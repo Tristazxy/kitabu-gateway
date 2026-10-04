@@ -40,6 +40,7 @@ def run(args):
 
 def app_clip(ci, chapter, nxt, busy, narr, index, total, k, rate=1.0):
     """One recorded chapter: phone footage (busy spans sped up) + caption background + narration."""
+    src = os.path.join(OUT, os.path.basename(chapter['file'])) if chapter.get('file') else SRC
     a, b = chapter['t'], nxt
     cuts = sorted({a, b, *[x for span in busy for x in span if a < x < b]})
     segs = []
@@ -77,7 +78,7 @@ def app_clip(ci, chapter, nxt, busy, narr, index, total, k, rate=1.0):
     parts.append('[1:v]fps=30,format=rgb24[bg]')
     parts.append(f'[bg][phone]overlay=x={PX}:y={PY}:shortest=1[v1]')
     parts.append(f'[v1][2:v]overlay=x={PX - BEZEL}:y={PY - BEZEL}:shortest=1,format=yuv420p[v]')
-    inputs = ['-i', SRC, '-f', 'concat', '-safe', '0', '-i', concat_file, '-loop', '1', '-i', os.path.join(TMP, 'bezel.png')]
+    inputs = ['-i', src, '-f', 'concat', '-safe', '0', '-i', concat_file, '-loop', '1', '-i', os.path.join(TMP, 'bezel.png')]
     if narr:
         inputs += ['-i', narr['file']]
         parts.append(f'[3:a]aresample=48000,aformat=channel_layouts=stereo,apad=whole_dur={final:.3f},atrim=0:{final:.3f},asetpts=PTS-STARTPTS[a]')
@@ -126,8 +127,9 @@ def scene_clip(scene, narr, index):
 def main():
     story = STORY
     meta = json.load(open(os.path.join(OUT, 'chapters.json')))
-    chapters, end = meta['chapters'], meta['end']
-    busy = [(a, b) for a, b in meta['busy'] if b - a >= MIN_BUSY]
+    chapters, end = meta['chapters'], meta.get('end', 0)
+    per_part = meta.get('perPart', False)
+    busy = [(a, b) for a, b in meta.get('busy', []) if b - a >= MIN_BUSY]
     narr_file = os.path.join(NARR_DIR, 'index.json')
     narration = json.load(open(narr_file)) if os.path.exists(narr_file) else []
     narr_by_index = {n['index']: n for n in narration}
@@ -155,8 +157,14 @@ def main():
                 print(f"skip: chapter '{item['title']}' was not recorded")
                 continue
             ci = by_title[item['title']]
-            nxt = chapters[ci + 1]['t'] if ci + 1 < len(chapters) else end
-            clip, d = app_clip(ci, chapters[ci], nxt, busy, narr, app_items.index(item) + 1, len(app_items) + 2, k, float(item.get('rate', 1.0)))
+            ch = chapters[ci]
+            if per_part:
+                nxt = min(ch['end'], seconds_of(os.path.join(OUT, os.path.basename(ch['file']))) or ch['end'])
+                ch_busy = [(a, b) for a, b in ch.get('busy', []) if b - a >= MIN_BUSY]
+            else:
+                nxt = chapters[ci + 1]['t'] if ci + 1 < len(chapters) else end
+                ch_busy = busy
+            clip, d = app_clip(ci, ch, nxt, ch_busy, narr, app_items.index(item) + 1, len(app_items) + 2, k, float(item.get('rate', 1.0)))
             label = item['title']
         clips.append(clip)
         timeline.append((t, label))
@@ -174,7 +182,7 @@ def main():
         os.replace(final + '.cut.mp4', final)
         t = limit
 
-    if not NAME:
+    if not NAME and not per_part:
         start = chapters[0]['t'] if chapters else 0
         run(['-ss', f'{start:.3f}', '-i', SRC, '-c:v', 'libx264', '-preset', 'medium', '-crf', '22', '-pix_fmt', 'yuv420p', '-an',
              '-movflags', '+faststart', os.path.join(OUT, 'kitabu-demo-phone.mp4')])

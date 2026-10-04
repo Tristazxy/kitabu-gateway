@@ -103,12 +103,15 @@ async function warmUp() {
 }
 
 // ------------------------------------------------------------------ phase 2: the recorded walkthrough
+// Every part is recorded on its own page, i.e. its own video file, with times relative to that file:
+// a chapter clip is exactly its part, whatever the machine's speed.
 const chapters = [];
-const busySpans = [];
+let busySpans = [];
 let t0 = 0;
 let page;
+let ctx;
 const now = () => (Date.now() - t0) / 1000;
-const chapter = (title, body) => chapters.push({ t: now(), title, body });
+const chapter = (title, body) => chapters.push({ t: now(), title, body, file: '' });
 const pause = ms => page.waitForTimeout(ms);
 let shot = 0;
 const snap = name => page.screenshot({ path: `${OUT}/${String(++shot).padStart(2, '0')}-${name}.png` });
@@ -188,13 +191,38 @@ async function part(name, fn) {
     results.push(`ok   ${name} (${Math.round((Date.now() - t) / 1000)} s)`);
   } catch (err) {
     results.push(`FAIL ${name}: ${err.message.split('\n')[0]}`);
-    await snap(`failed-${name}`).catch(() => {});
-    await toHome().catch(e => results.push(`     reset failed: ${e.message.split('\n')[0]}`));
+    if (page) { await snap(`failed-${name}`).catch(() => {}); await endPart(`failed-${name}`).catch(() => {}); }
   }
 }
 
+// A fresh page for a part: new video file, app opened at the role chooser, role picked.
+let partNo = 0;
+async function fresh(role) {
+  if (page) await page.close().catch(() => {});
+  page = await ctx.newPage();
+  watch(page, 'demo');
+  t0 = Date.now();
+  busySpans = [];
+  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await pause(700);
+  if (role) {
+    await tap(`[data-role="${role}"]`, 250);
+    if (await exists('[data-action="guide-close"]')) await tap('[data-action="guide-close"]', 200);
+    await pause(400);
+  }
+}
+async function endPart(name) {
+  const end = now();
+  const v = page.video();
+  await page.close();
+  page = null;
+  const file = `${OUT}/part-${String(++partNo).padStart(2, '0')}-${name}.webm`;
+  if (v) await rename(await v.path(), file);
+  for (const c of chapters) if (!c.file) { c.file = file; c.end = end; c.busy = busySpans; }
+}
+
 async function walkthrough() {
-  const ctx = await chromium.launchPersistentContext(PROFILE, { ...PHONE, recordVideo: { dir: OUT, size: PHONE.viewport } });
+  ctx = await chromium.launchPersistentContext(PROFILE, { ...PHONE, recordVideo: { dir: OUT, size: PHONE.viewport } });
   t0 = Date.now();
   await ctx.addInitScript(zoomScript);
   if (mock) await mock(ctx);
@@ -217,16 +245,12 @@ async function walkthrough() {
       setTimeout(() => d.remove(), 800);
     };
   });
-  page = ctx.pages()[0] || await ctx.newPage();
-  watch(page, 'demo');
+  for (const p0 of ctx.pages()) await p0.close().catch(() => {});
 
   try {
     // ---- product demo, chapter 1: a friend's tip → booking → deposit (visitor side)
     await part('tip', async () => {
-      await page.goto(BASE, { waitUntil: 'networkidle' });
-      await pause(900);
-      await tap('[data-role="visitor"]', 300);
-      await pause(700);
+      await fresh('visitor');
       chapter('A friend’s tip is enough', 'The search understands a friend’s tip and locks on the host. Vivian books one of Noor’s published days and pays the deposit by M-Pesa to Noor’s own phone.');
       await type('#find-q', 'my friend Emma went to a coffee farm');
       await pause(1600);
@@ -245,15 +269,12 @@ async function walkthrough() {
       await tap('[data-action="pay-deposit"]', 200);
       await pause(1300);
       await snap('deposit-paid');
+      await endPart('tip');
     });
 
     // ---- chapter 2: the host accepts; a photo and a voice note are read on the phone
     await part('decide', async () => {
-      await top(300);
-      await tap('[data-action="switch-role"]', 200);
-      await pause(500);
-      await tap('[data-role="host"]', 200);
-      if (await exists('[data-action="guide-close"]')) await tap('[data-action="guide-close"]', 200);
+      await fresh('host');
       chapter('Noor decides', 'The booking waits for Noor’s answer: Accept or Decline, in the app or by SMS from her basic phone. Then the guestbook photo (German) and a voice note (French) are read on the phone, offline.');
       await scrollTo('[data-action="host-answer"][data-answer="accepted"]', 'center', 900);
       await tap('[data-action="host-answer"][data-answer="accepted"]', 200);
@@ -300,11 +321,12 @@ async function walkthrough() {
       await pause(900);
       await tap('[data-action="finish-add"]', 200);
       await pause(400);
-      await tap('[data-action="back"]', 200);
+      await endPart('decide');
     });
 
     // ---- chapter 3: the week in Swahili, read aloud
     await part('swahili', async () => {
+      await fresh('host');
       chapter('The week, in Swahili', 'Ten fixed topics, good or bad; unsure sentences are marked “Check” for a person. The summary is human-written Swahili with the AI’s counts filled in; “Sikiliza” reads it aloud.');
       await pause(600);
       if (await exists('[data-action="analyze-pending"]')) {
@@ -321,11 +343,13 @@ async function walkthrough() {
       });
       if (voiceReady) { await tap('[data-action="speak"]', 200); await pause(5500); }
       await choose('#ui-lang', 'en');
-      await pause(400);
+      await pause(300);
+      await endPart('swahili');
     });
 
     // ---- chapter 4: the thank-you (consent, host taps send)
     await part('thanks', async () => {
+      await fresh('host');
       await tap('[data-action="go"][data-screen="guests"]', 200);
       await pause(300);
       chapter('A thank-you, with consent', 'A human-written note in the guest’s language with its meaning underneath. Sent only with consent, and only when the host taps send.');
@@ -334,12 +358,13 @@ async function walkthrough() {
       await scrollTo('.list li', 'start', 900);
       await pause(2500);
       await snap('thank-you');
-      await top(300);
-      await tap('[data-action="back"]', 200);
+      await pause(600);
+      await endPart('thanks');
     });
 
     // ---- technical walkthrough: the accuracy page
     await part('evidence', async () => {
+      await fresh(null);
       await page.goto(BASE.replace('index.html', 'eval.html'), { waitUntil: 'networkidle' });
       await pause(400);
       chapter('Evidence', 'The app’s own code on a labelled set and on FLORES-200, run in GitHub Actions on every change: topic accuracy, mood, chrF per language pack, and the share of “not sure”.');
@@ -348,13 +373,12 @@ async function walkthrough() {
       await scrollBy(600, 1800);
       await scrollBy(600, 1800);
       await pause(600);
+      await endPart('evidence');
     });
   } finally {
-    const end = now();
-    const video = page.video();
+    if (page) await endPart('tail').catch(() => {});
     await ctx.close();
-    if (video) await rename(await video.path(), `${OUT}/kitabu-demo.webm`);
-    await writeFile(`${OUT}/chapters.json`, JSON.stringify({ chapters, busy: busySpans, end }, null, 2));
+    await writeFile(`${OUT}/chapters.json`, JSON.stringify({ chapters, perPart: true }, null, 2));
   }
 }
 

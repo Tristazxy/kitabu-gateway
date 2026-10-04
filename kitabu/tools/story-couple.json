@@ -1,0 +1,67 @@
+{
+  "_note": "Product demo told by the couple, Vivian and Frank, in dialogue over the phone footage (60 s max). Two ElevenLabs stock voices, never cloned: Matilda (Vivian) and Charlie (Frank, Australian). Same chapters as story-demo.json.",
+  "name": "couple",
+  "output": "wekaribu-product-demo-couple.mp4",
+  "max_seconds": 60,
+  "busy_speed": 12,
+  "voice": "XrExE9yKIg1WjnnlVkGX",
+  "voice_name": "Matilda (ElevenLabs stock voice)",
+  "voices": { "vivian": "XrExE9yKIg1WjnnlVkGX", "frank": "IKne3meq5aSn8XLyUdCD" },
+  "model": "eleven_multilingual_v2",
+  "speed": 1.08,
+  "items": [
+    {
+      "kind": "card",
+      "card": "couple",
+      "title": "Vivian & Frank visit Noor",
+      "lines": ["A coffee farm with no website, no phone line, no internet.", "A friend said: you can only go by luck."],
+      "foot": "WeKaribu · Hack-Nation × World Bank · Small AI for Development · Tourism",
+      "dialogue": [
+        { "who": "Vivian", "voice": "XrExE9yKIg1WjnnlVkGX", "text": "Emma said you can't book Noor's farm. No website, no phone line. You can only go by luck." },
+        { "who": "Frank", "voice": "IKne3meq5aSn8XLyUdCD", "text": "Unless Emma used WeKaribu. Give it a go." }
+      ],
+      "text": ""
+    },
+    {
+      "kind": "app",
+      "title": "A friend’s tip is enough",
+      "rate": 2.6,
+      "dialogue": [
+        { "who": "Vivian", "voice": "XrExE9yKIg1WjnnlVkGX", "text": "I'll just type what Emma told us." },
+        { "who": "Frank", "voice": "IKne3meq5aSn8XLyUdCD", "text": "Best match: Noor's farm. Wednesday's free. Two of us, and mention Emma." },
+        { "who": "Vivian", "voice": "XrExE9yKIg1WjnnlVkGX", "text": "Deposit by M-Pesa, straight to Noor's phone. Done." }
+      ],
+      "text": ""
+    },
+    {
+      "kind": "app",
+      "title": "Noor decides",
+      "rate": 3.2,
+      "dialogue": [
+        { "who": "Frank", "voice": "IKne3meq5aSn8XLyUdCD", "text": "Noor gets our request and taps Accept. Her call, not the app's." },
+        { "who": "Vivian", "voice": "XrExE9yKIg1WjnnlVkGX", "text": "After the visit she photographs the guestbook: a German page, a French voice note, read on her phone, offline." }
+      ],
+      "text": ""
+    },
+    {
+      "kind": "app",
+      "title": "The week, in Swahili",
+      "rate": 1.8,
+      "dialogue": [
+        { "who": "Frank", "voice": "IKne3meq5aSn8XLyUdCD", "text": "Ten fixed topics, good or bad. Anything unsure is marked for a person." },
+        { "who": "Vivian", "voice": "XrExE9yKIg1WjnnlVkGX", "text": "And the summary is human-written Swahili the AI only fills in. She can even listen to it." }
+      ],
+      "text": ""
+    },
+    {
+      "kind": "app",
+      "title": "A thank-you, with consent",
+      "rate": 2.0,
+      "dialogue": [
+        { "who": "Vivian", "voice": "XrExE9yKIg1WjnnlVkGX", "text": "Then a thank-you came, in English, because we ticked yes." },
+        { "who": "Frank", "voice": "IKne3meq5aSn8XLyUdCD", "text": "Sent only when Noor tapped send. WeKaribu: we welcome." }
+      ],
+      "text": ""
+    }
+  ]
+}

@@ -27,11 +27,11 @@ def seconds_of(path):
     return float(r.stdout.strip() or 0)
 
 
-def elevenlabs(text, mp3):
+def elevenlabs(text, mp3, voice=None):
     key = os.environ.get('ELEVENLABS_API_KEY', '').strip()
     if not key:
         return False
-    voice = os.environ.get('NARRATION_VOICE_ID') or SPEC['voice']
+    voice = voice or os.environ.get('NARRATION_VOICE_ID') or SPEC['voice']
     body = {
         'text': text, 'model_id': SPEC.get('model', 'eleven_multilingual_v2'),
         'voice_settings': {'stability': 0.5, 'similarity_boost': 0.8, 'style': 0.3, 'use_speaker_boost': True, 'speed': SPEC.get('speed', 1.0)},
@@ -67,11 +67,66 @@ def silence(seconds, wav):
                     '-t', f'{seconds:.2f}', wav], check=True)
 
 
+def dialogue_clip(i, line, silent):
+    """An item spoken by several people (line['dialogue'] = [{who, voice, text}, ...]): one clip per turn,
+    joined with a short gap. Each turn is cached by its own voice and text."""
+    parts = []
+    for j, turn in enumerate(line['dialogue']):
+        text = turn['text'].strip()
+        voice = turn.get('voice') or SPEC['voice']
+        key = hashlib.sha1((voice + '|' + str(SPEC.get('speed', 1.0)) + '|' + text).encode()).hexdigest()[:12]
+        cached = os.path.join(CACHE, key + '.m4a')
+        part = os.path.join(OUT, f'{i:02d}-{j}-{key}.m4a')
+        source = 'silence'
+        if not silent and os.path.exists(cached) and os.path.getsize(cached) > 1000:
+            shutil.copy(cached, part)
+            source = 'cached'
+        else:
+            raw = os.path.join(OUT, f'{i:02d}-{j}.mp3')
+            if not silent and elevenlabs(text, raw, voice):
+                source = 'elevenlabs'
+            else:
+                raw = os.path.join(OUT, f'{i:02d}-{j}.wav')
+                if not silent and espeak(text, raw):
+                    source = 'espeak-ng'
+                else:
+                    silence(len(text.split()) / 2.6, raw)
+            try:
+                af = ['-af', 'loudnorm=I=-16:TP=-1.5'] if source != 'silence' else []
+                subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', raw, *af, '-ac', '2', '-ar', '48000', '-c:a', 'aac', '-b:a', '160k', part], check=True)
+            except subprocess.CalledProcessError:
+                subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', raw, '-ac', '2', '-ar', '48000', '-c:a', 'aac', '-b:a', '160k', part], check=True)
+            os.remove(raw)
+            if source == 'elevenlabs':
+                os.makedirs(CACHE, exist_ok=True)
+                shutil.copy(part, cached)
+        parts.append((part, source, turn.get('who', '')))
+    # join: 0.3 s lead-in, 0.45 s between turns
+    lst = os.path.join(OUT, f'{i:02d}-dialogue.txt')
+    gap = os.path.join(OUT, 'gap.m4a')
+    if not os.path.exists(gap):
+        subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'anullsrc=r=48000:cl=stereo', '-t', '0.45', '-c:a', 'aac', gap], check=True)
+    with open(lst, 'w') as f:
+        for k, (part, _, _) in enumerate(parts):
+            if k:
+                f.write(f"file '{os.path.abspath(gap)}'\n")
+            f.write(f"file '{os.path.abspath(part)}'\n")
+    final = os.path.join(OUT, f'{i:02d}-dialogue.m4a')
+    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', lst, '-af', 'adelay=300|300', '-c:a', 'aac', '-b:a', '160k', final], check=True)
+    sources = ','.join(sorted({p[1] for p in parts}))
+    return final, sources
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     silent = '--silent' in sys.argv
     index = []
     for i, line in enumerate(SPEC['items']):
+        if line.get('dialogue'):
+            final, source = dialogue_clip(i, line, silent)
+            index.append({'index': i, 'kind': line['kind'], 'title': line.get('title'), 'scene': line.get('scene'), 'file': final, 'seconds': round(seconds_of(final), 2), 'source': source})
+            print(f'{i:02d} {index[-1]["seconds"]:5.1f}s {source:28s} {line.get("title") or line.get("card") or line.get("scene")} (dialogue)')
+            continue
         text = line['text'].strip()
         stem = f'{i:02d}-{hashlib.sha1((SPEC["voice"] + "|" + text).encode()).hexdigest()[:8]}'
         key = hashlib.sha1((SPEC["voice"] + "|" + str(SPEC.get("speed", 1.0)) + "|" + text).encode()).hexdigest()[:12]

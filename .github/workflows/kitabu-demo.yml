@@ -16,6 +16,7 @@ on:
       - kitabu/tools/story.json
       - kitabu/tools/story-demo.json
       - kitabu/tools/story-tech.json
+      - kitabu/tools/story-couple.json
       - kitabu/tools/compose_story.py
       - kitabu/tools/intro/**
       - .github/workflows/kitabu-demo.yml
@@ -74,6 +75,7 @@ jobs:
         run: |
           STORY=tools/story-demo.json node tools/intro/render_cards.mjs
           STORY=tools/story-tech.json node tools/intro/render_cards.mjs
+          STORY=tools/story-couple.json node tools/intro/render_cards.mjs
 
       - name: Reuse narration clips from the last recording (saves ElevenLabs credits)
         if: always()
@@ -95,12 +97,14 @@ jobs:
         run: |
           STORY=tools/story-demo.json python3 tools/narrate.py
           STORY=tools/story-tech.json python3 tools/narrate.py
+          STORY=tools/story-couple.json python3 tools/narrate.py
 
-      - name: Compose the two 60-second videos (product demo, technical walkthrough)
+      - name: Compose the 60-second videos (product demo, technical walkthrough, the couple's version)
         if: always()
         run: |
           STORY=tools/story-demo.json python3 tools/compose_story.py
           STORY=tools/story-tech.json python3 tools/compose_story.py
+          STORY=tools/story-couple.json python3 tools/compose_story.py
           ls -la demo-out
 
       - name: Upload as a workflow artifact

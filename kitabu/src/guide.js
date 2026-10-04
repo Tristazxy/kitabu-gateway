@@ -30,6 +30,8 @@ export const GUIDE_STEPS = [
       ['Chapisha ukurasa wa kitabu cha wageni. Mgeni anaandika kwenye kisanduku A (alichopenda) na B (kinachoweza kuboreshwa), na anaweka alama kama anakubali uwasiliane naye.',
         'Print the guestbook page. Guests fill box A (what they liked) and box B (what could be better), and tick if you may contact them.'],
     ],
+    extra: ['Au bonyeza “Mpe mgeni simu”: mgeni anaandika mwenyewe, kwa lugha yake, kwenye simu yako.',
+      'Or tap “Hand the phone to a guest”: they type it themselves, in their language, on your phone.'],
     link: { href: 'print/guestbook.html', label: ['Fungua ukurasa wa kuchapisha', 'Open the printable page'] },
   },
   {
@@ -83,7 +85,7 @@ export function guideHTML(step) {
   const s = GUIDE_STEPS[step];
   const last = step === GUIDE_STEPS.length - 1;
   const dots = GUIDE_STEPS.map((_, i) => `<span class="${i === step ? 'on' : ''}"></span>`).join('');
-  const body = s.body.map(([sw, en]) => `<p class="lead">${sw}</p><p class="en" style="margin-top:-4px">${en}</p>`).join('');
+  const body = [...s.body, ...(s.extra ? [s.extra] : [])].map(([sw, en]) => `<p class="lead">${sw}</p><p class="en" style="margin-top:-4px">${en}</p>`).join('');
   const link = s.link
     ? `<a class="btn secondary block" href="${s.link.href}" target="_blank" rel="noopener" style="margin-top:6px">${L(s.link.label[0], s.link.label[1])}</a>`
     : '';

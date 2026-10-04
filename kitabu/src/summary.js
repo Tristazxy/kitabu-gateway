@@ -42,7 +42,7 @@ export function summarize(entries, guests) {
       if (s.sentiment === 'pos') bump(liked, s.topic, e.guestId, quote);
       else if (s.sentiment === 'neg') bump(improve, s.topic, e.guestId, quote);
     }
-    for (const p of e.products || []) bump(products, p, e.guestId, null);
+    for (const p of new Set([...(e.products || []), ...(e.declaredProducts || [])])) bump(products, p, e.guestId, null);
   }
   for (const id of guestSet) {
     const g = guestById[id];

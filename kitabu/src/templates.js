@@ -35,6 +35,11 @@ export function strongProduct(s) {
   return s.guests ? s.products.find(p => p.guests >= 3 && p.guests / s.guests >= 0.4) || null : null;
 }
 
+// One booking sent by a tour company straight to Noor's basic phone.
+export function bookingSms(b) {
+  return `Kitabu: Wageni wapya. ${daySw(b.date)}: wageni ${b.guests} (${langName(b.language, 'sw')})${b.guide ? `, mwongozaji ${b.guide}` : ''}.\nJibu NDIYO kukubali au HAPANA kukataa.`;
+}
+
 // ---------- Swahili summary for Noor ----------
 /**
  * @param {Object} s  stats from summarize()

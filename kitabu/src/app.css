@@ -21,7 +21,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font: 17px/1.45 system-ui, -apple-system, "Segoe UI", "Noto Sans", Ubuntu, sans-serif;
+  font: 1.0625rem/1.45 system-ui, -apple-system, "Segoe UI", "Noto Sans", Ubuntu, sans-serif;
   padding-bottom: calc(76px + env(safe-area-inset-bottom));
 }
 body.hide-en .en { display: none !important; }
@@ -205,6 +205,25 @@ mark.low { background: var(--warn-soft); color: var(--warn-ink); border-bottom: 
   padding: 12px 14px; box-shadow: 0 6px 24px rgba(28, 36, 32, .14);
 }
 .busy-label { font-weight: 650; margin-bottom: 8px; font-size: .95rem; }
+
+/* roles: chooser, visitor kiosk, company */
+html.big-text { font-size: 18.5px; }
+body.no-tabs { padding-bottom: 24px; }
+body.no-tabs .tabbar, body.no-tabs .host-only { display: none !important; }
+.role-card {
+  display: flex; gap: 14px; align-items: center; width: 100%; text-align: left; min-height: 88px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px;
+  font: inherit; color: var(--ink); cursor: pointer; box-shadow: var(--shadow);
+}
+.role-card:hover { border-color: var(--primary); }
+.role-icon {
+  width: 56px; height: 56px; border-radius: 16px; background: var(--primary-soft); color: var(--primary);
+  display: flex; align-items: center; justify-content: center; flex: none;
+}
+.role-icon svg { width: 30px; height: 30px; }
+.role-text { display: flex; flex-direction: column; gap: 2px; }
+.role-text strong { font-size: 1.08rem; }
+.hint { margin: -4px 2px 14px; }
 
 /* first-time guide */
 .guide-backdrop {

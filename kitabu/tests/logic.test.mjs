@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { planPacks, LANGS, DEFAULT_KEEP } from '../src/langs.js';
 import { splitClauses, findProducts, TOPICS } from '../src/topics.js';
 import { summarize, needsCheck, guestTopLiked } from '../src/summary.js';
-import { summaryText, thankYou, guideReport, weeklySms, strongProduct } from '../src/templates.js';
+import { summaryText, thankYou, guideReport, weeklySms, strongProduct, bookingSms } from '../src/templates.js';
 import { summaryClipIds } from '../src/voice.js';
 import { corpusChrF, scoreTopics } from '../src/evalcore.js';
 import { decideMood } from '../src/ai.js';
@@ -139,6 +139,19 @@ test('every language has the fields the app uses', () => {
   for (const [c, l] of Object.entries(LANGS)) {
     assert.ok(l.sw && l.en && l.native && l.tess && l.whisper, c);
   }
+});
+
+test('company booking becomes a Swahili SMS', () => {
+  const sms = bookingSms({ date: day(4), guests: 3, language: 'pl', guide: 'Neema' });
+  assert.ok(sms.startsWith('Kitabu: Wageni wapya.'));
+  assert.ok(sms.includes('wageni 3 (Kipolandi)'));
+});
+
+test('products ticked by a visitor are counted once per guest', () => {
+  const s = summarize([
+    { id: 'v1', guestId: 'v', lang: 'it', sentences: [], products: ['coffee'], declaredProducts: ['coffee', 'souvenir'] },
+  ], [{ id: 'v', language: 'it' }]);
+  assert.deepEqual(s.products.map(p => [p.id, p.guests]).sort(), [['coffee', 1], ['souvenir', 1]]);
 });
 
 console.log(`\n${n} checks passed`);

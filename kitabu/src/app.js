@@ -4,13 +4,14 @@
 import { db, uid } from './db.js';
 import { LANGS, SHARED_MODELS, PACK_MB, packLangs, planPacks, langName, KEEP_TOP_N } from './langs.js';
 import { TOPICS, OTHER, topicById, PRODUCTS } from './topics.js';
-import { weeklySms, summaryText, thankYou, guideReport, daySw, dayEn, SUBJECTS } from './templates.js';
+import { weeklySms, summaryText, thankYou, guideReport, daySw, dayEn, SUBJECTS, bookingSms } from './templates.js';
 import { summarize, inPeriod, guestTopLiked, needsCheck } from './summary.js';
 import * as ai from './ai.js';
 import { analyze } from './pipeline.js';
 import { h, L, Li, toast, showBusy, progress, hideBusy, speak, isoDate, dayStamp, addDays, daysFromToday, copyText } from './ui.js';
 import { summaryClipIds, playClips, prefetchVoice, loadVoiceManifest } from './voice.js';
 import { guideHTML, GUIDE_STEPS } from './guide.js';
+import { roleChooserHTML, visitorHTML, companyHTML, pickVisitorLang, V } from './roles.js';
 
 const view = document.getElementById('view');
 
@@ -32,6 +33,8 @@ const state = {
   shareOk: false,
   openGuest: null,
   guide: { open: false, step: 0 },
+  role: null,          // null (choose) | 'host' | 'visitor' | 'company'
+  visitor: { lang: 'en', saved: false, draft: {} },
 };
 
 // ---------------------------------------------------------------- data
@@ -39,8 +42,10 @@ async function loadAll() {
   const [g, e, b, m] = await Promise.all(['guests', 'entries', 'bookings', 'messages'].map(s => db.all(s)));
   Object.assign(state, { guests: g, entries: e, bookings: b, messages: m });
   state.lastSync = await db.getSetting('lastSync');
+  state.role = await db.getSetting('role', null);
   const showEn = await db.getSetting('showEn', true);
   document.body.classList.toggle('hide-en', !showEn);
+  document.documentElement.classList.toggle('big-text', await db.getSetting('bigText', false));
 }
 
 async function refreshModels() {
@@ -208,6 +213,16 @@ function screenWeek() {
     </li>`;
 
   return `
+  <div class="card">
+    <h2>${L('Unataka kufanya nini?', 'What do you want to do?')}</h2>
+    <div class="grid2">
+      <button class="btn big secondary" data-action="go" data-tab="add">${ICON_CAMERA}<span class="btn-col">${L('Ongeza maoni', 'Add feedback')}</span></button>
+      <button class="btn big secondary" data-action="go" data-tab="summary">${ICON_LISTEN}<span class="btn-col">${L('Sikiliza muhtasari', 'Hear the summary')}</span></button>
+      <button class="btn big secondary" data-action="go" data-tab="guests">${ICON_MAIL}<span class="btn-col">${L('Washukuru wageni', 'Thank guests')}</span></button>
+      <button class="btn big" data-action="hand-to-guest">${ICON_HAND}<span class="btn-col">${L('Mpe mgeni simu', 'Hand the phone to a guest')}</span></button>
+    </div>
+  </div>
+
   <h1>${L('Wiki ijayo', 'Next week')}</h1>
 
   <div class="card">
@@ -291,6 +306,7 @@ function addStep1() {
 
   return `
   <h1>${L('Mgeni ni nani?', 'Who is the guest?')}</h1>
+  <p class="hint small muted">${Li('Chagua mgeni, kisha ongeza picha, sauti au maandishi yake.', 'Pick the guest, then add their photo, voice or text.')}</p>
 
   ${recentBookings.length ? `
   <div class="card">
@@ -336,6 +352,9 @@ function addStep1() {
 
 const ICON_CAMERA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
 const ICON_MIC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+const ICON_LISTEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4h4l5 4V6L8 10z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>';
+const ICON_MAIL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>';
+const ICON_HAND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="16" rx="2"/><path d="M11 15h2M4 22l3-4M20 22l-3-4"/></svg>';
 const ICON_PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>';
 
 function addStep2() {
@@ -460,6 +479,7 @@ function screenSummary() {
 
   return `
   <h1>${L('Muhtasari', 'Summary')}</h1>
+  <p class="hint small muted">${Li('Hapa unasikia na kusoma walichosema wageni. Bonyeza “Sikiliza”.', 'Here you hear and read what guests said. Tap “Listen”.')}</p>
   <div class="row" style="margin-bottom:12px">${periodChips}</div>
 
   ${pending.length ? `
@@ -642,7 +662,11 @@ function screenMore() {
 
   <div class="card">
     <h2>${L('Jinsi ya kutumia', 'How to use it')}</h2>
-    <button class="btn block" data-action="guide-open">${L('Fungua mwongozo', 'Open the guide')}</button>
+    <div class="stack">
+      <button class="btn block" data-action="guide-open">${L('Fungua mwongozo', 'Open the guide')}</button>
+      <button class="btn secondary block" data-action="toggle-big">${document.documentElement.classList.contains('big-text') ? L('Herufi za kawaida', 'Normal text size') : L('Herufi kubwa', 'Large text')}</button>
+      <button class="btn secondary block" data-action="switch-role">${L('Badilisha jukumu (mwenyeji, mgeni, kampuni)', 'Switch role (host, visitor, company)')}</button>
+    </div>
   </div>
 
   <div class="card">
@@ -681,6 +705,68 @@ function screenMore() {
       <a class="btn secondary" href="https://github.com/Tristazxy/kitabu-gateway#readme" target="_blank" rel="noopener">${L('Vyanzo vya data na mipaka', 'Data sources and limits')}</a>
     </div>
   </div>`;
+}
+
+// ---------------------------------------------------------------- tour company screen
+function readCompanyForm() {
+  const v = id => document.getElementById(id)?.value?.trim() || '';
+  const consent = Boolean(document.getElementById('c-consent')?.checked);
+  const date = v('c-date');
+  return {
+    id: uid('bk'), date: dayStamp(date || addDays(new Date(), 3)), guests: Math.max(1, Number(v('c-guests')) || 1),
+    leadName: v('c-name') || 'Mgeni', language: v('c-lang') || 'en', guide: v('c-guide'),
+    company: '', consent, email: consent ? v('c-email') : '',
+  };
+}
+
+function companyScreen() {
+  const today = isoDate(addDays(new Date(), 3));
+  const { s } = currentSummary();
+  const report = s.entries ? guideReport(s, 'Mfano · Example') : null;
+  return companyHTML({
+    langOptionsHTML: langOptions('en'), today,
+    sms: bookingSms({ date: dayStamp(today), guests: 2, language: 'en', guide: '' }), report,
+  });
+}
+
+function captureVisitorDraft() {
+  const v = id => document.getElementById(id)?.value || '';
+  if (!document.getElementById('v-liked')) return;
+  state.visitor.draft = { name: v('v-name'), liked: v('v-liked'), improve: v('v-improve'), email: v('v-email') };
+}
+
+async function saveVisitor() {
+  const v = id => document.getElementById(id)?.value?.trim() || '';
+  const lang = state.visitor.lang;
+  const t = V[lang] || V.en;
+  const liked = v('v-liked');
+  const improve = v('v-improve');
+  if (!liked && !improve) { toast(t.needText); return; }
+  const consent = Boolean(document.getElementById('v-consent')?.checked);
+  const declared = [
+    document.getElementById('v-buy-coffee')?.checked ? 'coffee' : null,
+    document.getElementById('v-buy-souvenir')?.checked ? 'souvenir' : null,
+  ].filter(Boolean);
+  const g = {
+    id: uid('g'), name: v('v-name') || 'Mgeni', language: lang, visitDate: dayStamp(new Date()), consent,
+    contact: consent ? { email: v('v-email'), phone: '' } : null, // no consent -> nothing stored
+    source: 'visitor', createdAt: new Date().toISOString(),
+  };
+  await db.put('guests', g);
+  let first = true;
+  for (const [box, text] of [['liked', liked], ['improve', improve]]) {
+    if (!text) continue;
+    await db.put('entries', {
+      id: uid('fb'), guestId: g.id, lang, source: 'visitor', box, original: text, status: 'pending',
+      sentences: [], products: [], declaredProducts: first ? declared : [],
+      visitDate: g.visitDate, createdAt: new Date().toISOString(),
+    });
+    first = false;
+  }
+  await loadAll();
+  state.visitor = { lang, saved: true, draft: {} };
+  render();
+  window.scrollTo(0, 0);
 }
 
 // ---------------------------------------------------------------- first-time guide
@@ -741,7 +827,13 @@ async function tryExample() {
 const SCREENS = { week: screenWeek, add: screenAdd, summary: screenSummary, guests: screenGuests, langs: screenLangs, more: screenMore };
 
 function render() {
-  view.innerHTML = SCREENS[state.tab]();
+  const mode = state.role || 'choose';
+  for (const m of ['choose', 'visitor', 'company']) document.body.classList.toggle(`mode-${m}`, mode === m);
+  document.body.classList.toggle('no-tabs', mode !== 'host');
+  if (mode === 'choose') view.innerHTML = roleChooserHTML();
+  else if (mode === 'visitor') view.innerHTML = visitorHTML(state.visitor.lang, state.visitor.saved, state.visitor.draft);
+  else if (mode === 'company') view.innerHTML = companyScreen();
+  else view.innerHTML = SCREENS[state.tab]();
   document.querySelectorAll('.tabbar button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === state.tab ? 'page' : 'false'));
   document.getElementById('net').innerHTML = state.online ? Li('Mtandaoni', 'online') : Li('Nje ya mtandao', 'offline');
   if (state.tab === 'langs') {
@@ -1051,7 +1143,45 @@ async function shareReport() {
   }
 }
 
+async function setRole(role) {
+  state.role = role;
+  await db.setSetting('role', role);
+  if (role === 'visitor') state.visitor = { lang: pickVisitorLang(), saved: false, draft: {} };
+  if (role === 'host') state.tab = 'week';
+  render();
+  window.scrollTo(0, 0);
+  if (role === 'host' && !(await db.getSetting('guideSeen', false))) openGuide(0);
+}
+
 const actions = {
+  'choose-role': el => setRole(el.dataset.role),
+  'switch-role': async () => { state.role = null; await db.setSetting('role', null); render(); window.scrollTo(0, 0); },
+  'hand-to-guest': () => setRole('visitor'),
+  'visitor-lang': el => { captureVisitorDraft(); state.visitor.lang = el.dataset.lang; render(); },
+  'visitor-save': saveVisitor,
+  'visitor-next': () => { state.visitor = { lang: pickVisitorLang(), saved: false, draft: {} }; render(); window.scrollTo(0, 0); },
+  'visitor-exit': async () => {
+    if (!confirm('Kwa Noor tu: rudi kwenye programu ya mwenyeji?\n\nHost only: go back to the host app?')) return;
+    await setRole('host');
+  },
+  'company-sms': () => {
+    const b = readCompanyForm();
+    const phone = document.getElementById('c-phone')?.value?.trim() || '';
+    if (!phone) { toast('Weka namba ya simu ya Noor · Add Noor’s phone number'); return; }
+    window.location.href = `sms:${encodeURIComponent(phone)}?body=${encodeURIComponent(bookingSms(b))}`;
+  },
+  'company-save': async () => {
+    const b = readCompanyForm();
+    await db.put('bookings', b);
+    state.bookings.push(b);
+    toast('Imehifadhiwa kwenye ratiba ya simu hii · Saved to this device’s schedule');
+  },
+  'toggle-big': async () => {
+    const on = !document.documentElement.classList.contains('big-text');
+    document.documentElement.classList.toggle('big-text', on);
+    await db.setSetting('bigText', on);
+    render();
+  },
   'guide-open': () => openGuide(0),
   'guide-next': () => openGuide(Math.min(state.guide.step + 1, GUIDE_STEPS.length - 1)),
   'guide-prev': () => openGuide(Math.max(state.guide.step - 1, 0)),
@@ -1145,6 +1275,11 @@ const actions = {
 };
 
 const changeHandlers = {
+  'company-preview': () => {
+    const el = document.getElementById('c-sms');
+    if (el) el.textContent = bookingSms(readCompanyForm());
+  },
+  'company-consent': el => document.getElementById('c-email-wrap')?.classList.toggle('hidden', !el.checked),
   'consent-toggle': el => document.getElementById('contact-fields')?.classList.toggle('hidden', !el.checked),
   'bk-consent-toggle': el => document.getElementById('bk-email-wrap')?.classList.toggle('hidden', !el.checked),
   box: el => { const i = state.add.inputs.find(x => x.id === el.dataset.id); if (i) i.box = el.value; },
@@ -1246,7 +1381,7 @@ async function warmCache() {
 async function start() {
   await loadAll();
   render();
-  if (!(await db.getSetting('guideSeen', false))) openGuide(0);
+  if (state.role === 'host' && !(await db.getSetting('guideSeen', false))) openGuide(0);
   await refreshModels();
   render();
   if ('serviceWorker' in navigator && import.meta.env?.PROD) {

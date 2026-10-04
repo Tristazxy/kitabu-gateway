@@ -10,6 +10,7 @@ import * as ai from './ai.js';
 import { analyze } from './pipeline.js';
 import { h, L, Li, toast, showBusy, progress, hideBusy, speak, isoDate, dayStamp, addDays, daysFromToday, copyText } from './ui.js';
 import { summaryClipIds, playClips, prefetchVoice, loadVoiceManifest } from './voice.js';
+import { guideHTML, GUIDE_STEPS } from './guide.js';
 
 const view = document.getElementById('view');
 
@@ -30,6 +31,7 @@ const state = {
   lastSync: null,
   shareOk: false,
   openGuest: null,
+  guide: { open: false, step: 0 },
 };
 
 // ---------------------------------------------------------------- data
@@ -639,6 +641,11 @@ function screenMore() {
   <h1>${L('Zaidi', 'More')}</h1>
 
   <div class="card">
+    <h2>${L('Jinsi ya kutumia', 'How to use it')}</h2>
+    <button class="btn block" data-action="guide-open">${L('Fungua mwongozo', 'Open the guide')}</button>
+  </div>
+
+  <div class="card">
     <h2>${L('Kurasa za kuchapisha', 'Printable pages')}</h2>
     <div class="stack">
       <a class="btn secondary" href="print/guestbook.html" target="_blank" rel="noopener">${L('Ukurasa wa kitabu cha wageni', 'Guestbook page')}</a>
@@ -674,6 +681,60 @@ function screenMore() {
       <a class="btn secondary" href="https://github.com/Tristazxy/kitabu-gateway#readme" target="_blank" rel="noopener">${L('Vyanzo vya data na mipaka', 'Data sources and limits')}</a>
     </div>
   </div>`;
+}
+
+// ---------------------------------------------------------------- first-time guide
+let guideEl = null;
+function renderGuide() {
+  if (!guideEl) {
+    guideEl = document.createElement('div');
+    guideEl.className = 'guide-backdrop hidden';
+    guideEl.setAttribute('role', 'dialog');
+    guideEl.setAttribute('aria-modal', 'true');
+    guideEl.setAttribute('aria-labelledby', 'guide-title');
+    document.body.appendChild(guideEl);
+  }
+  guideEl.classList.toggle('hidden', !state.guide.open);
+  if (!state.guide.open) { guideEl.innerHTML = ''; return; }
+  guideEl.innerHTML = guideHTML(state.guide.step);
+  guideEl.querySelector('[data-action="guide-next"], [data-action="guide-try"]')?.focus();
+}
+function openGuide(step = 0) {
+  state.guide = { open: true, step };
+  renderGuide();
+}
+async function closeGuide() {
+  state.guide.open = false;
+  renderGuide();
+  await db.setSetting('guideSeen', true);
+}
+
+// One invented English-speaking guest: needs only the two small shared models (about 90 MB).
+async function tryExample() {
+  await closeGuide();
+  const id = 'demo_quick';
+  if (!guestById(id)) {
+    const g = {
+      id, name: 'Emma (mfano)', language: 'en', visitDate: dayStamp(addDays(new Date(), -1)), consent: true,
+      contact: { email: 'emma@example.com', phone: '' }, createdAt: new Date().toISOString(), synthetic: true,
+    };
+    await db.put('guests', g);
+    const text = {
+      liked: 'Roasting and grinding the coffee with the family was the best part of our trip. The lunch was delicious.',
+      improve: 'The road to the farm was hard to find. I wanted to buy a bag of coffee to take home, but there was none for sale.',
+    };
+    for (const box of ['liked', 'improve']) {
+      await db.put('entries', {
+        id: `${id}_${box}`, guestId: id, lang: 'en', source: 'typed', box, original: text[box], status: 'pending',
+        sentences: [], products: [], visitDate: g.visitDate, createdAt: new Date().toISOString(), synthetic: true,
+      });
+    }
+    await loadAll();
+  }
+  state.period = 'all';
+  state.tab = 'summary';
+  render();
+  await analyzePending();
 }
 
 // ---------------------------------------------------------------- render
@@ -991,6 +1052,12 @@ async function shareReport() {
 }
 
 const actions = {
+  'guide-open': () => openGuide(0),
+  'guide-next': () => openGuide(Math.min(state.guide.step + 1, GUIDE_STEPS.length - 1)),
+  'guide-prev': () => openGuide(Math.max(state.guide.step - 1, 0)),
+  'guide-close': closeGuide,
+  'guide-try': tryExample,
+  'guide-demo': async () => { await closeGuide(); await loadDemo(); },
   go: el => { state.tab = el.dataset.tab; render(); window.scrollTo(0, 0); },
   'toggle-en': async () => {
     const hide = !document.body.classList.contains('hide-en');
@@ -1151,6 +1218,10 @@ document.addEventListener('input', e => {
   if (fn) fn(e.target);
 });
 
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && state.guide.open) closeGuide();
+});
+
 window.addEventListener('online', () => { state.online = true; render(); });
 window.addEventListener('offline', () => { state.online = false; render(); });
 
@@ -1175,6 +1246,7 @@ async function warmCache() {
 async function start() {
   await loadAll();
   render();
+  if (!(await db.getSetting('guideSeen', false))) openGuide(0);
   await refreshModels();
   render();
   if ('serviceWorker' in navigator && import.meta.env?.PROD) {

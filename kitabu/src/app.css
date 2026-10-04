@@ -206,6 +206,34 @@ mark.low { background: var(--warn-soft); color: var(--warn-ink); border-bottom: 
 }
 .busy-label { font-weight: 650; margin-bottom: 8px; font-size: .95rem; }
 
+/* first-time guide */
+.guide-backdrop {
+  position: fixed; inset: 0; z-index: 40; background: rgba(20, 28, 24, .55);
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.guide-card {
+  background: var(--surface); width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto;
+  border-radius: 20px 20px 0 0; padding: 18px 20px calc(18px + env(safe-area-inset-bottom));
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, .2);
+}
+.guide-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.guide-dots { display: flex; gap: 6px; }
+.guide-dots span { width: 8px; height: 8px; border-radius: 99px; background: #D3D1C6; }
+.guide-dots span.on { background: var(--primary); width: 22px; }
+.guide-close { border: 0; background: none; color: var(--muted); font: inherit; font-weight: 600; min-height: 44px; padding: 0 6px; cursor: pointer; }
+.guide-icon {
+  width: 68px; height: 68px; border-radius: 18px; background: var(--primary-soft); color: var(--primary);
+  display: flex; align-items: center; justify-content: center; margin: 4px 0 12px;
+}
+.guide-icon svg { width: 36px; height: 36px; }
+.guide-card h2 { font-size: 1.3rem; }
+.guide-card .lead { font-size: 1.06rem; }
+.guide-nav { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; margin-top: 16px; }
+@media (min-width: 640px) {
+  .guide-backdrop { align-items: center; }
+  .guide-card { border-radius: 20px; }
+}
+
 /* toast */
 .toast {
   position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom)); transform: translateX(-50%);
@@ -228,6 +256,10 @@ mark.low { background: var(--warn-soft); color: var(--warn-ink); border-bottom: 
   .brand-name { font-size: .98rem; }
   .net { font-size: .66rem; padding: 2px 7px; }
   .net .en { display: none !important; }
+}
+@media (max-width: 400px) {
+  .brand img { display: none; }
+  .icon-btn { min-width: 40px; height: 40px; }
 }
 @media (min-width: 700px) {
   main { padding-top: 24px; }

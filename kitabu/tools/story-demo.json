@@ -1,0 +1,44 @@
+{
+  "_note": "Product demo, 60 seconds max (the submission form allows three videos of up to 60 s each). kind 'card' = a full-frame text card rendered by tools/intro/render_cards.mjs; kind 'app' = a recorded chapter from tools/record-demo.mjs (matched by title), played at 'rate' x with busy spans sped up further. Each item has the narration Brian reads over it (tools/narrate.py); a clip is held until its line ends.",
+  "name": "demo",
+  "output": "wekaribu-product-demo.mp4",
+  "max_seconds": 60,
+  "voice": "nPczCjzI2devNBz1zQrb",
+  "voice_name": "Brian (ElevenLabs stock voice, warm narrator)",
+  "model": "eleven_multilingual_v2",
+  "speed": 1.08,
+  "items": [
+    {
+      "kind": "card",
+      "card": "problem",
+      "title": "WeKaribu",
+      "lines": ["Guests write in their language.", "The host hears it in hers."],
+      "foot": "Hack-Nation × World Bank · Small AI for Development · Tourism",
+      "text": "WeKaribu. Because of this tool, Noor, a coffee-farm host in Tanzania, will hear in Swahili what her foreign visitors loved and what to improve, within days of a visit. Today she never does: the feedback is in languages she cannot read."
+    },
+    {
+      "kind": "app",
+      "title": "A friend’s tip is enough",
+      "rate": 2.2,
+      "text": "A friend's tip is enough: the search locks on Noor's farm. Vivian books a day Noor published, and pays the deposit by M-Pesa, straight to Noor's own phone."
+    },
+    {
+      "kind": "app",
+      "title": "Noor decides",
+      "rate": 2.2,
+      "text": "Noor accepts: the final call is hers, by app or by SMS. After the visit, a photo of the guestbook in German and a voice note in French are read and translated on the phone, offline."
+    },
+    {
+      "kind": "app",
+      "title": "The week, in Swahili",
+      "rate": 1.6,
+      "text": "Ten fixed topics, good or bad; anything unsure is flagged for a person. The summary is human-written Swahili the AI only fills in, and Noor can listen to it."
+    },
+    {
+      "kind": "app",
+      "title": "A thank-you, with consent",
+      "rate": 1.8,
+      "text": "SMS can carry the words; only a model can carry the meaning across languages. And nothing is sent without Noor's tap. WeKaribu: we welcome."
+    }
+  ]
+}

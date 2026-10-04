@@ -38,3 +38,4 @@ kitabu/demo-out
 kitabu/demo-assets
 kitabu/demo-profile
 kitabu/cache
+__pycache__/

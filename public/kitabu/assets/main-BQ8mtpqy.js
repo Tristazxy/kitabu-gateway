@@ -49,7 +49,7 @@ ${pe(["REPORT",a,t,s.guests,s.entries])}`}const ba={en:e=>`${e.company}: your vi
       <p class="lead" style="font-size:1.1rem">${d(s.handBack)}</p>
       <button class="btn block" style="margin-top:12px" data-action="visitor-next">${d(s.next)}</button>
     </div>
-    <button class="btn small secondary" data-action="visitor-exit">${n(`Kwa ${w()} tu: rudi`,`${w()} only: back`)}</button>`:`
+    <button class="btn small secondary" data-action="visitor-exit">← ${n("Rudi","Back")}</button>`:`
   <div class="row" style="margin-bottom:10px" aria-label="${d(s.lang)}">${o}</div>
   <div class="card" lang="${e}">
     <h1>${d(s.title)}</h1>
@@ -71,7 +71,7 @@ ${pe(["REPORT",a,t,s.guests,s.entries])}`}const ba={en:e=>`${e.company}: your vi
       <p class="small muted" style="margin:0">${d(s.privacy)}</p>
     </div>
   </div>
-  <button class="btn small secondary" data-action="visitor-exit">${n(`Kwa ${w()} tu: rudi`,`${w()} only: back`)}</button>`}function _t({langOptionsHTML:e,today:a,sms:t,report:s}){return`
+  <button class="btn small secondary" data-action="visitor-exit">← ${n("Rudi","Back")}</button>`}function _t({langOptionsHTML:e,today:a,sms:t,report:s}){return`
   <h1>${n("Kwa kampuni ya utalii","For tour companies")}</h1>
   <p class="small muted">${n(`Tuma ratiba ya wageni kwa ${w()}. Anapokea SMS fupi kwa Kiswahili kwenye simu yake ya kawaida.`,`Send a booking to ${w()}. The host gets a short Swahili SMS on a basic phone, no internet needed.`)}</p>
   <div class="card">

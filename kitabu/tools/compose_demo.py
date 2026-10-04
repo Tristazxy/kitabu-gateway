@@ -88,7 +88,7 @@ def background(chapter, index, total, sped):
         y += 52
     if sped:
         pf = font('semi', 28)
-        label = f'Sped up {SPEED}× while the phone works'
+        label = 'Sped up while the phone works'
         tw = d.textlength(label, font=pf)
         d.rounded_rectangle([TEXT_X, 830, TEXT_X + tw + 48, 884], 27, fill=GOLD)
         d.text((TEXT_X + 24, 840), label, font=pf, fill=(40, 34, 20))

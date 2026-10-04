@@ -144,7 +144,7 @@ export function visitorHTML(lang, saved, draft = {}) {
       <p class="lead" style="font-size:1.1rem">${h(t.handBack)}</p>
       <button class="btn block" style="margin-top:12px" data-action="visitor-next">${h(t.next)}</button>
     </div>
-    <button class="btn small secondary" data-action="visitor-exit">${L(`Kwa ${host()} tu: rudi`, `${host()} only: back`)}</button>`;
+    <button class="btn small secondary" data-action="visitor-exit">← ${L('Rudi', 'Back')}</button>`;
   }
   return `
   <div class="row" style="margin-bottom:10px" aria-label="${h(t.lang)}">${chips}</div>
@@ -168,7 +168,7 @@ export function visitorHTML(lang, saved, draft = {}) {
       <p class="small muted" style="margin:0">${h(t.privacy)}</p>
     </div>
   </div>
-  <button class="btn small secondary" data-action="visitor-exit">${L(`Kwa ${host()} tu: rudi`, `${host()} only: back`)}</button>`;
+  <button class="btn small secondary" data-action="visitor-exit">← ${L('Rudi', 'Back')}</button>`;
 }
 
 export function companyHTML({ langOptionsHTML, today, sms, report }) {

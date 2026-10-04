@@ -14,6 +14,8 @@ on:
       - kitabu/tools/demo_assets.py
       - kitabu/tools/narrate.py
       - kitabu/tools/story.json
+      - kitabu/tools/story-demo.json
+      - kitabu/tools/story-tech.json
       - kitabu/tools/compose_story.py
       - kitabu/tools/intro/**
       - .github/workflows/kitabu-demo.yml
@@ -67,15 +69,11 @@ jobs:
       - name: Record the walkthrough (downloads the real models once, then records)
         run: node tools/record-demo.mjs
 
-      - name: Intro animation (Korla wakes up) with sound
+      - name: Text cards for both videos
         if: always()
-        env:
-          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-        run: python3 tools/intro/intro_audio.py && node tools/intro/render_intro.mjs
-
-      - name: Cartoon story scenes
-        if: always()
-        run: node tools/intro/render_scenes.mjs
+        run: |
+          STORY=tools/story-demo.json node tools/intro/render_cards.mjs
+          STORY=tools/story-tech.json node tools/intro/render_cards.mjs
 
       - name: Reuse narration clips from the last recording (saves ElevenLabs credits)
         if: always()
@@ -94,11 +92,16 @@ jobs:
         env:
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           NARRATION_VOICE_ID: ${{ vars.NARRATION_VOICE_ID }}
-        run: python3 tools/narrate.py
+        run: |
+          STORY=tools/story-demo.json python3 tools/narrate.py
+          STORY=tools/story-tech.json python3 tools/narrate.py
 
-      - name: Compose the story video
+      - name: Compose the two 60-second videos (product demo, technical walkthrough)
         if: always()
-        run: python3 tools/compose_story.py && ls -la demo-out
+        run: |
+          STORY=tools/story-demo.json python3 tools/compose_story.py
+          STORY=tools/story-tech.json python3 tools/compose_story.py
+          ls -la demo-out
 
       - name: Upload as a workflow artifact
         if: always()
@@ -127,8 +130,8 @@ jobs:
           cp kitabu/demo-out/*.mp4 demo/ 2>/dev/null || true
           cp kitabu/demo-out/*.png demo/ 2>/dev/null || true
           cp kitabu/demo-out/*.txt kitabu/demo-out/*.json demo/ 2>/dev/null || true
-          cp kitabu/demo-out/narration/index.json demo/narration-index.json 2>/dev/null || true
-          mkdir -p demo/narration && cp kitabu/demo-out/narration/*.m4a demo/narration/ 2>/dev/null || true
+          mkdir -p demo/narration && cp kitabu/demo-out/narration*/*.m4a demo/narration/ 2>/dev/null || true
+          cp kitabu/cache/narration/*.m4a demo/narration/ 2>/dev/null || true
           cp kitabu/demo-assets/note-de.png demo/input-note-de.png 2>/dev/null || true
           cp kitabu/demo-assets/voice-fr.wav demo/input-voice-fr.wav 2>/dev/null || true
           git add -f demo

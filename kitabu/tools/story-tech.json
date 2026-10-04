@@ -1,0 +1,65 @@
+{
+  "_note": "Technical walkthrough, 60 seconds max. Same format as story-demo.json.",
+  "name": "tech",
+  "output": "wekaribu-technical-walkthrough.mp4",
+  "max_seconds": 60,
+  "voice": "nPczCjzI2devNBz1zQrb",
+  "voice_name": "Brian (ElevenLabs stock voice, warm narrator)",
+  "model": "eleven_multilingual_v2",
+  "speed": 1.08,
+  "items": [
+    {
+      "kind": "card",
+      "card": "stack",
+      "title": "One phone, no server",
+      "lines": [
+        "Plain-JavaScript PWA · IndexedDB · service worker",
+        "No account, no backend: the phone is the account"
+      ],
+      "foot": "github.com/Tristazxy/kitabu-gateway",
+      "text": "A plain-JavaScript web app, installed from the browser. No server, no account: data lives in the phone's IndexedDB, and a service worker keeps it working offline."
+    },
+    {
+      "kind": "card",
+      "card": "models",
+      "title": "Small AI, on the phone",
+      "lines": [
+        "Whisper base · 77 MB — speech, any guest language",
+        "Opus-MT pack per language → English pivot · 130 MB each",
+        "MiniLM → 10 fixed topics · 23 MB    DistilBERT mood · 67 MB",
+        "Tesseract OCR for the guestbook photos"
+      ],
+      "foot": "Transformers.js 3.8 in the browser · packs downloaded only for booked languages",
+      "text": "Models run in the browser with Transformers.js: Whisper for speech, one Opus-MT pack per guest language into an English pivot, MiniLM against ten fixed topics, DistilBERT for mood, Tesseract for photos. Packs are fetched only for booked languages."
+    },
+    {
+      "kind": "app",
+      "title": "Evidence",
+      "rate": 1.5,
+      "text": "Measured with the app's own code in CI: topic accuracy ninety-three percent, mood ninety-three, FLORES-200 chrF fifty-three to sixty-five, nineteen logic tests on every push."
+    },
+    {
+      "kind": "card",
+      "card": "sms",
+      "title": "No internet? SMS carries it",
+      "lines": [
+        "WK|BOOK|2026-10-07|2|it|Vivian & Frank|noor",
+        "Request · answer · days · receipt · report — pasted into the other phone, understood offline"
+      ],
+      "foot": "Store-and-forward: cloud uploads made offline are queued and sent later",
+      "text": "Every SMS ends with a code line, so a request, an answer, a receipt or a report pasted into the other phone is understood offline; uploads made offline send themselves later."
+    },
+    {
+      "kind": "card",
+      "card": "guardrails",
+      "title": "A person makes the final call",
+      "lines": [
+        "Swahili output = human-written templates; the model fills counts",
+        "Below threshold → “Check” — ask a person, never guess",
+        "Chagga has no model at any size: so Swahili is the core"
+      ],
+      "foot": "Consent before contact · nothing sent without a tap · data stays on the phone",
+      "text": "All Swahili is human-written; the model fills counts and flags what it is unsure of for a person. Chagga has no model at any size, so Swahili is the core and a person stays in the loop."
+    }
+  ]
+}

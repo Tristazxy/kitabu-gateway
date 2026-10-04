@@ -15,9 +15,10 @@ import sys
 import time
 import urllib.request
 
-OUT = os.path.join('demo-out', 'narration')
+STORY = os.environ.get('STORY', os.path.join('tools', 'story.json'))
+SPEC = json.load(open(STORY, encoding='utf-8'))
+OUT = os.path.join('demo-out', 'narration' + ('-' + SPEC['name'] if SPEC.get('name') else ''))
 CACHE = os.environ.get('NARRATION_CACHE', os.path.join('cache', 'narration'))  # clips from earlier runs (same text -> same file name)
-SPEC = json.load(open(os.path.join('tools', 'story.json'), encoding='utf-8'))
 
 
 def seconds_of(path):
@@ -73,9 +74,10 @@ def main():
     for i, line in enumerate(SPEC['items']):
         text = line['text'].strip()
         stem = f'{i:02d}-{hashlib.sha1((SPEC["voice"] + "|" + text).encode()).hexdigest()[:8]}'
+        key = hashlib.sha1((SPEC["voice"] + "|" + str(SPEC.get("speed", 1.0)) + "|" + text).encode()).hexdigest()[:12]
         final = os.path.join(OUT, stem + '.m4a')
         source = 'silence'
-        cached = os.path.join(CACHE, stem + '.m4a')
+        cached = os.path.join(CACHE, key + '.m4a')
         if not silent and os.path.exists(cached) and os.path.getsize(cached) > 1000:
             shutil.copy(cached, final)
             source = 'cached:' + SPEC.get('voice_name', SPEC['voice'])

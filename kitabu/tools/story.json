@@ -1,0 +1,104 @@
+{
+  "_note": "The demo video, in order. kind 'scene' = a cartoon scene from tools/intro/story.html; kind 'app' = a recorded chapter from tools/record-demo.mjs (matched by title). Each item has the narration Brian reads over it (tools/narrate.py); the composer holds an item on screen until its line ends. The intro (tools/intro/intro.html) plays first with its own sound.",
+  "voice": "nPczCjzI2devNBz1zQrb",
+  "voice_name": "Brian (ElevenLabs stock voice, warm narrator)",
+  "model": "eleven_multilingual_v2",
+  "speed": 1.06,
+  "items": [
+    {
+      "kind": "scene",
+      "scene": "kitchen",
+      "text": "Vivian and Frank, from Australia, are planning a trip to Tanzania. Their friend Emma tells them about Noor's coffee farm, up in Materuni: no website, no phone line, no internet. You can only go by luck, she says."
+    },
+    {
+      "kind": "scene",
+      "scene": "phone",
+      "text": "But Emma left her feedback through WeKaribu. So Vivian opens it, and picks Visitor."
+    },
+    {
+      "kind": "app",
+      "title": "Find a place",
+      "text": "She searches for Materuni. There is Noor's farm, with what twelve guests said about it, counts only, and the days Noor can take visitors next week. Noor published them a week ahead, from her own phone."
+    },
+    {
+      "kind": "app",
+      "title": "Book a visit",
+      "text": "They pick Saturday, two guests, English, and mention Emma. WeKaribu remembers that Emma visited in September. The request goes to the tour company."
+    },
+    {
+      "kind": "scene",
+      "scene": "office",
+      "text": "At Ondera Coffee Trails, Juma sees the request and confirms it. WeKaribu turns it into a plain text message."
+    },
+    {
+      "kind": "app",
+      "title": "Confirmed: an SMS for a basic phone",
+      "text": "No app on Noor's side. Just an SMS, in Swahili, to a phone that costs twenty dollars."
+    },
+    {
+      "kind": "scene",
+      "scene": "farm_sms",
+      "text": "Up on the mountain, Noor's phone beeps: two guests on Saturday, English speakers, with Juma. She knows who is coming, a week ahead, and which language to prepare."
+    },
+    {
+      "kind": "app",
+      "title": "Next week, on the helper’s phone",
+      "text": "On the family's smartphone, next week shows the booking, and that the English pack is already there. Rare languages are downloaded only when a guest is coming, and deleted afterwards. Storage costs money."
+    },
+    {
+      "kind": "scene",
+      "scene": "visit",
+      "text": "Saturday. Vivian and Frank roast and grind coffee with Noor's family, and write in the paper guestbook. Other guests that week wrote in German, and one left a voice note in French."
+    },
+    {
+      "kind": "app",
+      "title": "Vivian writes on Noor’s phone",
+      "text": "Noor can also hand over the phone. Vivian types in English, ticks that they would buy coffee beans, and agrees to be contacted."
+    },
+    {
+      "kind": "app",
+      "title": "A photo of the guestbook",
+      "text": "The German page is photographed. A text reader on the phone reads it, and highlights the words it is unsure of."
+    },
+    {
+      "kind": "app",
+      "title": "A voice note",
+      "text": "The French voice note is transcribed and translated on the phone, by Whisper. Nothing leaves the device."
+    },
+    {
+      "kind": "scene",
+      "scene": "weekend",
+      "text": "On Sunday, Noor's daughter Amina comes home. In ten minutes, the whole week's feedback is in Swahili."
+    },
+    {
+      "kind": "app",
+      "title": "The week, in Swahili",
+      "text": "The phone splits each comment into sentences, matches them to ten fixed topics, and reads the mood. The summary is built from sentences a person wrote; the AI only fills in counts. Sikiliza reads it aloud."
+    },
+    {
+      "kind": "app",
+      "title": "Check what the AI was unsure about",
+      "text": "Every topic keeps the guests' own words. When the model is unsure, the sentence is marked Check, for a person. Unsure means ask a human, not guess."
+    },
+    {
+      "kind": "app",
+      "title": "A thank-you for Vivian",
+      "text": "A thank-you note goes to Vivian, in English, human-written, because she agreed, and only when Noor taps send."
+    },
+    {
+      "kind": "app",
+      "title": "A report for the tour company",
+      "text": "And a report with counts only, no names, no quotes, goes to the tour company if Noor agrees. That is how next season's tours get better."
+    },
+    {
+      "kind": "app",
+      "title": "Our take on localising AI",
+      "text": "Our take on localising AI: keep the models language-agnostic through an English pivot, and keep every word a person reads human-written, in their language. A new host language is one translated file, not a new model. Chagga has no small model yet; the app says so instead of pretending."
+    },
+    {
+      "kind": "scene",
+      "scene": "outro",
+      "text": "WeKaribu: we welcome. Any host, any guest language, no account. Try it at wekaribu dot lovable dot app."
+    }
+  ]
+}

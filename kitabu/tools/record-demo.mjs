@@ -75,11 +75,21 @@ async function warmUp() {
     console.log(`warm-up: ${lang} pack ready in ${Math.round((Date.now() - t) / 1000)} s`);
   }
   await page.screenshot({ path: `${OUT}/00-warm-up-languages.png` });
-  // Delete the app's data (guests, settings, "guide seen"); the model files stay cached.
+  // Delete the app's data; the model files stay cached. Then seed the story: the host already has a
+  // season of analysed feedback (the synthetic example guests), so the visitor side has something to show.
   await click('[data-action="back"]');
   await click('[data-action="go"][data-screen="more"]');
   await click('[data-action="wipe"]');
   await page.waitForTimeout(1000);
+  await click('[data-role="host"]');
+  await click('[data-action="guide-close"]');
+  await click('[data-action="go"][data-screen="more"]');
+  await click('[data-action="load-demo"]');
+  await page.waitForTimeout(800);
+  await click('[data-action="analyze-pending"]');
+  await page.waitForFunction(() => !document.querySelector('[data-action="analyze-pending"]') && !document.querySelector('.busy:not(.hidden)'), null, { timeout: LONG });
+  console.log('warm-up: example guests analysed');
+  await click('[data-action="switch-role"]');
   } finally {
     await ctx.close();
   }
@@ -207,102 +217,86 @@ async function walkthrough() {
   watch(page, 'demo');
 
   try {
-    await part('roles', async () => {
+    await part('find', async () => {
       await page.goto(BASE, { waitUntil: 'networkidle' });
-      chapter('WeKaribu', 'A small AI guestbook for small tourism hosts. Guests write in their own language; the host hears it in theirs. In this demo the host is Noor, who runs coffee tours on her family farm in Tanzania.');
-      await pause(6000);
-      chapter('Three sides of one phone', 'Host, visitor, or tour company. The choice is remembered, so the phone opens on the right screen next time.');
-      await pause(3500);
-      await snap('choose-role');
-      await tap('[data-role="host"]');
-    });
-
-    await part('guide', async () => {
       await pause(1500);
-      await snap('guide-1');
-      chapter('A three-step guide', 'Opens by itself the first time. The host side is one home screen; everything else is one tap away.');
-      await tap('[data-action="guide-next"]', 150);
-      await pause(4500);
-      await snap('guide-2');
-      await tap('[data-action="guide-next"]', 150);
+      await tap('[data-role="visitor"]');
+      await pause(1500);
+      chapter('Find a place', 'Visitors search a village or a name. Small hosts with no website appear with counts-only feedback and the days they can take guests, which they publish a week ahead.');
+      await type('#find-q', 'Materuni');
+      await pause(1800);
+      await snap('find');
+      await tap('[data-action="open-host"]');
       await pause(2500);
+      await snap('host');
+      await scrollTo('[data-action="book-day"]', 'center', 2200);
     });
 
-    await part('example', async () => {
-      chapter('Try one example', 'An invented English-speaking guest. On the phone, the AI splits the feedback into sentences, matches each to a fixed list of 10 topics, and reads the mood.');
-      await tap('[data-action="guide-try"]');
-      await busy(() => page.waitForSelector('.big-summary', { timeout: LONG }));
-      chapter('The home screen', 'What guests said, in two lines, and the four things a host does: add feedback, hand the phone to a guest, thank guests, see next week.');
-      await pause(5000);
-      await snap('home-example');
-      chapter('In the host’s own language', 'The interface follows the phone’s language: here Swahili. The summary is built from human-written sentences; the AI only fills in counts and topic names. “Sikiliza” reads it aloud.');
-      await tap('[data-action="toggle-lang"]');
+    await part('book', async () => {
+      chapter('Book a visit', 'Saturday, two guests, English. “Who told you about this place?” links the booking to a past guest. The request goes to the tour company; no payment here.');
+      await tap('[data-action="book-day"]');
+      await type('#bk-v-name', 'Vivian & Frank');
+      await type('#bk-v-ref', 'Emma');
+      await pause(1500);
+      await type('#bk-v-email', 'vivian@example.com');
+      await tap('#bk-v-consent', 300);
+      await snap('book-form');
+      await tap('[data-action="book-submit"]');
       await pause(3500);
-      await snap('home-swahili');
-      // "Listen" plays the recorded Swahili clips; skip it when the clips have not been generated yet.
-      const voiceReady = await page.evaluate(async () => {
-        try { const m = await (await fetch('audio/sw/manifest.json')).json(); return Object.keys(m.files || {}).length > 0; } catch { return false; }
-      });
-      if (voiceReady) { await tap('[data-action="speak"]', 300); await pause(4000); }
-      await tap('[data-action="toggle-lang"]');
-      await pause(800);
-      chapter('Details: what guests said', 'Each topic keeps the guests’ own words. Anything the AI is unsure about is marked “Check” for a person to look at.');
-      await tap('[data-action="go"][data-screen="summary"]');
-      await pause(2500);
-      await snap('summary-example');
-      await scrollTo('details.quotes', 'center', 1200);
-      await tap('details.quotes summary', 300);
-      await pause(3000);
-      await scrollBy(450);
-      await scrollBy(450);
+      await snap('booked');
+    });
+
+    await part('company', async () => {
+      await tap('[data-action="switch-role"]');
+      await pause(1000);
+      await tap('[data-role="company"]');
+      chapter('Confirmed: an SMS for a basic phone', 'The tour company sees the request, confirms it, and sends the host a plain SMS from its own phone. No internet needed on the host’s side.');
+      await pause(1500);
+      await tap('[data-action="company-confirm"]');
       await pause(1200);
+      await scrollTo('.sms', 'center', 1500);
+      await pause(3000);
+      await snap('company-sms');
+      await top();
+      await tap('[data-action="switch-role"]');
+      await pause(800);
+      await tap('[data-role="host"]');
+      if (await exists('[data-action="guide-close"]')) await tap('[data-action="guide-close"]');
+    });
+
+    await part('host-week', async () => {
+      chapter('Next week, on the helper’s phone', 'The booking is in next week’s list with the language pack already on the phone. Rare languages are downloaded before a visit and deleted afterwards.');
+      await pause(1500);
+      await tap('[data-action="go"][data-screen="week"]');
+      await pause(1500);
+      await scrollTo('.list', 'center', 2000);
+      await snap('host-week');
+      await scrollBy(450);
+      await pause(2000);
       await top();
       await tap('[data-action="back"]');
     });
 
-    await part('thank-you', async () => {
-      await tap('[data-action="go"][data-screen="guests"]');
-      chapter('Thank the guest in their language', 'A human-written message in the guest’s language, with its meaning underneath. The host sends it, and only if the guest agreed.');
-      await tap('[data-action="toggle-draft"]');
-      await scrollTo('.list li', 'start', 1500);
-      await pause(3500);
-      await snap('thank-you');
-      await top();
-      await tap('[data-action="back"]');
-    });
-
-    await part('visitor', async () => {
-      chapter('Hand the phone to a guest', 'The visitor screen speaks 8 languages. Giulia writes in Italian, ticks that she would buy coffee, and agrees to be contacted.');
+    await part('visitor-write', async () => {
+      chapter('Vivian writes on Noor’s phone', 'The host hands over the phone. The screen is in the guest’s language: what they liked, what could be better, what they would buy, and a consent tick.');
       await tap('[data-action="hand-to-guest"]');
       await pause(1500);
-      await tap('[data-action="visitor-lang"][data-lang="it"]');
-      await pause(1000);
-      await type('#v-name', 'Giulia');
-      await type('#v-liked', 'Tostare e macinare il caffè con la famiglia è stato bellissimo. Il pranzo era delizioso.');
-      await type('#v-improve', 'La strada per arrivare era difficile. Vorrei comprare del caffè da portare a casa.');
+      if (await exists('[data-action="visitor-lang"][data-lang="en"]')) await tap('[data-action="visitor-lang"][data-lang="en"]', 300);
+      await type('#v-name', 'Vivian');
+      await type('#v-liked', 'Roasting and grinding the coffee with Noor’s family was the best morning of our trip. The lunch was delicious.');
+      await type('#v-improve', 'The road up was hard to find. We would have bought a bag of beans to take home.');
       await tap('#v-buy-coffee', 300);
-      await type('#v-email', 'giulia@example.com');
+      await type('#v-email', 'vivian@example.com');
       await tap('#v-consent', 300);
-      await snap('visitor-italian');
+      await snap('visitor-write');
       await tap('[data-action="visitor-save"]');
-      await pause(3000);
-      await snap('visitor-done');
+      await pause(2500);
       await tap('[data-action="visitor-exit"]');
-    });
-
-    await part('analyse-italian', async () => {
-      chapter('Analysed on the phone', 'Italian to English with a translation model on the phone (about 130 MB, downloaded once), then topics and mood. The feedback never leaves the phone.');
-      await pause(1500);
-      await tap('[data-action="analyze-pending"]');
-      await busy(() => page.waitForFunction(() => !document.querySelector('[data-action="analyze-pending"]') && !document.querySelector('.busy:not(.hidden)'), null, { timeout: LONG }));
-      chapter('Two guests now', 'Giulia’s wish to buy coffee is counted under products, so the host (and, if she agrees, the tour company) can see the demand.');
-      await pause(4500);
-      await snap('home-two-guests');
     });
 
     await part('photo', async () => {
       await tap('[data-action="go"][data-screen="add"]');
-      chapter('A photo of the paper guestbook', 'Lukas wrote in German in box A (what he liked). A text reader on the phone reads the photo; words it is unsure of are shown in yellow for a helper to fix.');
+      chapter('A photo of the guestbook', 'Lukas wrote in German in box A. A text reader on the phone reads the photo; words it is unsure of are shown in yellow for a helper to fix.');
       await type('#ng-name', 'Lukas');
       await choose('#ng-lang', 'de');
       await tap('[data-action="save-new-guest"]');
@@ -314,24 +308,20 @@ async function walkthrough() {
       }, null, { timeout: LONG }));
       if (await exists('.notice.neg')) throw new Error(`OCR failed: ${await page.locator('.notice.neg').first().innerText()}`);
       await scrollTo('.preview-img', 'start', 1500);
-      await pause(3000);
+      await pause(2500);
       await snap('photo-ocr');
-      await scrollTo('textarea[data-input="input-text"]', 'center', 2500);
       await tap('[data-action="run-analysis"]');
       await busy(() => page.waitForSelector('[data-action="finish-add"]', { timeout: LONG }));
-      chapter('Results to check', 'Each sentence shows the original, the English, a topic and a mood. A person can correct any label or press “OK”.');
-      await pause(4000);
+      await pause(3000);
       await snap('photo-results');
-      await scrollBy(450);
-      await pause(1500);
       await tap('[data-action="finish-add"]');
-      await pause(1500);
+      await pause(800);
       await tap('[data-action="back"]');
     });
 
     await part('voice', async () => {
       await tap('[data-action="go"][data-screen="add"]');
-      chapter('A voice message', 'Sophie left a voice message in French. Whisper (about 77 MB, on the phone) writes it down and translates it to English.');
+      chapter('A voice note', 'Sophie left a voice message in French. Whisper, on the phone, writes it down and translates it to English.');
       await type('#ng-name', 'Sophie');
       await choose('#ng-lang', 'fr');
       await tap('[data-action="save-new-guest"]');
@@ -343,68 +333,87 @@ async function walkthrough() {
       }, null, { timeout: LONG }));
       if (await exists('.notice.neg')) throw new Error(`voice failed: ${await page.locator('.notice.neg').first().innerText()}`);
       await scrollTo('audio', 'start', 1500);
-      await pause(3500);
+      await pause(2500);
       await snap('voice');
       await tap('[data-action="run-analysis"]');
       await busy(() => page.waitForSelector('[data-action="finish-add"]', { timeout: LONG }));
-      await pause(3500);
-      await snap('voice-results');
+      await pause(2500);
       await tap('[data-action="finish-add"]');
-      chapter('Four guests, four languages', 'What guests loved, what to improve, and what they wanted to buy. At the bottom: an anonymous report for the tour company, shared only if the host agrees.');
-      await pause(3500);
+      await pause(800);
+      await tap('[data-action="back"]');
+    });
+
+    await part('weekend', async () => {
+      chapter('The week, in Swahili', 'The helper taps Analyse. Translation, topics and mood run on the phone. The summary is human-written Swahili with the AI’s counts filled in; “Sikiliza” reads it aloud with recorded clips.');
+      await pause(800);
+      if (await exists('[data-action="analyze-pending"]')) {
+        await tap('[data-action="analyze-pending"]');
+        await busy(() => page.waitForFunction(() => !document.querySelector('[data-action="analyze-pending"]') && !document.querySelector('.busy:not(.hidden)'), null, { timeout: LONG }));
+      }
+      await pause(2500);
+      await snap('home-week');
+      await tap('[data-action="toggle-lang"]');
+      await pause(2500);
+      await snap('home-swahili');
+      const voiceReady = await page.evaluate(async () => {
+        try { const m = await (await fetch('audio/sw/manifest.json')).json(); return Object.keys(m.files || {}).length > 0; } catch { return false; }
+      });
+      if (voiceReady) { await tap('[data-action="speak"]', 300); await pause(5000); }
+      await tap('[data-action="toggle-lang"]');
+      await pause(600);
+    });
+
+    await part('details', async () => {
+      chapter('Check what the AI was unsure about', 'Each topic keeps the guests’ own words. Sentences the model is unsure about are marked “Check”, with a one-tap correction.');
+      await tap('[data-action="go"][data-screen="summary"]');
+      await pause(2000);
+      await snap('summary');
+      await scrollTo('details.quotes', 'center', 1200);
+      await tap('details.quotes summary', 300);
+      await pause(2500);
       await scrollBy(500);
       await scrollBy(500);
-      await scrollBy(500);
-      await pause(1500);
+      await pause(1200);
       await top();
       await tap('[data-action="back"]');
     });
 
-    await part('company', async () => {
-      chapter('The tour company sends a booking', 'The app writes a short SMS in the host’s language for a basic phone; the company sends it from its own phone. No internet needed on the host’s side.');
-      await tap('[data-action="switch-role"]');
+    await part('thanks', async () => {
+      chapter('A thank-you for Vivian', 'A human-written note in the guest’s language, with its meaning underneath. Sent only with consent, and only when the host taps send.');
+      await tap('[data-action="go"][data-screen="guests"]');
       await pause(1200);
-      await tap('[data-role="company"]');
-      await type('#c-phone', '+255 700 000 000');
-      await choose('#c-lang', 'pl');
-      await type('#c-name', 'Anna K.');
-      await type('#c-guide', 'Juma');
-      await page.locator('#c-guide').evaluate(n => n.dispatchEvent(new Event('change', { bubbles: true })));
-      await scrollTo('#c-sms', 'center', 1500);
+      await tap('[data-action="toggle-draft"]');
+      await scrollTo('.list li', 'start', 1500);
       await pause(3500);
-      await snap('company-sms');
-      await tap('[data-action="company-save"]');
-      await pause(1500);
+      await snap('thank-you');
       await top();
-      await tap('[data-action="switch-role"]');
-      await pause(800);
-      await tap('[data-role="host"]');
+      await tap('[data-action="back"]');
     });
 
-    await part('next-week', async () => {
-      chapter('Next week, and the languages to prepare', 'Polish guests are booked in 3 days, so the app asks to download Polish while the helper has Wi-Fi. Rare languages can be deleted afterwards.');
-      await pause(2000);
-      await tap('[data-action="go"][data-screen="week"]');
+    await part('report', async () => {
+      chapter('A report for the tour company', 'Counts only: how many guests, what they liked, what to improve, what they wanted to buy. No names, no quotes. Shared only if the host agrees.');
+      await tap('[data-action="go"][data-screen="summary"]');
+      await pause(800);
+      await scrollTo('#report-text', 'center', 1800);
+      await pause(1500);
+      await tap('input[data-change="share-ok"]', 300);
       await pause(2500);
-      await scrollTo('.list', 'center', 2500);
-      await snap('next-week');
-      await scrollBy(450);
-      await pause(2000);
+      await snap('report');
       await top();
+      await tap('[data-action="back"]');
+    });
+
+    await part('languages', async () => {
+      chapter('Our take on localising AI', 'Models stay language-agnostic (English pivot); every word a person reads is human-written in their language. Swahili and English are built in; guest packs come and go; Chagga is not pretended.');
+      await tap('[data-action="go"][data-screen="more"]');
       await tap('[data-action="go"][data-screen="langs"]');
-      chapter('Language packs on the phone', 'Swahili and English are built in. The 3 most common guest languages stay; others are downloaded before a visit and can be deleted afterwards.');
       await pause(2500);
       await scrollBy(500);
       await scrollBy(500);
       await snap('languages');
-      await pause(1000);
+      await pause(1500);
       await top();
-      await tap('[data-action="back"]');
-    });
-
-    await part('end', async () => {
-      chapter('WeKaribu', 'Any host, any guest language, no account.\nTry it: wekaribu.lovable.app\nCode: github.com/Tristazxy/kitabu-gateway');
-      await pause(5000);
+      await pause(800);
     });
   } finally {
     const end = now();

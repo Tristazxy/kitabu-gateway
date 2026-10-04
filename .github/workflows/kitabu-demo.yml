@@ -13,7 +13,8 @@ on:
       - kitabu/tools/compose_demo.py
       - kitabu/tools/demo_assets.py
       - kitabu/tools/narrate.py
-      - kitabu/tools/narration.json
+      - kitabu/tools/story.json
+      - kitabu/tools/compose_story.py
       - kitabu/tools/intro/**
       - .github/workflows/kitabu-demo.yml
 
@@ -72,6 +73,10 @@ jobs:
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
         run: python3 tools/intro/intro_audio.py && node tools/intro/render_intro.mjs
 
+      - name: Cartoon story scenes
+        if: always()
+        run: node tools/intro/render_scenes.mjs
+
       - name: Narration (stock ElevenLabs voice; espeak-ng placeholder without the key)
         if: always()
         env:
@@ -79,9 +84,9 @@ jobs:
           NARRATION_VOICE_ID: ${{ vars.NARRATION_VOICE_ID }}
         run: python3 tools/narrate.py
 
-      - name: Compose the videos
+      - name: Compose the story video
         if: always()
-        run: python3 tools/compose_demo.py && ls -la demo-out
+        run: python3 tools/compose_story.py && ls -la demo-out
 
       - name: Upload as a workflow artifact
         if: always()

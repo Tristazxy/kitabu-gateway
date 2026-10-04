@@ -1,10 +1,10 @@
-"""Voices the demo narration (tools/narration.json), one clip per chapter, into demo-out/narration/.
+"""Voices the demo narration (tools/story.json), one clip per item, into demo-out/narration/.
 
 With ELEVENLABS_API_KEY: a stock ElevenLabs voice (never a cloned one). Without it: espeak-ng (an MBROLA
 English voice if installed), so the pipeline still runs. `--silent` writes silence of the estimated
 length instead (for testing the video composition offline).
 
-Writes demo-out/narration/index.json: [{index, title, file, seconds, source}].
+Writes demo-out/narration/index.json: [{index, kind, title|scene, file, seconds, source}].
 """
 import hashlib
 import json
@@ -15,7 +15,7 @@ import sys
 import urllib.request
 
 OUT = os.path.join('demo-out', 'narration')
-SPEC = json.load(open(os.path.join('tools', 'narration.json'), encoding='utf-8'))
+SPEC = json.load(open(os.path.join('tools', 'story.json'), encoding='utf-8'))
 
 
 def seconds_of(path):
@@ -65,7 +65,7 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     silent = '--silent' in sys.argv
     index = []
-    for i, line in enumerate(SPEC['lines']):
+    for i, line in enumerate(SPEC['items']):
         text = line['text'].strip()
         stem = f'{i:02d}-{hashlib.sha1(text.encode()).hexdigest()[:8]}'
         final = os.path.join(OUT, stem + '.m4a')
@@ -93,8 +93,9 @@ def main():
             subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', raw, '-ac', '2', '-ar', '48000', '-c:a', 'aac', final], check=True)
             source = 'silence'
         os.remove(raw)
-        index.append({'index': i, 'title': line['title'], 'file': final, 'seconds': round(seconds_of(final), 2), 'source': source})
-        print(f'{i:02d} {index[-1]["seconds"]:5.1f}s {source:28s} {line["title"]}')
+        label = line.get('title') or line.get('scene')
+        index.append({'index': i, 'kind': line['kind'], 'title': line.get('title'), 'scene': line.get('scene'), 'file': final, 'seconds': round(seconds_of(final), 2), 'source': source})
+        print(f'{i:02d} {index[-1]["seconds"]:5.1f}s {source:28s} {label}')
     json.dump(index, open(os.path.join(OUT, 'index.json'), 'w'), indent=1)
     total = sum(x['seconds'] for x in index)
     print(f'narration: {len(index)} clips, {total:.0f} s total')

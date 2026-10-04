@@ -15,6 +15,8 @@ on:
       - 'kitabu/src/langs.js'
       - 'kitabu/public/data/eval-set.json'
       - 'kitabu/tools/eval.mjs'
+      - 'kitabu/tools/precompute-demo.mjs'
+      - 'kitabu/public/data/demo.json'
       - '.github/workflows/kitabu-eval.yml'
 
 permissions:
@@ -46,6 +48,8 @@ jobs:
           restore-keys: kitabu-eval-cache-v1-
       - name: Run accuracy check
         run: node tools/eval.mjs
+      - name: Analyse the example data once (so the example opens instantly on the phone)
+        run: node tools/precompute-demo.mjs
       - name: Rebuild the static app
         run: npm run site
       - name: Commit results
@@ -53,7 +57,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A kitabu/public/data/eval-results.json public/kitabu
+          git add -A kitabu/public/data/eval-results.json kitabu/public/data/demo-analysed.json public/kitabu
           if git diff --cached --quiet; then echo "No change"; exit 0; fi
           git commit -m "WeKaribu: update accuracy check results"
           git pull --rebase origin main

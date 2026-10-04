@@ -18,7 +18,7 @@ import { mountBackground, currentScene, sceneCredit, allCredits, toggleMotion, m
 
 const view = document.getElementById('view');
 
-const freshAdd = () => ({ step: 1, guestId: null, inputs: [], results: [] });
+const freshAdd = () => ({ step: 1, guestId: null, inputs: [], results: [], newLang: 'en' });
 
 const state = {
   screen: 'home',      // choose | home | add | summary | guests | week | langs | more | visitor | company
@@ -217,6 +217,7 @@ function entryCard(entry) {
 }
 
 const ICON_CAMERA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+const ICON_TRANSLATE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h8M8 3v2M6 5c0 5 3 8 6 10M11 5c-1 4-4 8-7 10"/><path d="M13 20l4-9 4 9M14.5 17h5"/></svg>';
 const ICON_MIC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
 const ICON_LISTEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4h4l5 4V6L8 10z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>';
 const ICON_MAIL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>';
@@ -272,15 +273,17 @@ function screenHome() {
       <h2>${L('Wageni walisema', 'What guests said')}</h2>
       <p class="muted" style="margin:0">${L('Bado hakuna maoni.', 'No feedback yet.')}</p>
       ${pendingBox}
-      ${pending.length ? '' : `<button class="btn secondary block" style="margin-top:12px" data-action="guide-try">${L('Jaribu mfano mmoja', 'Try one example')}</button>`}
+      ${pending.length ? '' : `<button class="btn block" style="margin-top:12px" data-action="load-demo">${L('Ona mfano', 'See an example')}</button>`}
     </div>`;
 
-  const bigBtn = (attrs, icon, title, sub, tile = '', clip = '', sw = '', en = '') => `
-    <div class="home-row">
-    <button class="home-btn" ${attrs}>
+  // One row = one action. The speaker sits inside the row's right edge (a sibling, so the markup stays valid).
+  const sayInline = (clipId, sw, en) => `<button class="say-inline" data-action="say" data-clip="${clipId}" data-sw="${h(sw)}" data-en="${h(en)}" aria-label="${L('Sikiliza', 'Listen')}">${ICON_SPEAKER}</button>`;
+  const bigBtn = (attrs, icon, title, sub, tile = '', clip = '', sw = '', en = '', extra = '') => `
+    <div class="home-row ${clip ? 'has-say' : ''}">
+    <button class="home-btn ${extra}" ${attrs}>
       <span class="role-icon ${tile}" aria-hidden="true">${icon}</span>
       <span class="role-text"><strong>${title}</strong><span class="small muted">${sub}</span></span>
-    </button>${clip ? sayBtn(clip, sw, en) : ''}</div>`;
+    </button>${clip ? sayInline(clip, sw, en) : ''}</div>`;
 
   const reservations = state.bookings
     .filter(b => daysFromToday(b.date) >= 0).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(0, 4);
@@ -301,14 +304,14 @@ function screenHome() {
   return `
   ${summaryCard}
   ${reservationsCard}
-  <div class="stack">
-    ${bigBtn('data-action="go" data-screen="add"', ICON_CAMERA, L('Ongeza maoni ya mgeni', 'Add guest feedback'), L('Picha ya kitabu, sauti au kuandika', 'Photo of the guestbook, voice or typing'), 'tile-caramel', 'ui_add', 'Ongeza maoni ya mgeni. Piga picha ya kitabu, rekodi sauti, au andika.', 'Add guest feedback: photograph the guestbook, record a voice note, or type.')}
+  <div class="stack" style="gap:8px">
+    ${bigBtn('data-action="go" data-screen="add"', ICON_CAMERA, L('Ongeza maoni ya mgeni', 'Add guest feedback'), L('Picha ya kitabu, sauti au kuandika', 'Photo of the guestbook, voice or typing'), '', 'ui_add', 'Ongeza maoni ya mgeni. Piga picha ya kitabu, rekodi sauti, au andika.', 'Add guest feedback: photograph the guestbook, record a voice note, or type.', 'primary')}
     ${bigBtn('data-action="hand-to-guest"', ICON_HAND, L('Mpe mgeni simu aandike', 'Let a guest write'), L('Kwa lugha yake, kwenye simu hii', 'In their own language, on this phone'), 'tile-leaf', 'ui_hand', 'Mpe mgeni simu aandike maoni kwa lugha yake.', 'Hand the phone to a guest to write in their own language.')}
     ${bigBtn('data-action="go" data-screen="guests"', ICON_MAIL, L('Washukuru wageni', 'Thank guests'), toThank ? L(`Wageni ${toThank} wanasubiri`, `${toThank} waiting`) : L('Ujumbe kwa lugha ya mgeni', 'A message in the guest’s language'), 'tile-cherry', 'ui_thank', 'Washukuru wageni kwa lugha yao.', 'Thank guests in their own language.')}
     ${bigBtn('data-action="go" data-screen="week"', ICON_CAL, L('Wiki ijayo', 'Next week'), weekSub, 'tile-sky', 'ui_week', 'Wiki ijayo. Nani anakuja, na lugha gani.', 'Next week: who is coming, and which language.')}
+    ${bigBtn('data-action="go" data-screen="translate"', ICON_TRANSLATE, L('Tafsiri', 'Translate'), L('Mgeni anaongea, unasikia kwa Kiingereza', 'The guest speaks, you hear it in English'), 'tile-sky')}
   </div>
   <div class="row home-links">
-    <button class="link-btn" data-action="go" data-screen="translate">${L('Tafsiri', 'Translate')}</button>
     <button class="link-btn" data-action="guide-open">${L('Jinsi ya kutumia', 'How to use')}</button>
     <button class="link-btn" data-action="switch-role">${L('Badilisha upande', 'Switch side')}</button>
     <button class="link-btn" data-action="go" data-screen="more">${L('Zaidi', 'More')}</button>
@@ -350,28 +353,28 @@ function screenWeek() {
 
   <div class="card">
     <h2>${L('Siku unazoweza kupokea wageni', 'Days you can take guests')}</h2>
-    <p class="small muted">${L('Wageni wanaziona wanapotafuta mahali, na kampuni ya utalii inapanga kulingana nazo.', 'Visitors see these when they search for a place, and the tour company books around them.')}</p>
+    <p class="small muted">${L('Gusa siku. Wageni wanaziona wanapotafuta, na kampuni inapanga kulingana nazo.', 'Tap the days. Visitors see them when they search; the tour company books around them.')}</p>
     <div class="row">${dayChips}</div>
-  </div>
-
-  <div class="card">
-    <h2>${L('Bila mtandao: SMS', 'No internet? SMS')}</h2>
-    <p class="small muted">${L('Tuma siku zako kwa kampuni kwa SMS. Simu ya kawaida inatosha.', 'Send your days to the tour company by SMS. A basic phone signal is enough.')}</p>
-    <a class="btn block ${state.availableDays.length ? '' : 'disabled'}" ${state.availableDays.length ? `href="${smsHref(companyPhone(), availabilitySms(host(), 'noor', state.availableDays.filter(d => daysFromToday(d + 'T12:00:00') >= 0).sort()))}"` : 'aria-disabled="true"'}>${L('Tuma siku zangu (SMS)', 'Send my days (SMS)')}</a>
-  </div>
-  ${smsImportCard(L('Kampuni ikithibitisha wageni kwa SMS, bandika ujumbe hapa: wageni wanaingia kwenye ratiba yako.', 'When the company confirms guests by SMS, paste the message here: the guests go straight into your reservations.'))}
-
-  <div class="card">
-    <button class="btn block" data-action="sync" ${state.online ? '' : 'disabled'}>${L('Pokea ratiba mpya', 'Get the new schedule')}</button>
-    <p class="small muted" style="margin:8px 0 0">${state.lastSync ? `${L('Mara ya mwisho', 'Last updated')}: ${h(new Date(state.lastSync).toLocaleString())}` : L('Bado haijapokelewa. Inahitaji mtandao mara moja.', 'Not received yet. Needs internet once.')}${state.online ? '' : ` · ${L('Nje ya mtandao', 'Offline')}`}</p>
+    <a class="btn block ${state.availableDays.length ? '' : 'disabled'}" style="margin-top:12px" ${state.availableDays.length ? `href="${smsHref(companyPhone(), availabilitySms(host(), 'noor', state.availableDays.filter(d => daysFromToday(d + 'T12:00:00') >= 0).sort()))}"` : 'aria-disabled="true"'}>${L('Tuma siku zangu kwa kampuni (SMS)', 'Send my days to the company (SMS)')}</a>
   </div>
 
   ${next7.length ? `
   <div class="card">
     <h2>${L('Siku 7 zijazo', 'Next 7 days')}</h2>
     <ul class="list">${next7.map(bookingLi).join('')}</ul>
-  </div>` : `
-  <div class="notice">${L('Hakuna wageni waliopangwa siku 7 zijazo.', 'No guests booked for the next 7 days.')}</div>`}
+  </div>` : ''}
+
+  <div class="card">
+    <h2>${L('Kutoka kwa kampuni', 'From the tour company')}</h2>
+    <button class="btn block" data-action="sync" ${state.online ? '' : 'disabled'}>${L('Pokea ratiba mpya', 'Get the new schedule')}</button>
+    <p class="small muted" style="margin:8px 0 0">${state.lastSync ? `${L('Mara ya mwisho', 'Last updated')}: ${h(new Date(state.lastSync).toLocaleString())}` : L('Inahitaji mtandao mara moja.', 'Needs internet once.')}${state.online ? '' : ` · ${L('Nje ya mtandao', 'Offline')}`}</p>
+    <details style="margin-top:10px">
+      <summary>${L('Hakuna mtandao? Bandika SMS ya kampuni', 'No internet? Paste the company’s SMS')}</summary>
+      <p class="small muted" style="margin:6px 0 8px">${L('Kampuni ikithibitisha wageni kwa SMS, bandika ujumbe hapa: wageni wanaingia kwenye ratiba yako.', 'When the company confirms guests by SMS, paste the message here: the guests go straight into your reservations.')}</p>
+      <label class="field"><span>${L('Ujumbe', 'Message')}</span><textarea id="sms-in" rows="3" placeholder="WeKaribu: …"></textarea></label>
+      <button class="btn secondary block" style="margin-top:8px" data-action="sms-import">${L('Ongeza kutoka SMS', 'Add from the SMS')}</button>
+    </details>
+  </div>
 
   <div class="card">
     <h2>${L('Lugha za kuandaa', 'Languages to prepare')}</h2>
@@ -407,8 +410,14 @@ function addStep1() {
     .sort((a, b) => new Date(b.date) - new Date(a.date));
   const guests = state.guests.slice().sort((a, b) => new Date(b.visitDate) - new Date(a.visitDate)).slice(0, 12);
 
+  // Common guest languages first, as chips; everything else behind "Other".
+  const COMMON = ['en', 'it', 'fr', 'de', 'zh', 'es'];
+  const picked = state.add.newLang || 'en';
+  const chips = COMMON.map(c => `<button class="chip" data-action="lang-chip" data-lang="${c}" aria-pressed="${picked === c}">${h(langName(c, getLang()))}</button>`).join('')
+    + `<button class="chip" data-action="lang-chip" data-lang="other" aria-pressed="${!COMMON.includes(picked)}">${L('Nyingine…', 'Other…')}</button>`;
+
   return `
-  <h1>${L('Mgeni ni nani?', 'Who is the guest?')}</h1>
+  <h1>${L('Ongeza maoni', 'Add feedback')}</h1>
 
   ${recentBookings.length ? `
   <div class="card">
@@ -422,32 +431,38 @@ function addStep1() {
   </div>` : ''}
 
   <div class="card">
-    <h2>${L('Mgeni mpya', 'New guest')}</h2>
+    <h2>${L('Mgeni aliandika kwa lugha gani?', 'Which language did the guest write in?')}</h2>
+    <div class="row" style="margin:4px 0 12px">${chips}</div>
     <div class="stack">
-      <label class="field">${L('Jina', 'Name')}<input type="text" id="ng-name" autocomplete="off"></label>
-      <label class="field">${L('Lugha ya mgeni', 'Guest’s language')}<select id="ng-lang">${langOptions('en')}</select></label>
-      <label class="field">${L('Tarehe ya ziara', 'Visit date')}<input type="date" id="ng-date" value="${isoDate(new Date())}"></label>
-      <label class="check"><input type="checkbox" id="ng-consent" data-change="consent-toggle">
-        <span>${L(`Mgeni aliweka alama: ${host()} anaweza kuhifadhi mawasiliano yangu`, `Guest ticked: ${host()} may keep my contact details`)}</span></label>
-      <div id="contact-fields" class="stack hidden">
-        <label class="field">${L('Barua pepe', 'Email')}<input type="email" id="ng-email" autocomplete="off"></label>
-        <label class="field">${L('Simu / WhatsApp', 'Phone / WhatsApp')}<input type="tel" id="ng-phone" autocomplete="off"></label>
-      </div>
-      <label class="field">${L('Nani alikupendekezea? (hiari)', 'Who recommended us? (optional)')}<input type="text" id="ng-ref" autocomplete="off"></label>
-      <button class="btn" data-action="save-new-guest">${L('Endelea', 'Continue')}</button>
+      <label class="field ${COMMON.includes(picked) ? 'hidden' : ''}">${L('Lugha', 'Language')}<select id="ng-lang" data-change="ng-lang">${langOptions(picked)}</select></label>
+      <label class="field">${L('Jina la mgeni (hiari)', 'Guest’s name (optional)')}<input type="text" id="ng-name" autocomplete="off" placeholder="${L('mfano: Vivian', 'e.g. Vivian')}"></label>
+      <details>
+        <summary class="small">${L('Zaidi: tarehe, mawasiliano, nani alipendekeza', 'More: date, contact details, who recommended')}</summary>
+        <div class="stack" style="margin-top:10px">
+          <label class="field">${L('Tarehe ya ziara', 'Visit date')}<input type="date" id="ng-date" value="${isoDate(new Date())}"></label>
+          <label class="check"><input type="checkbox" id="ng-consent" data-change="consent-toggle">
+            <span>${L(`Mgeni aliweka alama: ${host()} anaweza kuhifadhi mawasiliano yangu`, `Guest ticked: ${host()} may keep my contact details`)}</span></label>
+          <div id="contact-fields" class="stack hidden">
+            <label class="field">${L('Barua pepe', 'Email')}<input type="email" id="ng-email" autocomplete="off"></label>
+            <label class="field">${L('Simu / WhatsApp', 'Phone / WhatsApp')}<input type="tel" id="ng-phone" autocomplete="off"></label>
+          </div>
+          <label class="field">${L('Nani alikupendekezea? (hiari)', 'Who recommended us? (optional)')}<input type="text" id="ng-ref" autocomplete="off"></label>
+        </div>
+      </details>
+      <button class="btn" data-action="save-new-guest">${L('Endelea', 'Continue')} →</button>
     </div>
   </div>
 
   ${guests.length ? `
-  <div class="card">
-    <h2>${L('Wageni waliopo', 'Existing guests')}</h2>
-    <ul class="list">${guests.map(g => `
+  <details class="card" style="padding:14px 18px">
+    <summary><strong>${L('Mgeni anayerudi?', 'Returning guest?')}</strong> <span class="small muted">${L('Chagua kutoka orodha', 'pick from the list')}</span></summary>
+    <ul class="list" style="margin-top:8px">${guests.map(g => `
       <li class="row between">
         <div><strong>${h(g.name)}</strong> ${langPill(g.language)}<div class="small muted">${h(day(g.visitDate))}</div></div>
         <button class="btn small secondary" data-action="pick-guest" data-id="${g.id}">${L('Chagua', 'Pick')}</button>
       </li>`).join('')}
     </ul>
-  </div>` : ''}`;
+  </details>` : ''}`;
 }
 
 function addStep2() {
@@ -1201,6 +1216,7 @@ async function tryExample() {
   }
   state.period = 'all';
   state.screen = 'home';
+  if (await applyPrecomputed()) { await loadAll(); return render(); }
   render();
   await analyzePending();
 }
@@ -1364,7 +1380,7 @@ async function saveNewGuest() {
   const v = id => document.getElementById(id)?.value?.trim() || '';
   const consent = document.getElementById('ng-consent').checked;
   const g = {
-    id: uid('g'), name: v('ng-name') || 'Mgeni', language: v('ng-lang') || 'en',
+    id: uid('g'), name: v('ng-name') || 'Mgeni', language: v('ng-lang') || state.add.newLang || 'en',
     visitDate: dayStamp(v('ng-date') || new Date()), consent,
     contact: consent ? { email: v('ng-email'), phone: v('ng-phone') } : null, // no consent -> nothing stored
     referredBy: v('ng-ref'), createdAt: new Date().toISOString(),
@@ -1552,10 +1568,33 @@ async function loadDemo() {
       });
     }
   }
+  const ready = await applyPrecomputed();
   await loadAll();
   state.period = 'all';
   go('home');
-  toast(L('Data ya mfano imepakiwa. Bonyeza “Changanua sasa”.', 'Example data loaded. Tap “Analyse now”.'), 5000);
+  toast(ready
+    ? L('Mfano umepakiwa: hawa ni wageni wa kubuni.', 'Example loaded: these are made-up guests.')
+    : L('Data ya mfano imepakiwa. Bonyeza “Changanua sasa”.', 'Example data loaded. Tap “Analyse now”.'), 5000);
+}
+
+// The example data was analysed once by the same pipeline in CI (data/demo-analysed.json); use those
+// results so the example opens at once. Real feedback is always analysed on this phone.
+async function applyPrecomputed() {
+  try {
+    const res = await fetch('data/demo-analysed.json');
+    if (!res.ok) return false;
+    const pre = (await res.json()).entries || {};
+    const all = await db.all('entries');
+    let n = 0;
+    for (const e of all) {
+      const r = pre[e.id];
+      if (!r || e.status !== 'pending') continue;
+      Object.assign(e, { english: r.english, sentences: r.sentences, products: r.products, status: r.status, precomputed: true });
+      await db.put('entries', e);
+      n++;
+    }
+    return n > 0;
+  } catch { return false; }
 }
 
 async function removeDemo() {
@@ -1639,7 +1678,7 @@ async function chooseRole(role) {
   await db.setSetting('role', role);
   if (role === 'visitor') { state.book = { hostId: null, day: null, form: {}, done: null }; return go('find'); }
   go(role === 'company' ? 'company' : 'home');
-  if (role === 'host' && !(await db.getSetting('guideSeen', false))) openGuide(0);
+  // The guide is one tap away (How to use) rather than a wall on the first visit.
 }
 
 const actions = {
@@ -1738,6 +1777,11 @@ const actions = {
   'pick-booking': el => pickBooking(el.dataset.id),
   'pick-guest': el => { state.add = freshAdd(); state.add.guestId = el.dataset.id; state.add.step = 2; render(); window.scrollTo(0, 0); },
   'save-new-guest': saveNewGuest,
+  'lang-chip': el => {
+    const v = el.dataset.lang;
+    state.add.newLang = v === 'other' ? (Object.keys(LANGS).find(c => !['en', 'it', 'fr', 'de', 'zh', 'es'].includes(c)) || 'pl') : v;
+    render();
+  },
   'change-guest': () => { state.add.step = 1; render(); },
   'add-typed': () => { state.add.inputs.push({ id: uid('in'), source: 'typed', box: 'liked', text: '', status: 'ready' }); render(); },
   record: toggleRecording,
@@ -1832,6 +1876,7 @@ const changeHandlers = {
     await saveEntry(entry);
   },
   // The host's language, chosen in the top-right menu: never only the phone's setting
+  'ng-lang': el => { state.add.newLang = el.value; },
   'ui-lang': async el => {
     setLang(el.value === 'sw' ? 'sw' : 'en');
     await db.setSetting('lang', getLang());

@@ -8,7 +8,7 @@ const LIBS = 'kitabu-libs-v1';
 const PRECACHE = [
   './index.html', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png',
   './fonts/inter-latin-wght-normal.woff2', './fonts/inter-latin-ext-wght-normal.woff2', './fonts/inter-cyrillic-wght-normal.woff2',
-  './data/demo.json', './data/hosts.json', './data/phrasebook-sw.json', './print/guestbook.html', './print/sales-log.html', './print/print.css',
+  './data/demo.json', './data/demo-analysed.json', './data/hosts.json', './data/phrasebook-sw.json', './print/guestbook.html', './print/sales-log.html', './print/print.css',
 ];
 
 self.addEventListener('install', event => {

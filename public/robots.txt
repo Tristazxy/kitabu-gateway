@@ -12,3 +12,5 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+Sitemap: https://kitabu-cha-wageni.lovable.app/sitemap.xml

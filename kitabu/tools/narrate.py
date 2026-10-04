@@ -49,9 +49,11 @@ def espeak(text, wav):
     if not shutil.which('espeak-ng'):
         return False
     voices = subprocess.run(['espeak-ng', '--voices=mb'], capture_output=True, text=True).stdout
-    voice = next((v for v in ('mb-us1', 'mb-en1', 'mb-us2') if v in voices), 'en-us')
-    subprocess.run(['espeak-ng', '-v', voice, '-s', '150', '-w', wav, text], check=True)
-    return True
+    for voice in [v for v in ('mb-us1', 'mb-en1', 'mb-us2') if v in voices] + ['en-us']:
+        r = subprocess.run(['espeak-ng', '-v', voice, '-s', '150', '-w', wav, text], capture_output=True, text=True)
+        if r.returncode == 0 and os.path.exists(wav) and os.path.getsize(wav) > 1000:
+            return True
+    return False
 
 
 def silence(seconds, wav):
@@ -82,8 +84,14 @@ def main():
                 else:
                     silence(len(text.split()) / 2.6, raw)
         # normalise to 48 kHz stereo AAC with a short lead-in so the first word is never clipped
-        subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', raw, '-af', 'adelay=300|300,loudnorm=I=-16:TP=-1.5',
-                        '-ac', '2', '-ar', '48000', '-c:a', 'aac', '-b:a', '160k', final], check=True)
+        try:
+            subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', raw, '-af', 'adelay=300|300,loudnorm=I=-16:TP=-1.5',
+                            '-ac', '2', '-ar', '48000', '-c:a', 'aac', '-b:a', '160k', final], check=True)
+        except subprocess.CalledProcessError as err:
+            print(f'{i:02d}: could not encode ({err}); using silence', file=sys.stderr)
+            silence(len(text.split()) / 2.6, raw)
+            subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', raw, '-ac', '2', '-ar', '48000', '-c:a', 'aac', final], check=True)
+            source = 'silence'
         os.remove(raw)
         index.append({'index': i, 'title': line['title'], 'file': final, 'seconds': round(seconds_of(final), 2), 'source': source})
         print(f'{i:02d} {index[-1]["seconds"]:5.1f}s {source:28s} {line["title"]}')

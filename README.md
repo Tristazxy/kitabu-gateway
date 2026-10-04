@@ -51,6 +51,11 @@ Built around Noor, usable by any small host. What changes per host is data, not 
 | **Country** | Nothing country-specific: no currency, addresses or regulation in the app. The SMS prefix and the printable page are plain text. | — |
 | **Accounts** | **No login, by design.** The phone is the account: data never leaves it, there is no server to breach, no sign-up wall for a host with patchy internet. | Multi-device sharing, when needed, will be an export/import file or QR code — still no account. |
 
+
+### Background videos (Pexels, free licence)
+
+Each screen has a short real-nature loop behind it, cross-faded on navigation, played only online and outside data-saver mode (the still frame otherwise). All from [Pexels](https://www.pexels.com) under the Pexels licence: mountains and riders — RD King (12492499); bamboo grove — Anton Lukin (12311788); bamboo canopy — Vanessa Garcia (6318875); coffee cherries — Matthias Groeneveld (7116757); stream — Thierry Rossier (11902892); flower field — Michael Burrows (14482561); dunes — Dubang chang (14483416); snowy forest — iPhone Snaps (19806018).
+
 ## Why AI here — and what is deliberately *not* AI
 
 A listing, a booking page or an SMS already solve discovery and scheduling (the brief's Jordan example).

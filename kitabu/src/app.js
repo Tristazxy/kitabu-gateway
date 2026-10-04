@@ -14,7 +14,7 @@ import { summaryClipIds, playClips, prefetchVoice, loadVoiceManifest, sayLabel }
 import { guideHTML, GUIDE_STEPS } from './guide.js';
 import { roleChooserHTML, visitorHTML, companyHTML, pickVisitorLang, visitorStrings } from './roles.js';
 import { findHTML, hostHTML, bookedHTML, hostDays, hostSummaryLine } from './visit.js';
-import { mountBackground } from './nature.js';
+import { mountBackground, setScene, SCENE_FOR, sceneCredit, allCredits } from './nature.js';
 
 const view = document.getElementById('view');
 
@@ -744,6 +744,7 @@ function screenMore() {
   <div class="card">
     <h2>${L('Kuhusu', 'About')}</h2>
     <p class="small">${L('Imejengwa kwa Hack-Nation × World Bank Small AI for Development (utalii).', 'Built for the Hack-Nation × World Bank Small AI for Development hackathon (tourism).')}</p>
+    <p class="small muted">${L('Video za mandhari: Pexels (leseni ya bure)', 'Background videos: Pexels, free licence')} — ${h(allCredits())}.</p>
     <div class="stack">
       <a class="btn secondary" href="https://github.com/Tristazxy/kitabu-gateway#readme" target="_blank" rel="noopener">${L('Msimbo, vyanzo vya data na mipaka', 'Code, data sources and limits')}</a>
     </div>
@@ -984,7 +985,8 @@ function render() {
   document.body.classList.toggle('home', sc === 'home');
   const changed = sc !== lastScreen;
   lastScreen = sc;
-  view.innerHTML = SCREENS[sc]();
+  setScene(SCENE_FOR[sc] || 'grove');
+  view.innerHTML = SCREENS[sc]() + (document.getElementById('nature').classList.contains('real') ? `<div class="credit">${h(sceneCredit(SCENE_FOR[sc] || 'grove'))}</div>` : '');
   // a new screen: its cards rise in one after another
   view.classList.remove('enter');
   if (changed) { void view.offsetWidth; view.classList.add('enter'); }
@@ -1599,12 +1601,12 @@ async function pickUiLang() {
 }
 
 async function start() {
-  mountBackground(document.getElementById('nature'));
   setLang(await pickUiLang());
   await loadAll();
   const kiosk = await db.getSetting('kiosk', false);
   if (kiosk) { state.visitor = { lang: pickVisitorLang(), saved: false, draft: {} }; state.screen = 'visitor'; }
   else state.screen = state.role === 'host' ? 'home' : state.role === 'company' ? 'company' : state.role === 'visitor' ? 'find' : 'choose';
+  mountBackground(document.getElementById('nature'), SCENE_FOR[state.screen] || 'grove');
   render();
   if (state.screen === 'home' && !(await db.getSetting('guideSeen', false))) openGuide(0);
   await refreshModels();

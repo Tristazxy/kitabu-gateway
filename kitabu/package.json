@@ -9,7 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node tests/logic.test.mjs",
-    "site": "vite build && rm -rf ../public/kitabu && cp -r dist ../public/kitabu && rm -rf dist"
+    "site": "vite build && mkdir -p ../public/kitabu/bg dist/bg && cp -r ../public/kitabu/bg/. dist/bg/ && rm -rf ../public/kitabu && cp -r dist ../public/kitabu && rm -rf dist"
   },
   "devDependencies": {
     "vite": "5.4.21"

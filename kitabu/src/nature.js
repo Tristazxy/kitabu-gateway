@@ -54,26 +54,73 @@ export const NATURE_SVG = `
   ${leaf(180, 0, 14)}${leaf(520, 5, 18)}${leaf(820, 9, 16)}${leaf(330, 12, 20)}
 </svg>`;
 
-// Real-nature background: a photo (always) and an optional looping video, dropped into public/bg/.
-// Falls back to the illustrated scene above when the photo is missing.
-export const BG = { poster: 'bg/forest.jpg', video: 'bg/forest.mp4' };
+// Real-nature backgrounds: short looping clips from Pexels (free licence), one per screen, cross-faded.
+// Files live in public/kitabu/bg/ (served, not rebuilt): <scene>.mp4 / <scene>-wide.mp4 and matching .jpg posters.
+// The video plays only when online, not in data-saver mode and not set to reduce motion; otherwise the photo.
+export const SCENES = {
+  mountains: { id: 12492499, by: 'RD King' },
+  grove: { id: 12311788, by: 'Anton Lukin' },
+  canopy: { id: 6318875, by: 'Vanessa Garcia' },
+  cherries: { id: 7116757, by: 'Matthias Groeneveld' },
+  stream: { id: 11902892, by: 'Thierry Rossier' },
+  flowers: { id: 14482561, by: 'Michael Burrows' },
+  dunes: { id: 14483416, by: 'Dubang chang' },
+  snow: { id: 19806018, by: 'iPhone Snaps' },
+};
+export const SCENE_FOR = {
+  choose: 'mountains', home: 'cherries', add: 'canopy', summary: 'stream', guests: 'flowers', week: 'mountains',
+  langs: 'snow', more: 'snow', company: 'dunes', find: 'grove', host: 'grove', booked: 'flowers', visitor: 'canopy',
+};
+export const sceneCredit = scene => `Pexels video ${SCENES[scene].id} by ${SCENES[scene].by}`;
+export const allCredits = () => Object.entries(SCENES).map(([k, v]) => `${v.by} (${v.id})`).join(', ');
 
-export function mountBackground(el) {
-  const img = new Image();
-  img.onload = () => {
-    const saveData = navigator.connection && navigator.connection.saveData;
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const useVideo = navigator.onLine && !saveData && !reduce;
-    el.innerHTML = `<img class="bg-photo" src="${BG.poster}" alt="">` +
-      (useVideo ? `<video class="bg-video" autoplay muted loop playsinline preload="metadata" poster="${BG.poster}"><source src="${BG.video}" type="video/mp4"></video>` : '');
-    el.classList.add('real');
-    const v = el.querySelector('video');
-    if (v) {
-      v.addEventListener('canplay', () => el.classList.add('video-ready'), { once: true });
-      v.addEventListener('error', () => v.remove(), { once: true });
-      v.play().catch(() => v.remove());
-    }
-  };
-  img.onerror = () => { el.innerHTML = NATURE_SVG; };
-  img.src = BG.poster;
+let root = null;
+let active = null;
+const layers = {};
+const wide = () => matchMedia('(orientation: landscape)').matches && innerWidth > 700;
+const sceneFile = (scene, ext) => `bg/${scene}${wide() ? '-wide' : ''}.${ext}`;
+
+function canPlayVideo() {
+  const saveData = navigator.connection && navigator.connection.saveData;
+  return navigator.onLine && !saveData && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function makeLayer(scene) {
+  const el = document.createElement('div');
+  el.className = 'bg-layer';
+  el.dataset.scene = scene;
+  el.innerHTML = `<img class="bg-photo" src="${sceneFile(scene, 'jpg')}" alt="">`;
+  if (canPlayVideo()) {
+    const v = document.createElement('video');
+    v.className = 'bg-video';
+    v.muted = true; v.loop = true; v.playsInline = true; v.autoplay = true; v.preload = 'metadata';
+    v.setAttribute('muted', ''); v.setAttribute('playsinline', '');
+    v.src = sceneFile(scene, 'mp4');
+    v.addEventListener('canplay', () => el.classList.add('video-ready'), { once: true });
+    v.addEventListener('error', () => v.remove(), { once: true });
+    el.appendChild(v);
+  }
+  return el;
+}
+
+// Show one scene; the previous one fades out. Layers are kept so a scene seen before shows instantly.
+export function setScene(scene) {
+  if (!root || !SCENES[scene] || scene === active) return;
+  let el = layers[scene];
+  if (!el) { el = makeLayer(scene); layers[scene] = el; root.appendChild(el); }
+  for (const [k, l] of Object.entries(layers)) {
+    const on = k === scene;
+    l.classList.toggle('on', on);
+    const v = l.querySelector('video');
+    if (v) { if (on) v.play().catch(() => {}); else v.pause(); }
+  }
+  active = scene;
+}
+
+export function mountBackground(el, firstScene) {
+  root = el;
+  const probe = new Image();
+  probe.onload = () => { el.classList.add('real'); setScene(firstScene); };
+  probe.onerror = () => { el.innerHTML = NATURE_SVG; };
+  probe.src = sceneFile(firstScene, 'jpg');
 }

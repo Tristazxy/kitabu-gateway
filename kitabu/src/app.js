@@ -14,7 +14,7 @@ import { summaryClipIds, playClips, prefetchVoice, loadVoiceManifest, sayLabel }
 import { guideHTML, GUIDE_STEPS } from './guide.js';
 import { roleChooserHTML, visitorHTML, companyHTML, pickVisitorLang, visitorStrings } from './roles.js';
 import { findHTML, hostHTML, tripHTML, hostDays, hostSummaryLine, rankHosts } from './visit.js';
-import { mountBackground, setScene, SCENE_FOR, sceneCredit, allCredits } from './nature.js';
+import { mountBackground, currentScene, sceneCredit, allCredits, toggleMotion, motionOn } from './nature.js';
 
 const view = document.getElementById('view');
 
@@ -1121,6 +1121,20 @@ const SCREENS = {
 };
 
 let lastScreen = null;
+// The top-bar button that freezes or restarts the moving background.
+function updateMotionBtn() {
+  const b = document.getElementById('motion-btn');
+  if (!b) return;
+  const on = motionOn();
+  const icon = on
+    ? '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="1" width="3.5" height="10" rx="1" fill="currentColor"/><rect x="7.5" y="1" width="3.5" height="10" rx="1" fill="currentColor"/></svg>'
+    : '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1.2v9.6L10.5 6z" fill="currentColor"/></svg>';
+  b.innerHTML = `${icon} Video`;
+  b.setAttribute('aria-pressed', String(!on));
+  b.setAttribute('aria-label', on ? L('Simamisha mandhari inayosogea', 'Stop the moving background') : L('Cheza mandhari inayosogea', 'Play the moving background'));
+  b.title = b.getAttribute('aria-label');
+}
+
 function render() {
   const sc = state.screen;
   document.body.classList.toggle('mode-visitor', sc === 'visitor' || sc === 'choose');
@@ -1128,8 +1142,8 @@ function render() {
   document.body.classList.toggle('home', sc === 'home');
   const changed = sc !== lastScreen;
   lastScreen = sc;
-  setScene(SCENE_FOR[sc] || 'grove');
-  view.innerHTML = SCREENS[sc]() + (document.getElementById('nature').classList.contains('real') ? `<div class="credit">${h(sceneCredit(SCENE_FOR[sc] || 'grove'))}</div>` : '');
+  view.innerHTML = SCREENS[sc]() + (document.getElementById('nature').classList.contains('real') ? `<div class="credit">${h(sceneCredit(currentScene()))}</div>` : '');
+  updateMotionBtn();
   // a new screen: its cards rise in one after another
   view.classList.remove('enter');
   if (changed) { void view.offsetWidth; view.classList.add('enter'); }
@@ -1532,6 +1546,7 @@ const actions = {
     await db.setSetting('lang', getLang());
     render();
   },
+  'toggle-motion': () => { toggleMotion(); updateMotionBtn(); },
   'hand-to-guest': () => startVisitor(state.screen === 'find' ? 'choose' : 'home'),
   'visitor-lang': el => { captureVisitorDraft(); state.visitor.lang = el.dataset.lang; render(); },
   'visitor-save': saveVisitor,
@@ -1785,7 +1800,7 @@ async function start() {
   const kiosk = await db.getSetting('kiosk', false);
   if (kiosk) { state.visitor = { lang: pickVisitorLang(), saved: false, draft: {} }; state.screen = 'visitor'; }
   else state.screen = state.role === 'host' ? 'home' : state.role === 'company' ? 'company' : state.role === 'visitor' ? 'find' : 'choose';
-  mountBackground(document.getElementById('nature'), SCENE_FOR[state.screen] || 'grove');
+  mountBackground(document.getElementById('nature'));
   render();
   if (state.screen === 'home' && !(await db.getSetting('guideSeen', false))) openGuide(0);
   await refreshModels();

@@ -54,7 +54,7 @@ Built around Noor, usable by any small host. What changes per host is data, not 
 
 ### Background videos (Pexels, free licence)
 
-Each screen has a short real-nature loop behind it, cross-faded on navigation, played only online and outside data-saver mode (the still frame otherwise). All from [Pexels](https://www.pexels.com) under the Pexels licence: mountains and riders — RD King (12492499); bamboo grove — Anton Lukin (12311788); bamboo canopy — Vanessa Garcia (6318875); coffee cherries — Matthias Groeneveld (7116757); stream — Thierry Rossier (11902892); flower field — Michael Burrows (14482561); dunes — Dubang chang (14483416); snowy forest — iPhone Snaps (19806018).
+Eight short real-nature clips play in turn behind the app; when one ends the next scrolls up from below, like a feed. Video plays only online and outside data-saver mode (the still frames take turns otherwise), and the **⏸ Video** button in the top bar freezes the background. All from [Pexels](https://www.pexels.com) under the Pexels licence: mountains and riders — RD King (12492499); bamboo grove — Anton Lukin (12311788); bamboo canopy — Vanessa Garcia (6318875); coffee cherries — Matthias Groeneveld (7116757); stream — Thierry Rossier (11902892); flower field — Michael Burrows (14482561); dunes — Dubang chang (14483416); snowy forest — iPhone Snaps (19806018).
 
 ## Why AI here — and what is deliberately *not* AI
 

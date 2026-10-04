@@ -54,9 +54,10 @@ export const NATURE_SVG = `
   ${leaf(180, 0, 14)}${leaf(520, 5, 18)}${leaf(820, 9, 16)}${leaf(330, 12, 20)}
 </svg>`;
 
-// Real-nature backgrounds: short looping clips from Pexels (free licence), one per screen, cross-faded.
-// Files live in public/kitabu/bg/ (served, not rebuilt): <scene>.mp4 / <scene>-wide.mp4 and matching .jpg posters.
-// The video plays only when online, not in data-saver mode and not set to reduce motion; otherwise the photo.
+// Real-nature backgrounds: eight short Pexels clips (free licence) that play in turn behind the app.
+// When one clip ends the next one scrolls up from below, like a feed; offline (or with data-saver /
+// reduced motion) the still frames take turns instead. The "Video" button in the top bar freezes it.
+// Files live in public/kitabu/bg/ (served, not rebuilt): <scene>.mp4 / <scene>-wide.mp4 and .jpg posters.
 export const SCENES = {
   mountains: { id: 12492499, by: 'RD King' },
   grove: { id: 12311788, by: 'Anton Lukin' },
@@ -67,16 +68,23 @@ export const SCENES = {
   dunes: { id: 14483416, by: 'Dubang chang' },
   snow: { id: 19806018, by: 'iPhone Snaps' },
 };
-export const SCENE_FOR = {
-  choose: 'mountains', home: 'cherries', add: 'canopy', summary: 'stream', guests: 'flowers', week: 'mountains',
-  langs: 'snow', more: 'snow', company: 'dunes', find: 'grove', host: 'grove', booked: 'flowers', visitor: 'canopy',
-};
+export const PLAYLIST = Object.keys(SCENES);
 export const sceneCredit = scene => `Pexels video ${SCENES[scene].id} by ${SCENES[scene].by}`;
 export const allCredits = () => Object.entries(SCENES).map(([k, v]) => `${v.by} (${v.id})`).join(', ');
 
+const MOTION_KEY = 'wekaribu-motion';
+const PHOTO_SECONDS = 12;   // how long each still frame stays when the video cannot play
+const SLIDE_MS = 900;       // must match the transform transition in app.css
+
 let root = null;
-let active = null;
+let index = -1;
+let timer = 0;
+let motion = true;
 const layers = {};
+
+export const currentScene = () => PLAYLIST[Math.max(index, 0)];
+export const motionOn = () => motion;
+
 const wide = () => matchMedia('(orientation: landscape)').matches && innerWidth > 700;
 const sceneFile = (scene, ext) => `bg/${scene}${wide() ? '-wide' : ''}.${ext}`;
 
@@ -85,42 +93,115 @@ function canPlayVideo() {
   return navigator.onLine && !saveData && !matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-function makeLayer(scene) {
-  const el = document.createElement('div');
-  el.className = 'bg-layer';
-  el.dataset.scene = scene;
-  el.innerHTML = `<img class="bg-photo" src="${sceneFile(scene, 'jpg')}" alt="">`;
-  if (canPlayVideo()) {
-    const v = document.createElement('video');
-    v.className = 'bg-video';
-    v.muted = true; v.loop = true; v.playsInline = true; v.autoplay = true; v.preload = 'metadata';
-    v.setAttribute('muted', ''); v.setAttribute('playsinline', '');
-    v.src = sceneFile(scene, 'mp4');
-    v.addEventListener('canplay', () => el.classList.add('video-ready'), { once: true });
-    v.addEventListener('error', () => v.remove(), { once: true });
-    el.appendChild(v);
+function addVideo(el, scene) {
+  const v = document.createElement('video');
+  v.className = 'bg-video';
+  v.muted = true; v.loop = false; v.playsInline = true; v.autoplay = false; v.preload = 'metadata';
+  v.setAttribute('muted', ''); v.setAttribute('playsinline', '');
+  v.src = sceneFile(scene, 'mp4');
+  v.addEventListener('canplay', () => el.classList.add('video-ready'), { once: true });
+  v.addEventListener('error', () => { v.remove(); el.classList.remove('video-ready'); }, { once: true });
+  v.addEventListener('ended', () => { if (el.classList.contains('on')) next(); });
+  el.appendChild(v);
+  return v;
+}
+
+function layerFor(scene) {
+  let el = layers[scene];
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'bg-layer';
+    el.dataset.scene = scene;
+    el.innerHTML = `<img class="bg-photo" src="${sceneFile(scene, 'jpg')}" alt="">`;
+    layers[scene] = el;
+    root.appendChild(el);
   }
+  if (!el.querySelector('video') && motion && canPlayVideo()) addVideo(el, scene);
   return el;
 }
 
-// Show one scene; the previous one fades out. Layers are kept so a scene seen before shows instantly.
-export function setScene(scene) {
-  if (!root || !SCENES[scene] || scene === active) return;
-  let el = layers[scene];
-  if (!el) { el = makeLayer(scene); layers[scene] = el; root.appendChild(el); }
-  for (const [k, l] of Object.entries(layers)) {
-    const on = k === scene;
-    l.classList.toggle('on', on);
-    const v = l.querySelector('video');
-    if (v) { if (on) v.play().catch(() => {}); else v.pause(); }
-  }
-  active = scene;
+// Keep the show going even when the video never starts (low-power mode, offline, slow network).
+function arm(el) {
+  clearTimeout(timer);
+  if (!motion) return;
+  const v = el.querySelector('video');
+  const playing = v && !v.paused && isFinite(v.duration) && v.duration > 0;
+  const seconds = playing ? v.duration - v.currentTime + 3 : PHOTO_SECONDS;
+  timer = setTimeout(next, seconds * 1000);
 }
 
-export function mountBackground(el, firstScene) {
+function updateCredit() {
+  const text = sceneCredit(currentScene());
+  for (const c of document.querySelectorAll('.credit')) c.textContent = text;
+}
+
+function show(i) {
+  const scene = PLAYLIST[i];
+  const el = layerFor(scene);
+  const prev = index >= 0 ? layers[PLAYLIST[index]] : null;
+  index = i;
+  void el.offsetWidth; // the start position is applied before it moves
+  el.classList.add('on');
+  if (prev && prev !== el) {
+    // the old scene scrolls out at the top while the new one comes up from below
+    prev.classList.remove('on');
+    prev.classList.add('out');
+    const pv = prev.querySelector('video');
+    if (pv) { pv.pause(); try { pv.currentTime = 0; } catch (e) { /* not seekable yet */ } }
+    setTimeout(() => {
+      prev.classList.add('reset');
+      prev.classList.remove('out');
+      requestAnimationFrame(() => requestAnimationFrame(() => prev.classList.remove('reset')));
+    }, SLIDE_MS + 100);
+  }
+  const v = el.querySelector('video');
+  if (v && motion) {
+    v.addEventListener('playing', () => { if (el.classList.contains('on')) arm(el); }, { once: true });
+    v.play().catch(() => {});
+  }
+  arm(el);
+  // fetch the next clip while this one plays, so the switch is seamless
+  const nv = layerFor(PLAYLIST[(i + 1) % PLAYLIST.length]).querySelector('video');
+  if (nv && nv.preload !== 'auto') { nv.preload = 'auto'; nv.load(); }
+  updateCredit();
+  root.dispatchEvent(new CustomEvent('scenechange', { detail: { scene } }));
+}
+
+function next() {
+  if (!root || !motion || document.hidden) return;
+  show((index + 1) % PLAYLIST.length);
+}
+
+export function setMotion(on) {
+  motion = !!on;
+  try { localStorage.setItem(MOTION_KEY, motion ? '1' : '0'); } catch (e) { /* private mode */ }
+  if (!root) return;
+  root.classList.toggle('still', !motion);
+  const el = layers[currentScene()];
+  if (!motion) {
+    clearTimeout(timer);
+    const v = el && el.querySelector('video');
+    if (v) v.pause();
+  } else if (el) {
+    const v = layerFor(currentScene()).querySelector('video');
+    if (v) v.play().catch(() => {});
+    arm(el);
+  }
+}
+export const toggleMotion = () => setMotion(!motion);
+
+export function mountBackground(el) {
   root = el;
+  try { motion = localStorage.getItem(MOTION_KEY) !== '0'; } catch (e) { motion = true; }
+  root.classList.toggle('still', !motion);
+  document.addEventListener('visibilitychange', () => {
+    const cur = layers[currentScene()];
+    const v = cur && cur.querySelector('video');
+    if (document.hidden) { clearTimeout(timer); if (v) v.pause(); }
+    else if (motion && cur) { if (v) v.play().catch(() => {}); arm(cur); }
+  });
   const probe = new Image();
-  probe.onload = () => { el.classList.add('real'); setScene(firstScene); };
+  probe.onload = () => { el.classList.add('real'); show(0); };
   probe.onerror = () => { el.innerHTML = NATURE_SVG; };
-  probe.src = sceneFile(firstScene, 'jpg');
+  probe.src = sceneFile(PLAYLIST[0], 'jpg');
 }

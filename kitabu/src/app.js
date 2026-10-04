@@ -258,7 +258,7 @@ function screenHome() {
     return `<div class="faces"><span>${FACE.pos} <b>${pos}</b></span><span>${FACE.neg} <b>${neg}</b></span>${unsure ? `<span>${FACE.unsure} <b>${unsure}</b></span>` : ''}</div>`;
   })() : '';
   const summaryCard = s.entries ? `
-    <div class="card accent">
+    <div class="card accent" style="margin-top:14px">
       <div class="card-title"><h2>${L('Wageni walisema', 'What guests said')} ${sayBtn('ui_summary', 'Wageni walisema. Bonyeza Sikiliza kusikia muhtasari.', 'What guests said. Tap Listen to hear the summary.')}</h2><span class="small muted">${PERIODS[state.period]()}</span></div>
       ${faces}
       <p class="big-summary" style="margin:0">${h(shortSummary(s))}</p>
@@ -269,7 +269,7 @@ function screenHome() {
         <button class="btn secondary" data-action="go" data-screen="summary">${L('Maelezo zaidi', 'Details')} →</button>
       </div>
     </div>` : `
-    <div class="card">
+    <div class="card" style="margin-top:14px">
       <h2>${L('Wageni walisema', 'What guests said')}</h2>
       <p class="muted" style="margin:0">${L('Bado hakuna maoni.', 'No feedback yet.')}</p>
       ${pendingBox}
@@ -287,30 +287,34 @@ function screenHome() {
 
   const reservations = state.bookings
     .filter(b => daysFromToday(b.date) >= 0).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(0, 4);
-  const reservationsCard = reservations.length ? `
+  const reservationsCard = `
     <div class="card">
-      <div class="card-title"><h2>${L('Wageni wanaokuja', 'Reservations')}</h2><button class="btn small secondary" data-action="go" data-screen="week">${L('Zote', 'All')}</button></div>
+      <div class="card-title"><h2>${L('Wageni wanaokuja', 'Reservations')}</h2><button class="btn small secondary" data-action="go" data-screen="week">${reservations.length ? L('Zote', 'All') : L('Siku zangu', 'My days')}</button></div>
+      ${reservations.length ? '' : `<p class="muted" style="margin:0">${L('Bado hakuna wageni waliopangwa. Weka siku unazoweza kupokea wageni.', 'No guests booked yet. Publish the days you can take guests.')}</p>`}
       <ul class="list">${reservations.map(b => `
         <li>
           <div class="row between"><div><strong>${h(day(b.date))}</strong> · ${h(b.leadName || 'Mgeni')} <span class="small muted">· ${L('wageni', 'guests')} ${h(b.guests)}</span></div>${bookingStatusChip(b)}</div>
           <div class="row small" style="margin-top:4px">${langPill(b.language)} ${packChip(b.language)} ${b.payment ? `<span class="chip">${L('Malipo ya awali yamelipwa', 'Deposit paid')}</span>` : ''}</div>
           ${hostAnswerButtons(b)}
         </li>`).join('')}</ul>
-    </div>` : '';
+    </div>`;
   const weekSub = next7.length
     ? L(`Wageni ${next7.reduce((n, b) => n + (Number(b.guests) || 1), 0)} siku 7 zijazo`, `${next7.reduce((n, b) => n + (Number(b.guests) || 1), 0)} guests in the next 7 days`)
       + (plan.download.length ? ` · ${L('pakua', 'download')} ${plan.download.map(c => langName(c, getLang())).join(', ')}` : '')
     : L('Pokea ratiba kutoka kwa kampuni ya utalii', 'Get the schedule from the tour company');
 
+  // Order of a host's day: who is coming, talk to them, then collect and hear what they said.
   return `
-  ${summaryCard}
   ${reservationsCard}
   <div class="stack" style="gap:8px">
+    ${bigBtn('data-action="go" data-screen="translate"', ICON_TRANSLATE, L('Tafsiri', 'Translate'), L('Mgeni anaongea, unasikia kwa Kiingereza', 'The guest speaks, you hear it in English'), 'tile-sky')}
     ${bigBtn('data-action="go" data-screen="add"', ICON_CAMERA, L('Ongeza maoni ya mgeni', 'Add guest feedback'), L('Picha ya kitabu, sauti au kuandika', 'Photo of the guestbook, voice or typing'), '', 'ui_add', 'Ongeza maoni ya mgeni. Piga picha ya kitabu, rekodi sauti, au andika.', 'Add guest feedback: photograph the guestbook, record a voice note, or type.', 'primary')}
+  </div>
+  ${summaryCard}
+  <div class="stack" style="gap:8px">
     ${bigBtn('data-action="hand-to-guest"', ICON_HAND, L('Mpe mgeni simu aandike', 'Let a guest write'), L('Kwa lugha yake, kwenye simu hii', 'In their own language, on this phone'), 'tile-leaf', 'ui_hand', 'Mpe mgeni simu aandike maoni kwa lugha yake.', 'Hand the phone to a guest to write in their own language.')}
     ${bigBtn('data-action="go" data-screen="guests"', ICON_MAIL, L('Washukuru wageni', 'Thank guests'), toThank ? L(`Wageni ${toThank} wanasubiri`, `${toThank} waiting`) : L('Ujumbe kwa lugha ya mgeni', 'A message in the guest’s language'), 'tile-cherry', 'ui_thank', 'Washukuru wageni kwa lugha yao.', 'Thank guests in their own language.')}
     ${bigBtn('data-action="go" data-screen="week"', ICON_CAL, L('Wiki ijayo', 'Next week'), weekSub, 'tile-sky', 'ui_week', 'Wiki ijayo. Nani anakuja, na lugha gani.', 'Next week: who is coming, and which language.')}
-    ${bigBtn('data-action="go" data-screen="translate"', ICON_TRANSLATE, L('Tafsiri', 'Translate'), L('Mgeni anaongea, unasikia kwa Kiingereza', 'The guest speaks, you hear it in English'), 'tile-sky')}
   </div>
   <div class="row home-links">
     <button class="link-btn" data-action="guide-open">${L('Jinsi ya kutumia', 'How to use')}</button>

@@ -14,7 +14,7 @@ import { summaryClipIds, playClips, prefetchVoice, loadVoiceManifest, sayLabel }
 import { guideHTML, GUIDE_STEPS } from './guide.js';
 import { roleChooserHTML, visitorHTML, companyHTML, pickVisitorLang, visitorStrings } from './roles.js';
 import { findHTML, hostHTML, tripHTML, hostDays, hostSummaryLine, rankHosts } from './visit.js';
-import { mountBackground, currentScene, sceneCredit, allCredits, toggleMotion, motionOn } from './nature.js';
+import { mountBackground, currentScene, sceneCredit, allCredits, toggleMotion, motionOn, setOffline } from './nature.js';
 
 const view = document.getElementById('view');
 
@@ -30,6 +30,7 @@ const state = {
   installed: [],
   shared: { voice: false, topics: false, mood: false },
   online: navigator.onLine,
+  forceOffline: false, // the Offline button: work as if there were no internet (SMS, on-phone AI, no video)
   period: 'month',
   add: freshAdd(),
   recording: false,
@@ -56,6 +57,9 @@ async function loadAll() {
   state.availableDays = await db.getSetting('availableDays', []);
   state.cloud.uploads = await db.getSetting('cloudUploads', []);
   state.cloud.queue = await db.getSetting('cloudQueue', []);
+  state.forceOffline = await db.getSetting('forceOffline', false);
+  state.online = isOnline();
+  setOffline(!state.online);
   state.hostDaysBySms = await db.getSetting('hostDaysBySms', {});
   setHost(await db.getSetting('hostName', 'Noor'));
   document.documentElement.classList.toggle('big-text', await db.getSetting('bigText', false));
@@ -918,6 +922,20 @@ function screenCompany() {
 }
 
 // ---------------------------------------------------------------- visitor: find a place and book
+// Online means: the phone has internet AND the Offline button is not switched on.
+const isOnline = () => navigator.onLine && !state.forceOffline;
+async function toggleNet() {
+  if (!navigator.onLine && !state.forceOffline) return toast(L('Hakuna mtandao sasa hivi. Kila kitu kwenye simu bado kinafanya kazi.', 'No internet right now. Everything on this phone still works.'), 4000);
+  state.forceOffline = !state.forceOffline;
+  await db.setSetting('forceOffline', state.forceOffline);
+  state.online = isOnline();
+  setOffline(!state.online);
+  captureBookForm();
+  toast(state.online ? L('Mtandaoni: wingu, ratiba na video zinarudi.', 'Online: cloud, schedule and video are back.') : L('Nje ya mtandao: SMS na AI ya simu. Hakuna data inayotumika.', 'Offline mode: SMS and on-phone AI. No data is used.'), 3500);
+  render();
+  if (state.online) flushCloudQueue();
+}
+
 // Phone numbers for sms: links (digits and + only; the demo data carries notes in brackets).
 const smsTo = phone => String(phone || '').replace(/[^\d+]/g, '');
 const smsHref = (phone, body) => `sms:${smsTo(phone)}?body=${encodeURIComponent(body)}`;
@@ -1223,7 +1241,14 @@ function render() {
   // a new screen: its cards rise in one after another
   view.classList.remove('enter');
   if (changed) { void view.offsetWidth; view.classList.add('enter'); }
-  document.getElementById('net').textContent = state.online ? L('Mtandaoni', 'Online') : L('Nje ya mtandao', 'Offline');
+  const net = document.getElementById('net-btn');
+  if (net) {
+    net.classList.toggle('off', !state.online);
+    net.innerHTML = `<span class="dot"></span>${state.online ? L('Mtandaoni', 'Online') : L('Nje ya mtandao', 'Offline')}`;
+    net.setAttribute('aria-pressed', String(!state.online));
+    net.title = state.online ? L('Bonyeza kufanya kazi bila mtandao', 'Tap to work offline') : (state.forceOffline ? L('Bonyeza kurudi mtandaoni', 'Tap to go back online') : L('Hakuna mtandao sasa', 'No internet right now'));
+  }
+  if (!state.online) view.insertAdjacentHTML('afterbegin', `<div class="netbar">${L('Bila mtandao: maoni, muhtasari, tafsiri na ratiba vinafanya kazi kwenye simu hii. Maombi na ripoti huenda kwa SMS.', 'No internet: feedback, summary, translate and reservations work on this phone. Requests and reports go by SMS.')}</div>`);
   const lb = document.getElementById('lang-btn');
   if (lb) lb.textContent = getLang() === 'sw' ? 'English' : 'Kiswahili';
   if (state.guide.open) renderGuide();
@@ -1246,7 +1271,7 @@ function go(screen) {
 async function confirmDownload(needs) {
   if (!needs.length) return true;
   const mb = needs.reduce((a, [kind, key]) => a + (kind === 'pack' ? PACK_MB : SHARED_MODELS[key].mb), 0);
-  if (!navigator.onLine) {
+  if (!isOnline()) {
     toast(L('Hakuna mtandao. Pakua lugha msaidizi akiwa na mtandao.', 'Offline. Download packs when the helper has internet.'), 6000);
     return false;
   }
@@ -1279,7 +1304,7 @@ async function deletePacks(codes) {
 
 // ---------------------------------------------------------------- actions
 async function syncBookings() {
-  if (!navigator.onLine) return toast(L('Hakuna mtandao', 'Offline'));
+  if (!isOnline()) return toast(L('Hakuna mtandao', 'Offline'));
   showBusy(L('Inapokea ratiba', 'Receiving the schedule'));
   const res = await fetch('data/bookings.json', { cache: 'no-store' });
   const feed = await res.json();
@@ -1559,7 +1584,7 @@ async function cloudUpload() {
   const { s } = currentSummary();
   const report = guideReport(s, `${PERIODS[state.period]()}`, host());
   const up = { id: uid('up'), at: new Date().toISOString(), entries: s.entries, guests: s.guests, to: 'Ondera Coffee Trails · ' + L('Ofisi ya utalii', 'Tourism office'), report, period: state.period, host: host() };
-  if (!navigator.onLine) {
+  if (!isOnline()) {
     // kept on the phone and sent by itself the next time there is internet
     state.cloud.queue.push(up);
     await db.setSetting('cloudQueue', state.cloud.queue);
@@ -1576,7 +1601,7 @@ async function cloudUpload() {
 }
 
 async function flushCloudQueue() {
-  if (!navigator.onLine || !state.cloud.queue.length) return;
+  if (!isOnline() || !state.cloud.queue.length) return;
   const pending = state.cloud.queue.splice(0);
   for (const up of pending) state.cloud.uploads.push({ ...up, at: new Date().toISOString(), queuedAt: up.at });
   await db.setSetting('cloudUploads', state.cloud.uploads);
@@ -1627,6 +1652,7 @@ const actions = {
   'cloud-upload': cloudUpload,
   'sms-import': () => importSms(document.getElementById('sms-in')?.value || ''),
   'translate-record': () => toggleRecordingWith(translateAudio),
+  'toggle-net': toggleNet,
   'say-text': el => speak(el.dataset.text, el.dataset.lang || 'en'),
   'say-phrase': el => sayLabel(el.dataset.clip, el.dataset.text, 'sw', speak),
   'book-day': el => { captureBookForm(); state.book.day = el.dataset.day; render(); },
@@ -1882,8 +1908,8 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && state.guide.open) closeGuide();
 });
 
-window.addEventListener('online', () => { state.online = true; captureBookForm(); render(); flushCloudQueue(); });
-window.addEventListener('offline', () => { state.online = false; captureBookForm(); render(); });
+window.addEventListener('online', () => { state.online = isOnline(); setOffline(!state.online); captureBookForm(); render(); flushCloudQueue(); });
+window.addEventListener('offline', () => { state.online = false; setOffline(true); captureBookForm(); render(); });
 
 // Put everything the page already loaded into the offline cache, so the very first visit
 // is enough to work offline afterwards (names of built files change with every build).
@@ -1929,7 +1955,7 @@ async function start() {
   }
   // Voices load asynchronously on some browsers; voice clips are fetched once for offline use.
   if ('speechSynthesis' in window) speechSynthesis.getVoices();
-  loadVoiceManifest().then(m => { if (m && navigator.onLine) prefetchVoice(); });
+  loadVoiceManifest().then(m => { if (m && isOnline()) prefetchVoice(); });
 }
 
 start().catch(err => {

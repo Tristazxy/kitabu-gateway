@@ -89,9 +89,26 @@ export const motionOn = () => motion;
 const wide = () => matchMedia('(orientation: landscape)').matches && innerWidth > 700;
 const sceneFile = (scene, ext) => `bg/${scene}${wide() ? '-wide' : ''}.${ext}`;
 
+let offline = false; // the app's Offline button (or no connection): still frames only, no clip downloads
 function canPlayVideo() {
   const saveData = navigator.connection && navigator.connection.saveData;
-  return navigator.onLine && !saveData && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return navigator.onLine && !offline && !saveData && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+export function setOffline(flag) {
+  offline = !!flag;
+  if (!root) return;
+  const el = layers[currentScene()];
+  if (!el) return;
+  const v = el.querySelector('video');
+  if (offline) {
+    if (v) { v.pause(); el.classList.remove('video-ready'); } // back to the still frame
+    arm(el);
+  } else if (motion) {
+    const nv = layerFor(currentScene()).querySelector('video');
+    if (nv) { if (nv.readyState >= 3) el.classList.add('video-ready'); startVideo(el, nv); }
+    arm(el);
+  }
 }
 
 function addVideo(el, scene) {
@@ -101,7 +118,7 @@ function addVideo(el, scene) {
   v.setAttribute('muted', ''); v.setAttribute('playsinline', '');
   v.src = sceneFile(scene, 'mp4');
   el.classList.add('has-video');
-  v.addEventListener('canplay', () => el.classList.add('video-ready'), { once: true });
+  v.addEventListener('canplay', () => { if (canPlayVideo()) el.classList.add('video-ready'); });
   v.addEventListener('error', () => { v.remove(); el.classList.remove('video-ready', 'has-video'); }, { once: true });
   // each clip plays exactly once, forwards; the next one scrolls in during its last second,
   // or as soon as it is ready if the clip ended first
@@ -133,7 +150,7 @@ const nextIndex = () => (index + 1) % PLAYLIST.length;
 
 // Start a clip only once the browser expects to play it through without stalling.
 function startVideo(el, v) {
-  const go = () => { if (el.classList.contains('on') && motion && !document.hidden) v.play().catch(() => {}); };
+  const go = () => { if (el.classList.contains('on') && motion && canPlayVideo() && !document.hidden) v.play().catch(() => {}); };
   if (v.readyState >= 4) go();
   else v.addEventListener('canplaythrough', go, { once: true });
 }
@@ -177,9 +194,12 @@ function show(i) {
     }, SLIDE_MS + 100);
   }
   const v = el.querySelector('video');
-  if (v && motion) {
+  if (v && motion && canPlayVideo()) {
+    if (v.readyState >= 3) el.classList.add('video-ready');
     v.addEventListener('playing', () => { if (el.classList.contains('on')) arm(el); }, { once: true });
     startVideo(el, v);
+  } else if (v) {
+    el.classList.remove('video-ready'); // offline or data-saver: the still frame
   }
   arm(el);
   layerFor(PLAYLIST[nextIndex()]); // the next clip downloads while this one plays

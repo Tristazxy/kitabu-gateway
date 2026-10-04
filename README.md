@@ -54,6 +54,8 @@ Built around Noor, usable by any small host. What changes per host is data, not 
 
 ### No internet? Everything still moves by SMS
 
+The **Online / Offline** button in the top bar shows which mode the app is in and lets anyone switch to offline mode on purpose (no data used, still frames instead of video, SMS instead of cloud); when the phone really loses its connection the app switches by itself.
+
 Every WeKaribu SMS ends with one short code line (`WK|BOOK|2026-10-07|2|it|Vivian & Frank|noor`), so a message can be pasted into the app on the other phone and understood, offline:
 
 | Side | Sends by SMS | Receives by pasting |

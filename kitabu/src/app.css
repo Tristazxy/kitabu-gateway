@@ -61,7 +61,11 @@ a { color: var(--primary); }
   background: transparent; color: #fff; font: inherit; font-weight: 700; font-size: .8rem; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center; padding: 0 12px;
 }
-.net { font-size: .72rem; padding: 3px 8px; border-radius: 999px; background: rgba(255,255,255,.16); white-space: nowrap; }
+.net-btn { gap: 6px; white-space: nowrap; }
+.net-btn .dot { width: 9px; height: 9px; border-radius: 50%; background: #7CE0A6; box-shadow: 0 0 0 3px rgba(124, 224, 166, .25); flex: none; }
+.net-btn.off { background: rgba(255,255,255,.14); }
+.net-btn.off .dot { background: #F2B662; box-shadow: 0 0 0 3px rgba(242, 182, 98, .25); }
+.netbar { background: rgba(31, 42, 34, .82); color: #fff; font-size: .82rem; padding: 8px 12px; border-radius: 12px; margin-bottom: 12px; backdrop-filter: blur(4px); }
 
 main { max-width: 620px; margin: 0 auto; padding: 16px 14px 24px; outline: none; }
 
@@ -270,7 +274,6 @@ body.mode-visitor .host-only { display: none !important; }
 
 @media (max-width: 480px) {
   .brand-name { font-size: .98rem; }
-  .net { font-size: .66rem; padding: 2px 7px; }
 }
 @media (max-width: 400px) {
   .brand img { display: none; }

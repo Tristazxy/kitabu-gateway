@@ -92,7 +92,7 @@ def app_clip(ci, chapter, nxt, busy, narr, index, total, k, rate=1.0):
 def card_clip(card, narr, index):
     """A full-frame text card (demo-out/cards/<card>.png), held for the narration with a slow push-in."""
     src = os.path.join(OUT, 'cards', f'{card}.png')
-    final = (narr['seconds'] + 0.6) if narr else 4.0
+    final = (narr['seconds'] + 0.35) if narr else 4.0
     frames = int(final * 30) + 1
     vf = (f'scale=2112:1188,zoompan=z=\'1+0.0006*on\':x=\'iw/2-(iw/zoom/2)\':y=\'ih/2-(ih/zoom/2)\':d={frames}:s=1920x1080:fps=30,'
           f'fade=t=in:st=0:d=0.4,fade=t=out:st={max(0.0, final - 0.4):.3f}:d=0.4,format=yuv420p')
@@ -177,10 +177,18 @@ def main():
     run(['-f', 'concat', '-safe', '0', '-i', os.path.join(TMP, 'all.ffconcat'), *ENC, '-movflags', '+faststart', final])
     limit = story.get('max_seconds')
     if limit and t > limit + 0.05:
-        print(f'WARNING: {FINAL_NAME} is {t:.1f} s, over the {limit} s limit; trimming the tail')
-        run(['-i', final, '-t', f'{limit:.3f}', '-af', f'afade=t=out:st={limit - 0.6:.3f}:d=0.6', *ENC, '-movflags', '+faststart', final + '.cut.mp4'])
-        os.replace(final + '.cut.mp4', final)
-        t = limit
+        f = t / (limit - 0.2)
+        if f <= 1.08:
+            # a few percent faster is inaudible; a cut mid-sentence is not
+            print(f'NOTE: {FINAL_NAME} is {t:.1f} s; playing {f:.3f}x faster to fit {limit} s')
+            run(['-i', final, '-filter_complex', f'[0:v]setpts=PTS/{f:.4f}[v];[0:a]atempo={f:.4f}[a]', '-map', '[v]', '-map', '[a]', *ENC, '-movflags', '+faststart', final + '.fit.mp4'])
+            os.replace(final + '.fit.mp4', final)
+            t = t / f
+        else:
+            print(f'WARNING: {FINAL_NAME} is {t:.1f} s, over the {limit} s limit; trimming the tail')
+            run(['-i', final, '-t', f'{limit:.3f}', '-af', f'afade=t=out:st={limit - 0.6:.3f}:d=0.6', *ENC, '-movflags', '+faststart', final + '.cut.mp4'])
+            os.replace(final + '.cut.mp4', final)
+            t = limit
 
     if not NAME and not per_part:
         start = chapters[0]['t'] if chapters else 0

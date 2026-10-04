@@ -1,0 +1,8 @@
+ok   tip (22 s)
+ok   decide (51 s)
+ok   swahili (17 s)
+ok   thanks (11 s)
+ok   evidence (9 s)
+
+uploaded demo-assets/note-de.png via "Photo of box A"
+uploaded demo-assets/voice-fr.wav via "Upload an audio file"

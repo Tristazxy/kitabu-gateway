@@ -291,7 +291,7 @@ async function walkthrough() {
     });
 
     await part('analyse-italian', async () => {
-      chapter('Analysed on the phone', 'Italian → English with a translation model on the phone (about 130 MB, downloaded once), then topics and mood. The feedback never leaves the phone.');
+      chapter('Analysed on the phone', 'Italian to English with a translation model on the phone (about 130 MB, downloaded once), then topics and mood. The feedback never leaves the phone.');
       await pause(1500);
       await tap('[data-action="analyze-pending"]');
       await busy(() => page.waitForFunction(() => !document.querySelector('[data-action="analyze-pending"]') && !document.querySelector('.busy:not(.hidden)'), null, { timeout: LONG }));

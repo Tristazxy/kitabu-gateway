@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>WeKaribu intro — Korla wakes up</title>
+<style>
+  html, body { margin: 0; background: #1E130C; width: 1920px; height: 1080px; overflow: hidden; }
+  svg { display: block; width: 1920px; height: 1080px; }
+  text { font-family: "Noto Sans", "Inter", system-ui, sans-serif; }
+</style>
+</head>
+<body>
+<!-- A 1920x1080 scene drawn with plain shapes. window.seek(t) places everything for time t (seconds),
+     so a renderer can take one screenshot per frame. Korla is an original cartoon koala. -->
+<svg viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3B2618"/><stop offset="1" stop-color="#1A100A"/>
+    </linearGradient>
+    <radialGradient id="bubbleFill" cx="0.35" cy="0.3" r="0.75">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.55"/><stop offset="0.6" stop-color="#bfe3ff" stop-opacity="0.25"/><stop offset="1" stop-color="#8fc8ff" stop-opacity="0.35"/>
+    </radialGradient>
+    <linearGradient id="mug" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#FBF4EA"/><stop offset="1" stop-color="#E8DCCB"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#sky)"/>
+  <g id="stars" fill="#F6EFE6" opacity="0.8">
+    <circle cx="180" cy="140" r="3"/><circle cx="420" cy="260" r="2"/><circle cx="760" cy="90" r="2.5"/>
+    <circle cx="1240" cy="160" r="2"/><circle cx="1500" cy="320" r="3"/><circle cx="1720" cy="110" r="2"/>
+    <circle cx="300" cy="520" r="2"/><circle cx="1650" cy="560" r="2.5"/><circle cx="1000" cy="230" r="2"/>
+  </g>
+  <!-- moon -->
+  <g transform="translate(1740 130)">
+    <circle r="60" fill="#F6EFE6"/><circle cx="30" cy="-16" r="53" fill="#2C1B10"/>
+  </g>
+
+  <!-- table line -->
+  <rect x="0" y="930" width="1920" height="150" fill="#2A1A10"/>
+  <ellipse cx="960" cy="935" rx="420" ry="26" fill="#1A100A" opacity="0.8"/>
+
+  <!-- steam -->
+  <g id="steam" fill="none" stroke="#F6EFE6" stroke-width="10" stroke-linecap="round" opacity="0.35">
+    <path id="steam1" d="M860 560 c -30 -60 30 -90 0 -150"/>
+    <path id="steam2" d="M960 540 c -30 -60 30 -90 0 -150"/>
+    <path id="steam3" d="M1060 560 c -30 -60 30 -90 0 -150"/>
+  </g>
+
+  <!-- Korla's body group (bobs while sleeping, lifts when awake) -->
+  <g id="korla">
+    <!-- arms over the rim -->
+    <g id="arms" fill="#9AA0A8" stroke="#6E747C" stroke-width="6">
+      <rect x="740" y="560" width="110" height="200" rx="55"/>
+      <rect x="1070" y="560" width="110" height="200" rx="55"/>
+    </g>
+    <g id="head" transform="translate(960 470)">
+      <!-- ears -->
+      <g id="earL" transform="translate(-170 -60)">
+        <circle r="92" fill="#8A9098"/><circle r="60" fill="#E9C9D0"/>
+        <circle cx="-70" cy="-40" r="22" fill="#8A9098"/><circle cx="-80" cy="20" r="18" fill="#8A9098"/><circle cx="-40" cy="-80" r="18" fill="#8A9098"/>
+      </g>
+      <g id="earR" transform="translate(170 -60)">
+        <circle r="92" fill="#8A9098"/><circle r="60" fill="#E9C9D0"/>
+        <circle cx="70" cy="-40" r="22" fill="#8A9098"/><circle cx="80" cy="20" r="18" fill="#8A9098"/><circle cx="40" cy="-80" r="18" fill="#8A9098"/>
+      </g>
+      <!-- face -->
+      <circle r="170" fill="#9AA0A8"/>
+      <ellipse cx="0" cy="40" rx="118" ry="96" fill="#B9BEC5"/>
+      <!-- cheeks -->
+      <circle id="cheekL" cx="-95" cy="55" r="22" fill="#E9A6A6" opacity="0.6"/>
+      <circle id="cheekR" cx="95" cy="55" r="22" fill="#E9A6A6" opacity="0.6"/>
+      <!-- eyes: sleeping (arcs) and awake (circles) -->
+      <g id="eyesClosed" fill="none" stroke="#2B1D14" stroke-width="9" stroke-linecap="round">
+        <path d="M-85 -20 q 28 22 56 0"/><path d="M29 -20 q 28 22 56 0"/>
+      </g>
+      <g id="eyesOpen" opacity="0">
+        <circle cx="-57" cy="-22" r="26" fill="#fff"/><circle cx="57" cy="-22" r="26" fill="#fff"/>
+        <circle id="pupilL" cx="-52" cy="-18" r="14" fill="#2B1D14"/><circle id="pupilR" cx="62" cy="-18" r="14" fill="#2B1D14"/>
+        <circle cx="-46" cy="-26" r="5" fill="#fff"/><circle cx="68" cy="-26" r="5" fill="#fff"/>
+      </g>
+      <!-- nose -->
+      <ellipse cx="0" cy="38" rx="44" ry="56" fill="#2B1D14"/>
+      <ellipse cx="-14" cy="18" rx="12" ry="8" fill="#5A4A42" opacity="0.8"/>
+      <!-- mouth: closed smile, yawn -->
+      <path id="mouthSmile" d="M-30 112 q 30 24 60 0" fill="none" stroke="#2B1D14" stroke-width="8" stroke-linecap="round"/>
+      <g id="mouthYawn" opacity="0">
+        <ellipse id="yawnShape" cx="0" cy="118" rx="36" ry="10" fill="#5B2A2A"/>
+        <ellipse id="tongue" cx="0" cy="138" rx="18" ry="8" fill="#E07A7A"/>
+      </g>
+      <!-- paw for the yawn -->
+      <g id="paw" opacity="0">
+        <circle cx="70" cy="130" r="44" fill="#9AA0A8" stroke="#6E747C" stroke-width="6"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- mug (in front of the body) -->
+  <g id="mugGroup">
+    <ellipse cx="960" cy="900" rx="300" ry="34" fill="#C9B8A4"/>
+    <path d="M700 620 h520 l-28 280 h-464 z" fill="url(#mug)" stroke="#D8CBB9" stroke-width="4"/>
+    <rect x="705" y="700" width="510" height="36" fill="#5B3A24"/>
+    <ellipse cx="960" cy="620" rx="262" ry="46" fill="#F6EFE6" stroke="#D8CBB9" stroke-width="4"/>
+    <ellipse cx="960" cy="620" rx="236" ry="34" fill="#3B2314"/>
+    <path d="M1222 660 c 120 -10 150 160 0 170" fill="none" stroke="#EDE2D3" stroke-width="42" stroke-linecap="round"/>
+    <path d="M1222 660 c 120 -10 150 160 0 170" fill="none" stroke="#D8CBB9" stroke-width="10" stroke-linecap="round" opacity="0.5"/>
+    <text x="960" y="840" text-anchor="middle" font-size="44" font-weight="700" fill="#5B3A24" opacity="0.85">karibu</text>
+  </g>
+
+  <!-- nose bubble (drawn above the mug so it reads clearly) -->
+  <g id="bubble" transform="translate(986 500)" opacity="0">
+    <circle id="bubbleCircle" r="10" fill="url(#bubbleFill)" stroke="#dff0ff" stroke-width="3" stroke-opacity="0.7"/>
+    <ellipse id="bubbleShine" cx="-6" cy="-8" rx="6" ry="4" fill="#fff" opacity="0.8"/>
+  </g>
+  <g id="pop" transform="translate(986 500)" opacity="0" stroke="#dff0ff" stroke-width="6" stroke-linecap="round" fill="none">
+    <g id="popLines"></g>
+  </g>
+
+  <!-- zzz -->
+  <g id="zzz" font-weight="800" fill="#F6EFE6">
+    <text id="z1" x="1130" y="420" font-size="60" opacity="0">z</text>
+    <text id="z2" x="1190" y="350" font-size="80" opacity="0">Z</text>
+    <text id="z3" x="1270" y="270" font-size="100" opacity="0">Z</text>
+  </g>
+
+  <!-- title -->
+  <g id="title" opacity="0">
+    <text x="960" y="190" text-anchor="middle" font-size="150" font-weight="800" fill="#F6EFE6">WeKaribu</text>
+    <text id="subtitle" x="960" y="262" text-anchor="middle" font-size="46" fill="#EADDCB" opacity="0">Guests write in their language. You hear it in yours.</text>
+  </g>
+  <!-- fade to the demo -->
+  <rect id="fade" width="1920" height="1080" fill="#3B2618" opacity="0"/>
+</svg>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+  const ease = x => (x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2);
+  const lerp = (a, b, t) => a + (b - a) * t;
+
+  // Timeline (seconds)
+  const SNORES = [0.3, 1.7, 3.1];      // each: 0.75 s in (bubble grows), 0.5 s out (bubble settles)
+  const POP = 4.5;
+  const YAWN = [4.9, 6.4];
+  const TITLE = 6.6;
+  const FADE = [7.5, 8.0];
+  const DURATION = 8.0;
+  window.DURATION = DURATION;
+
+  // pop lines
+  const popLines = $('popLines');
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2;
+    const l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    l.setAttribute('x1', Math.cos(a) * 40); l.setAttribute('y1', Math.sin(a) * 40);
+    l.setAttribute('x2', Math.cos(a) * 80); l.setAttribute('y2', Math.sin(a) * 80);
+    popLines.appendChild(l);
+  }
+
+  function bubbleRadius(t) {
+    // grows a step with each snore, breathes in and out
+    let r = 0;
+    for (let i = 0; i < SNORES.length; i++) {
+      const s = SNORES[i];
+      const base = [0, 22, 40][i];
+      const target = [30, 50, 72][i];
+      if (t >= s && t < s + 0.75) r = lerp(base, target, ease(clamp((t - s) / 0.75)));
+      else if (t >= s + 0.75 && t < s + 1.25) r = lerp(target, [22, 40, 58][i], ease(clamp((t - s - 0.75) / 0.5)));
+      else if (t >= s + 1.25) r = [22, 40, 58][i];
+    }
+    if (t >= SNORES[2] + 1.25 && t < POP) r = lerp(58, 78, ease(clamp((t - (SNORES[2] + 1.25)) / (POP - SNORES[2] - 1.25))));
+    return r;
+  }
+
+  window.seek = function (t) {
+    t = clamp(t, 0, DURATION);
+    const asleep = t < POP;
+    // head bob while sleeping; lift and tilt when awake
+    let bob = asleep ? Math.sin(t * 2.2) * 3 : 0;
+    let lift = 0;
+    if (t >= POP) lift = -46 * ease(clamp((t - POP) / 0.35));
+    let tilt = asleep ? 6 + bob : lerp(6, -4, ease(clamp((t - POP) / 0.6)));
+    $('korla').setAttribute('transform', `translate(0 ${lift})`);
+    $('head').setAttribute('transform', `translate(960 ${470 + (asleep ? bob * 2 : 0)}) rotate(${tilt})`);
+
+    // steam sway
+    for (let i = 1; i <= 3; i++) $('steam' + i).setAttribute('transform', `translate(${Math.sin(t * 1.5 + i) * 8} ${-((t * 25 + i * 30) % 60)})`);
+    $('steam').setAttribute('opacity', 0.35 * (1 - ((t * 25) % 60) / 120));
+
+    // eyes
+    const open = t >= POP;
+    $('eyesClosed').setAttribute('opacity', open ? 0 : 1);
+    $('eyesOpen').setAttribute('opacity', open ? 1 : 0);
+    if (open) {
+      // during the yawn the eyes squint: scale pupils/eyes vertically
+      const y = t >= YAWN[0] && t <= YAWN[1] ? clamp(Math.sin(((t - YAWN[0]) / (YAWN[1] - YAWN[0])) * Math.PI)) : 0;
+      $('eyesOpen').setAttribute('transform', `translate(0 -22) scale(1 ${1 - 0.7 * y}) translate(0 22)`);
+      // look around after waking
+      const look = t > YAWN[1] ? Math.sin((t - YAWN[1]) * 3) * 8 : 0;
+      $('pupilL').setAttribute('cx', -52 + look); $('pupilR').setAttribute('cx', 62 + look);
+    }
+
+    // ears twitch right after the pop
+    const tw = t >= POP && t < POP + 0.5 ? Math.sin((t - POP) * 25) * 10 : 0;
+    $('earL').setAttribute('transform', `translate(-170 -60) rotate(${-tw})`);
+    $('earR').setAttribute('transform', `translate(170 -60) rotate(${tw})`);
+
+    // mouth
+    const yawning = t >= YAWN[0] && t <= YAWN[1];
+    let yaw = 0;
+    if (yawning) {
+      const u = (t - YAWN[0]) / (YAWN[1] - YAWN[0]);
+      yaw = u < 0.3 ? ease(u / 0.3) : u > 0.75 ? 1 - ease((u - 0.75) / 0.25) : 1;
+    }
+    $('mouthSmile').setAttribute('opacity', yawning ? 0 : 1);
+    $('mouthSmile').setAttribute('d', open ? 'M-36 112 q 36 34 72 0' : 'M-30 112 q 30 24 60 0');
+    $('mouthYawn').setAttribute('opacity', yawning ? 1 : 0);
+    $('yawnShape').setAttribute('ry', 10 + 60 * yaw);
+    $('yawnShape').setAttribute('rx', 36 + 10 * yaw);
+    $('yawnShape').setAttribute('cy', 118 + 40 * yaw);
+    $('tongue').setAttribute('cy', 138 + 62 * yaw);
+    $('paw').setAttribute('opacity', yaw);
+    $('paw').setAttribute('transform', `translate(${40 + (1 - yaw) * 80} ${30 + (1 - yaw) * 60})`);
+
+    // bubble
+    const r = bubbleRadius(t);
+    $('bubble').setAttribute('opacity', asleep && r > 0 ? 1 : 0);
+    $('bubbleCircle').setAttribute('r', r);
+    $('bubble').setAttribute('transform', `translate(${986 + r * 0.6} ${500 + bob * 2 - r * 0.2})`);
+    $('bubbleShine').setAttribute('cx', -r * 0.35); $('bubbleShine').setAttribute('cy', -r * 0.4);
+    $('bubbleShine').setAttribute('rx', r * 0.22); $('bubbleShine').setAttribute('ry', r * 0.12);
+    // pop burst
+    const pu = (t - POP) / 0.3;
+    if (pu >= 0 && pu <= 1) {
+      $('pop').setAttribute('opacity', 1 - pu);
+      $('pop').setAttribute('transform', `translate(${986 + 78 * 0.6} ${500 - 78 * 0.2}) scale(${0.8 + pu * 1.6})`);
+    } else $('pop').setAttribute('opacity', 0);
+
+    // zzz: three letters rising on a 2.2 s loop while asleep
+    for (let i = 1; i <= 3; i++) {
+      const el = $('z' + i);
+      if (!asleep) { el.setAttribute('opacity', 0); continue; }
+      const ph = ((t * 0.55 + i * 0.3) % 1);
+      el.setAttribute('opacity', (ph < 0.15 ? ph / 0.15 : ph > 0.7 ? (1 - ph) / 0.3 : 1) * 0.9);
+      el.setAttribute('transform', `translate(${ph * 60} ${-ph * 110})`);
+    }
+
+    // title
+    const tu = clamp((t - TITLE) / 0.5);
+    $('title').setAttribute('opacity', tu);
+    $('title').setAttribute('transform', `translate(0 ${(1 - ease(tu)) * 40})`);
+    $('subtitle').setAttribute('opacity', clamp((t - TITLE - 0.35) / 0.5));
+
+    // fade out
+    $('fade').setAttribute('opacity', clamp((t - FADE[0]) / (FADE[1] - FADE[0])));
+  };
+  window.seek(0);
+</script>
+</body>
+</html>

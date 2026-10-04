@@ -12,6 +12,9 @@ on:
       - kitabu/tools/record-demo.mjs
       - kitabu/tools/compose_demo.py
       - kitabu/tools/demo_assets.py
+      - kitabu/tools/narrate.py
+      - kitabu/tools/narration.json
+      - kitabu/tools/intro/**
       - .github/workflows/kitabu-demo.yml
 
 permissions:
@@ -42,7 +45,7 @@ jobs:
           sudo apt-get update -q
           sudo apt-get install -y -q ffmpeg espeak-ng fonts-noto-core fonts-dejavu-core
           sudo apt-get install -y -q mbrola mbrola-fr4 || echo "no MBROLA voice; using espeak-ng's own"
-          python3 -m pip install --quiet pillow
+          python3 -m pip install --quiet pillow numpy
           npm ci
           npm install --no-save playwright@1.56.0
           npx playwright install --with-deps chromium
@@ -62,6 +65,19 @@ jobs:
 
       - name: Record the walkthrough (downloads the real models once, then records)
         run: node tools/record-demo.mjs
+
+      - name: Intro animation (Korla wakes up) with sound
+        if: always()
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+        run: python3 tools/intro/intro_audio.py && node tools/intro/render_intro.mjs
+
+      - name: Narration (stock ElevenLabs voice; espeak-ng placeholder without the key)
+        if: always()
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          NARRATION_VOICE_ID: ${{ vars.NARRATION_VOICE_ID }}
+        run: python3 tools/narrate.py
 
       - name: Compose the videos
         if: always()
@@ -94,6 +110,7 @@ jobs:
           cp kitabu/demo-out/*.mp4 demo/ 2>/dev/null || true
           cp kitabu/demo-out/*.png demo/ 2>/dev/null || true
           cp kitabu/demo-out/*.txt kitabu/demo-out/*.json demo/ 2>/dev/null || true
+          cp kitabu/demo-out/narration/index.json demo/narration-index.json 2>/dev/null || true
           cp kitabu/demo-assets/note-de.png demo/input-note-de.png 2>/dev/null || true
           cp kitabu/demo-assets/voice-fr.wav demo/input-voice-fr.wav 2>/dev/null || true
           git add -f demo

@@ -190,7 +190,7 @@ Jibu NDIYO kukubali au HAPANA kukataa.`}const Y=a=>`${a} ${a===1?"guest":"guests
   </g>`,pa=(a,e,t)=>`
   <ellipse class="leaf" style="animation-delay:${e}s;animation-duration:${t}s" cx="${a}" cy="-30" rx="14" ry="7" fill="#8DB86A" opacity="0.9"/>`,Ua=(a,e,t)=>`
   <path class="bird" style="animation-duration:${e}s;animation-delay:${t}s" d="M-16 ${a} q 8 -10 16 0 q 8 -10 16 0" fill="none" stroke="#3E5E46" stroke-width="3" stroke-linecap="round"/>`,it=`
-<svg viewBox="0 0 1000 1600" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 1000 1600" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="nsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#CFE7EE"/><stop offset="0.55" stop-color="#EAF2EA"/><stop offset="1" stop-color="#F4EFE3"/></linearGradient>
     <radialGradient id="nsun"><stop offset="0" stop-color="#FFE7A8"/><stop offset="0.5" stop-color="#F8D57E" stop-opacity="0.9"/><stop offset="1" stop-color="#F8D57E" stop-opacity="0"/></radialGradient>

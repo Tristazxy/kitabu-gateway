@@ -22,7 +22,7 @@ const bird = (y, dur, delay) => `
   <path class="bird" style="animation-duration:${dur}s;animation-delay:${delay}s" d="M-16 ${y} q 8 -10 16 0 q 8 -10 16 0" fill="none" stroke="#3E5E46" stroke-width="3" stroke-linecap="round"/>`;
 
 export const NATURE_SVG = `
-<svg viewBox="0 0 1000 1600" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 1000 1600" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="nsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#CFE7EE"/><stop offset="0.55" stop-color="#EAF2EA"/><stop offset="1" stop-color="#F4EFE3"/></linearGradient>
     <radialGradient id="nsun"><stop offset="0" stop-color="#FFE7A8"/><stop offset="0.5" stop-color="#F8D57E" stop-opacity="0.9"/><stop offset="1" stop-color="#F8D57E" stop-opacity="0"/></radialGradient>

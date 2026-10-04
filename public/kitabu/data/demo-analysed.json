@@ -1,0 +1,416 @@
+{
+ "_note": "Results of the app's own on-device pipeline (src/pipeline.js) on the SYNTHETIC example data, run in GitHub Actions so the example opens instantly. Same models and thresholds as the phone.",
+ "generated": "2026-10-04T08:24:54.793Z",
+ "entries": {
+  "demo_g1_liked": {
+   "english": "Grinding coffee singing with family was beautiful. The lunch was delicious.",
+   "sentences": [
+    {
+     "en": "Grinding coffee singing with family was beautiful.",
+     "original": "Macinare il caffè cantando con la famiglia è stato bellissimo.",
+     "topic": "coffee",
+     "topicScore": 0.721,
+     "runnerUp": "host",
+     "sentiment": "pos",
+     "moodScore": 1,
+     "modelMood": "pos",
+     "flags": [],
+     "confirmed": false
+    },
+    {
+     "en": "The lunch was delicious.",
+     "original": "Il pranzo era delizioso.",
+     "topic": "food",
+     "topicScore": 0.974,
+     "runnerUp": "coffee",
+     "sentiment": "pos",
+     "moodScore": 1,
+     "modelMood": "pos",
+     "flags": [],
+     "confirmed": false
+    }
+   ],
+   "products": [],
+   "status": "analyzed",
+   "precomputed": true
+  },
+  "demo_g1_improve": {
+   "english": "The way to get there was very difficult. I'd like to buy a bag of coffee to take home.",
+   "sentences": [
+    {
+     "en": "The way to get there was very difficult.",
+     "original": "La strada per arrivare era molto difficile.",
+     "topic": "access",
+     "topicScore": 0.691,
+     "runnerUp": "timing",
+     "sentiment": "neg",
+     "moodScore": 0.998,
+     "modelMood": "neg",
+     "flags": [],
+     "confirmed": false
+    },
+    {
+     "en": "I'd like to buy a bag of coffee to take home.",
+     "original": "Vorrei comprare un sacchetto di caffè da portare a casa.",
+     "topic": "buy",
+     "topicScore": 0.791,
+     "runnerUp": "coffee",
+     "sentiment": "neg",
+     "moodScore": 0.684,
+     "modelMood": "neg",
+     "flags": [],
+     "confirmed": false
+    }
+   ],
+   "products": [
+    "coffee"
+   ],
+   "status": "analyzed",
+   "precomputed": true
+  },
+  "demo_g2_liked": {
+   "english": "The walk in the farm with the view of the Kilimandjaro was magnificent. The family is very welcoming.",
+   "sentences": [
+    {
+     "en": "The walk in the farm with the view of the Kilimandjaro was magnificent.",
+     "original": "La balade dans la ferme avec la vue sur le Kilimandjaro était magnifique.",
+     "topic": "walk",
+     "topicScore": 0.582,
+     "runnerUp": "access",
+     "sentiment": "pos",
+     "moodScore": 1,
+     "modelMood": "pos",
+     "flags": [],
+     "confirmed": false
+    },
+    {
+     "en": "The family is very welcoming.",
+     "original": "La famille est très accueillante.",
+     "topic": "host",
+     "topicScore": 0.841,
+     "runnerUp": "food",
+     "sentiment": "pos",
+     "moodScore": 1,
+     "modelMood": "pos",
+     "flags": [],
+     "confirmed": false
+    }
+   ],
+   "products": [],
+   "status": "analyzed",
+   "precomputed": true
+  },
+  "demo_g2_improve": {
+   "english": "The toilet was not clean. We would have liked to buy torfied coffee.",
+   "sentences": [
+    {
+     "en": "The toilet was not clean.",
+     "original": "Les toilettes n'étaient pas propres.",
+     "topic": "facilities",
+     "topicScore": 0.871,
+     "runnerUp": "timing",
+     "sentiment": "neg",
+     "moodScore": 1,
+     "modelMood": "neg",
+     "flags": [],
+     "confirmed": false
+    },
+    {
+     "en": "We would have liked to buy torfied coffee.",
+     "original": "Nous aurions aimé acheter du café torréfié.",
+     "topic": "buy",
+     "topicScore": 0.646,
+     "runnerUp": "coffee",
+     "sentiment": "neg",
+     "moodScore": 0.995,
+     "modelMood": "neg",
+     "flags": [],
+     "confirmed": false
+    }
+   ],
+   "products": [],
+   "status": "analyzed",
+   "precomputed": true
+  },
+  "demo_g3_liked": {
+   "english": "It's very interesting to bake and grind coffee yourself. Lunch is good.",
+   "sentences": [
+    {
+     "en": "It's very interesting to bake and grind coffee yourself.",
+     "original": "自己烘焙和研磨咖啡非常有意思。",
+     "topic": "coffee",
+     "topicScore": 0.643,
+     "runnerUp": "buy",
+     "sentiment": "pos",
+     "moodScore": 0.999,
+     "modelMood": "pos",
+     "flags": [],
+     "confirmed": false
+    },
+    {
+     "en": "Lunch is good.",
+     "original": "午饭很好吃。",
+     "topic": "food",
+     "topicScore": 0.682,
+     "runnerUp": "coffee",
+     "sentiment": "pos",
+     "moodScore": 1,
+     "modelMood": "pos",
+     "flags": [],
+     "confirmed": false
+    }
+   ],
+   "products": [],
+   "status": "analyzed",
+   "precomputed": true
+  },
+  "demo_g3_improve": {
+   "english": "The toilet needs improvement. We'd like to buy some coffee beans and bring them home.",
+   "sentences": [
+    {
+     "en": "The toilet needs improvement.",
+     "original": "厕所需要改进。",
+     "topic": "facilities",
+     "topicScore": 0.604,
+     "runnerUp": "explain",
+     "sentiment": "neg",
+     "moodScore": 1,
+     "modelMood": "neg",
+     "flags": [],
+     "confirmed": false
+    },
+    {
+     "en": "We'd like to buy some coffee beans and bring them home.",
+     "original": "我们想买一些咖啡豆带回家。",
+     "topic": "buy",
+     "topicScore": 0.866,
+     "runnerUp": "coffee",
+     "sentiment": "unsure",
+     "moodScore": 0.999,
+     "modelMood": "pos",
+     "flags": [
+      "conflict"
+     ],
+     "confirmed": false
+    }
+   ],
+   "products": [
+    "coffee"
+   ],
+   "status": "analyzed",
+   "precomputed": true
+  },
+  "demo_g4_liked": {
+   "english": "Grinding the coffee while the family sang was the highlight of our trip. The banana beer was fun to try.",
+   "sentences": [
+    {
+     "en": "Grinding the coffee while the family sang was the highlight of our trip.",
+     "original": "Grinding the coffee while the family sang was the highlight of our trip.",
+     "topic": "coffee",
+     "topicScore": 0.631,
+     "runnerUp": "host",
+     "sentiment": "pos",
+     "moodScore": 0.998,
+     "modelMood": "pos",
+     "flags": [],
+     "confirmed": false
+    },
+    {
+     "en": "The banana beer was fun to try.",
+     "original": "The banana beer was fun to try.",
+     "topic": "food",
+     "topicScore": 0.769,
+     "runnerUp": "walk",
+     "sentiment": "pos",
+     "moodScore": 0.998,
+     "modelMood": "pos",
+     "flags": [],
+     "confirmed": false
+    }
+   ],
+   "products": [
+    "beer"
+   ],
+   "status": "analyzed",
+   "precomputed": true
+  },
+  "demo_g4_improve": {
+   "english": "The road up was very bumpy and hard to find. I would have bought roasted coffee beans if they were for sale.",
+   "sentences": [
+    {
+     "en": "The road up was very bumpy and hard to find.",
+     "original": "The road up was very bumpy and hard to find.",
+     "topic": "access",
+     "topicScore": 0.525,
+     "runnerUp": "walk",
+     "sentiment": "neg",
+     "moodScore": 0.999,
+     "modelMood": "neg",
+     "flags": [],
+     "confirmed": false
+    },
+    {
+     "en": "I would have bought roasted coffee beans if they were for sale.",
+     "original": "I would have bought roasted coffee beans if they were for sale.",
+     "topic": "buy",
+     "topicScore": 0.766,
+     "runnerUp": "coffee",
+     "sentiment": "neg",
+     "moodScore": 0.996,
+     "modelMood": "neg",
+     "flags": [],
+     "confirmed": false
+    }
+   ],
+   "products": [
+    "coffee"
+   ],
+   "status": "analyzed",
+   "precomputed": true
+  },
+  "demo_g5_liked": {
+   "english": "",
+   "sentences": [],
+   "products": [],
+   "status": "swahili",
+   "precomputed": true
+  },
+  "demo_g5_improve": {
+   "english": "",
+   "sentences": [],
+   "products": [],
+   "status": "swahili",
+   "precomputed": true
+  },
+  "demo_g6_liked": {
+   "english": "Learning how the coffee is grown and processed was fascinating. Lovely views of the waterfall.",
+   "sentences": [
+    {
+     "en": "Learning how the coffee is grown and processed was fascinating.",
+     "original": "Learning how the coffee is grown and processed was fascinating.",
+     "topic": "coffee",
+     "topicScore": 0.863,
+     "runnerUp": "buy",
+     "sentiment": "pos",
+     "moodScore": 0.999,
+     "modelMood": "pos",
+     "flags": [],
+     "confirmed": false
+    },
+    {
+     "en": "Lovely views of the waterfall.",
+     "original": "Lovely views of the waterfall.",
+     "topic": "walk",
+     "topicScore": 0.859,
+     "runnerUp": "facilities",
+     "sentiment": "pos",
+     "moodScore": 1,
+     "modelMood": "pos",
+     "flags": [],
+     "confirmed": false
+    }
+   ],
+   "products": [],
+   "status": "analyzed",
+   "precomputed": true
+  },
+  "demo_g6_improve": {
+   "english": "It was hard to understand some of the explanations without a translator.",
+   "sentences": [
+    {
+     "en": "It was hard to understand some of the explanations without a translator.",
+     "original": "It was hard to understand some of the explanations without a translator.",
+     "topic": "explain",
+     "topicScore": 0.73,
+     "runnerUp": "access",
+     "sentiment": "neg",
+     "moodScore": 1,
+     "modelMood": "neg",
+     "flags": [],
+     "confirmed": false
+    }
+   ],
+   "products": [],
+   "status": "analyzed",
+   "precomputed": true
+  },
+  "demo_quick_liked": {
+   "english": "Roasting and grinding the coffee with the family was the best part of our trip. The lunch was delicious.",
+   "sentences": [
+    {
+     "en": "Roasting and grinding the coffee with the family was the best part of our trip.",
+     "original": "Roasting and grinding the coffee with the family was the best part of our trip.",
+     "topic": "coffee",
+     "topicScore": 0.657,
+     "runnerUp": "host",
+     "sentiment": "pos",
+     "moodScore": 1,
+     "modelMood": "pos",
+     "flags": [],
+     "confirmed": false
+    },
+    {
+     "en": "The lunch was delicious.",
+     "original": "The lunch was delicious.",
+     "topic": "food",
+     "topicScore": 0.97,
+     "runnerUp": "coffee",
+     "sentiment": "pos",
+     "moodScore": 1,
+     "modelMood": "pos",
+     "flags": [],
+     "confirmed": false
+    }
+   ],
+   "products": [],
+   "status": "analyzed",
+   "precomputed": true
+  },
+  "demo_quick_improve": {
+   "english": "The road to the farm was hard to find. I wanted to buy a bag of coffee to take home, but there was none for sale.",
+   "sentences": [
+    {
+     "en": "The road to the farm was hard to find.",
+     "original": "The road to the farm was hard to find.",
+     "topic": "access",
+     "topicScore": 0.769,
+     "runnerUp": "walk",
+     "sentiment": "neg",
+     "moodScore": 0.999,
+     "modelMood": "neg",
+     "flags": [],
+     "confirmed": false
+    },
+    {
+     "en": "I wanted to buy a bag of coffee to take home",
+     "original": "I wanted to buy a bag of coffee to take home, but there was none for sale.",
+     "topic": "buy",
+     "topicScore": 0.829,
+     "runnerUp": "coffee",
+     "sentiment": "neg",
+     "moodScore": 0.994,
+     "modelMood": "neg",
+     "flags": [],
+     "confirmed": false
+    },
+    {
+     "en": "there was none for sale.",
+     "original": "I wanted to buy a bag of coffee to take home, but there was none for sale.",
+     "topic": "buy",
+     "topicScore": 0.875,
+     "runnerUp": "price",
+     "sentiment": "neg",
+     "moodScore": 0.999,
+     "modelMood": "neg",
+     "flags": [],
+     "confirmed": false
+    }
+   ],
+   "products": [
+    "coffee"
+   ],
+   "status": "analyzed",
+   "precomputed": true
+  }
+ }
+}

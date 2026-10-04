@@ -86,3 +86,9 @@ export async function prefetchVoice() {
   if (!m) return;
   await Promise.all(Object.values(m.files).map(f => fetch(`audio/sw/${f}`).catch(() => null)));
 }
+
+// Speak one interface label: the recorded Swahili clip when there is one, else the phone's own voice.
+export async function sayLabel(id, fallbackText, lang, speakFn) {
+  if (lang === 'sw' && await playClips([id])) return;
+  speakFn(fallbackText, lang);
+}

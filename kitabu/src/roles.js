@@ -111,16 +111,19 @@ const ICON_VISITOR = ICON.visitor;
 // The first screen: three sides of the same phone app.
 export function roleChooserHTML() {
   const tile = { host: 'tile-caramel', visitor: 'tile-leaf', company: 'tile-sky' };
+  const SPK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4h4l5 4V6L8 10z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>';
+  const clip = { host: 'ui_host', visitor: 'ui_visitor', company: 'ui_company' };
   const card = (role, title, sub) => `
+    <div class="home-row">
     <button class="home-btn" data-action="choose-role" data-role="${role}">
       <span class="role-icon ${tile[role]}" aria-hidden="true">${ICON[role]}</span>
       <span class="role-text"><strong>${title}</strong><span class="small muted">${sub}</span></span>
-    </button>`;
+    </button><button class="say" data-action="say" data-clip="${clip[role]}" data-sw="${h(title + '. ' + sub)}" data-en="${h(title + '. ' + sub)}" aria-label="Sikiliza">${SPK}</button></div>`;
   return `
   <div class="hero" aria-hidden="true">${FARM_ART}
     <div class="hero-text"><h1>${L('Karibu!', 'Welcome!')}</h1><p>${L('Wageni wanaandika kwa lugha yao. Mwenyeji anasikia kwa lugha yake.', 'Guests write in their language. The host hears it in hers.')}</p></div>
   </div>
-  <h2>${L('Wewe ni nani?', 'Who are you?')}</h2>
+  <h2>${L('Wewe ni nani?', 'Who are you?')} <button class="say" data-action="say" data-clip="ui_who" data-sw="Karibu! Wewe ni nani? Chagua: mwenyeji, mgeni, au kampuni ya utalii." data-en="Welcome! Who are you? Choose: host, visitor, or tour company." aria-label="Sikiliza">${'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4h4l5 4V6L8 10z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>'}</button></h2>
   <div class="stack" style="margin-top:12px">
     ${card('host', L('Mwenyeji', 'Host'), L('Ongeza maoni, sikiliza muhtasari, washukuru wageni.', 'Add feedback, hear the summary, thank guests.'))}
     ${card('visitor', L('Mgeni', 'Visitor'), L('Tafuta mahali, weka nafasi, andika maoni kwa lugha yako.', 'Find a place, book a visit, leave feedback in your language.'))}

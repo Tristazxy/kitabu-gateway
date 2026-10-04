@@ -207,11 +207,11 @@ body.mode-visitor .host-only { display: none !important; }
 .tile-cocoa { background: #E6D5C5; color: #5B3A24; }
 .home-btn { transition: transform .08s ease; }
 .home-btn:active { transform: scale(.985); }
-.hero { position: relative; overflow: hidden; border-radius: 18px; margin: -2px 0 14px; box-shadow: var(--shadow); }
+.hero { overflow: hidden; border-radius: 18px; margin: -2px 0 14px; box-shadow: var(--shadow); background: var(--surface); border: 1px solid var(--line); }
 .hero svg { display: block; width: 100%; height: auto; }
-.hero-text { position: absolute; left: 16px; right: 16px; bottom: 12px; color: #2B1D14; }
-.hero-text h1 { margin: 0; font-size: 1.5rem; text-shadow: 0 1px 0 rgba(255,255,255,.6); }
-.hero-text p { margin: 2px 0 0; font-size: .9rem; color: #4A3324; }
+.hero-text { padding: 10px 16px 14px; color: #2B1D14; }
+.hero-text h1 { margin: 0; font-size: 1.45rem; }
+.hero-text p { margin: 2px 0 0; font-size: .95rem; color: #4A3324; }
 .role-icon svg { width: 30px; height: 30px; }
 .role-text { display: flex; flex-direction: column; gap: 2px; }
 .role-text strong { font-size: 1.08rem; }
@@ -285,3 +285,26 @@ label.field.search input:focus { outline: none; }
 .field-label { font-weight: 600; font-size: .95rem; margin-bottom: 6px; }
 .hero-card { padding-top: 12px; }
 .hero-art svg { width: 100%; height: auto; display: block; border-radius: 10px; }
+
+/* listen buttons, faces, spotlight guide, tap feedback */
+.home-row { display: flex; align-items: stretch; gap: 8px; }
+.home-row .home-btn { flex: 1; min-width: 0; }
+.say {
+  flex: none; width: 48px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface);
+  color: var(--primary); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
+  box-shadow: var(--shadow); vertical-align: middle; min-height: 44px;
+}
+.say svg { width: 24px; height: 24px; }
+h2 .say, h1 .say { width: 40px; min-height: 40px; margin-left: 6px; box-shadow: none; }
+.say:active { transform: scale(.94); }
+.faces { display: flex; gap: 14px; font-size: 1.25rem; margin: 2px 0 8px; }
+.faces b { font-size: 1.05rem; color: var(--ink); }
+.spot {
+  position: fixed; z-index: 39; border-radius: 20px; pointer-events: none;
+  box-shadow: 0 0 0 4px #E2A85C, 0 0 0 9999px rgba(43, 29, 20, .35); animation: spot 1.2s ease-in-out infinite;
+}
+.spot-hand { position: absolute; right: -6px; bottom: -34px; font-size: 34px; animation: hand .9s ease-in-out infinite; }
+@keyframes spot { 50% { box-shadow: 0 0 0 10px #E2A85C, 0 0 0 9999px rgba(43, 29, 20, .35); } }
+@keyframes hand { 50% { transform: translateY(-8px); } }
+body:has(.spot:not(.hidden)) .guide-backdrop { background: transparent; }
+.btn:active { transform: scale(.985); }

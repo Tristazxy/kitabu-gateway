@@ -10,7 +10,7 @@ import { summarize, inPeriod, guestTopLiked, needsCheck } from './summary.js';
 import * as ai from './ai.js';
 import { analyze } from './pipeline.js';
 import { h, L, getLang, setLang, host, setHost, toast, showBusy, progress, hideBusy, speak, isoDate, dayStamp, addDays, daysFromToday, copyText } from './ui.js';
-import { summaryClipIds, playClips, prefetchVoice, loadVoiceManifest } from './voice.js';
+import { summaryClipIds, playClips, prefetchVoice, loadVoiceManifest, sayLabel } from './voice.js';
 import { guideHTML, GUIDE_STEPS } from './guide.js';
 import { roleChooserHTML, visitorHTML, companyHTML, pickVisitorLang, visitorStrings } from './roles.js';
 import { findHTML, hostHTML, bookedHTML, hostDays, hostSummaryLine } from './visit.js';
@@ -82,9 +82,9 @@ const tName = id => topicById(id)[getLang()].split(' (')[0];
 const langPill = code => `<span class="chip plain lang-pill" title="${h(LANGS[code]?.native || code)}">${h(langName(code, getLang()))}</span>`;
 
 function moodChip(m) {
-  if (m === 'pos') return `<span class="chip">${L('Nzuri', 'Positive')}</span>`;
-  if (m === 'neg') return `<span class="chip neg">${L('Ya kuboresha', 'To improve')}</span>`;
-  return `<span class="chip warn">${L('Haijulikani', 'Unsure')}</span>`;
+  if (m === 'pos') return `<span class="chip">${FACE.pos} ${L('Nzuri', 'Positive')}</span>`;
+  if (m === 'neg') return `<span class="chip neg">${FACE.neg} ${L('Ya kuboresha', 'To improve')}</span>`;
+  return `<span class="chip warn">${FACE.unsure} ${L('Haijulikani', 'Unsure')}</span>`;
 }
 
 function consentChip(g) {
@@ -123,6 +123,11 @@ function topicOptions(selected) {
 }
 
 const backBtn = () => `<button class="btn small secondary" data-action="back" style="margin-bottom:12px">← ${L('Nyumbani', 'Home')}</button>`;
+
+// A small speaker that reads a label aloud (Swahili clip, or the phone's voice). For people who prefer to listen.
+const ICON_SPEAKER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4h4l5 4V6L8 10z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>';
+const sayBtn = (clipId, sw, en) => `<button class="say" data-action="say" data-clip="${clipId}" data-sw="${h(sw)}" data-en="${h(en)}" aria-label="${L('Sikiliza', 'Listen')}">${ICON_SPEAKER}</button>`;
+const FACE = { pos: '😊', neg: '😟', unsure: '🤔' };
 
 // One analyzed sentence with its labels and the controls a person uses to correct it.
 function sentenceRow(entry, idx, { open = false } = {}) {
@@ -235,9 +240,15 @@ function screenHome() {
       <button class="btn block" style="margin-top:8px" data-action="analyze-pending">${L('Changanua sasa', 'Analyse now')}</button>
     </div>` : '';
 
+  const faces = s.entries ? (() => {
+    let pos = 0, neg = 0;
+    for (const e of state.entries) for (const x of (e.sentences || [])) { if (x.sentiment === 'pos') pos++; else if (x.sentiment === 'neg') neg++; }
+    return `<div class="faces"><span>${FACE.pos} <b>${pos}</b></span><span>${FACE.neg} <b>${neg}</b></span>${unsure ? `<span>${FACE.unsure} <b>${unsure}</b></span>` : ''}</div>`;
+  })() : '';
   const summaryCard = s.entries ? `
     <div class="card accent">
-      <div class="card-title"><h2>${L('Wageni walisema', 'What guests said')}</h2><span class="small muted">${PERIODS[state.period]()}</span></div>
+      <div class="card-title"><h2>${L('Wageni walisema', 'What guests said')} ${sayBtn('ui_summary', 'Wageni walisema. Bonyeza Sikiliza kusikia muhtasari.', 'What guests said. Tap Listen to hear the summary.')}</h2><span class="small muted">${PERIODS[state.period]()}</span></div>
+      ${faces}
       <p class="big-summary" style="margin:0">${h(shortSummary(s))}</p>
       ${unsure ? `<p class="small" style="margin:8px 0 0;color:var(--warn-ink)">${L(`Sentensi ${unsure} zinahitaji kuangaliwa.`, `${unsure} ${unsure === 1 ? 'sentence needs' : 'sentences need'} a check.`)}</p>` : ''}
       ${pendingBox}
@@ -253,11 +264,12 @@ function screenHome() {
       ${pending.length ? '' : `<button class="btn secondary block" style="margin-top:12px" data-action="guide-try">${L('Jaribu mfano mmoja', 'Try one example')}</button>`}
     </div>`;
 
-  const bigBtn = (attrs, icon, title, sub, tile = '') => `
+  const bigBtn = (attrs, icon, title, sub, tile = '', clip = '', sw = '', en = '') => `
+    <div class="home-row">
     <button class="home-btn" ${attrs}>
       <span class="role-icon ${tile}" aria-hidden="true">${icon}</span>
       <span class="role-text"><strong>${title}</strong><span class="small muted">${sub}</span></span>
-    </button>`;
+    </button>${clip ? sayBtn(clip, sw, en) : ''}</div>`;
 
   const weekSub = next7.length
     ? L(`Wageni ${next7.reduce((n, b) => n + (Number(b.guests) || 1), 0)} siku 7 zijazo`, `${next7.reduce((n, b) => n + (Number(b.guests) || 1), 0)} guests in the next 7 days`)
@@ -267,10 +279,10 @@ function screenHome() {
   return `
   ${summaryCard}
   <div class="stack">
-    ${bigBtn('data-action="go" data-screen="add"', ICON_CAMERA, L('Ongeza maoni ya mgeni', 'Add guest feedback'), L('Picha ya kitabu, sauti au kuandika', 'Photo of the guestbook, voice or typing'), 'tile-caramel')}
-    ${bigBtn('data-action="hand-to-guest"', ICON_HAND, L('Mpe mgeni simu aandike', 'Let a guest write'), L('Kwa lugha yake, kwenye simu hii', 'In their own language, on this phone'), 'tile-leaf')}
-    ${bigBtn('data-action="go" data-screen="guests"', ICON_MAIL, L('Washukuru wageni', 'Thank guests'), toThank ? L(`Wageni ${toThank} wanasubiri`, `${toThank} waiting`) : L('Ujumbe kwa lugha ya mgeni', 'A message in the guest’s language'), 'tile-cherry')}
-    ${bigBtn('data-action="go" data-screen="week"', ICON_CAL, L('Wiki ijayo', 'Next week'), weekSub, 'tile-sky')}
+    ${bigBtn('data-action="go" data-screen="add"', ICON_CAMERA, L('Ongeza maoni ya mgeni', 'Add guest feedback'), L('Picha ya kitabu, sauti au kuandika', 'Photo of the guestbook, voice or typing'), 'tile-caramel', 'ui_add', 'Ongeza maoni ya mgeni. Piga picha ya kitabu, rekodi sauti, au andika.', 'Add guest feedback: photograph the guestbook, record a voice note, or type.')}
+    ${bigBtn('data-action="hand-to-guest"', ICON_HAND, L('Mpe mgeni simu aandike', 'Let a guest write'), L('Kwa lugha yake, kwenye simu hii', 'In their own language, on this phone'), 'tile-leaf', 'ui_hand', 'Mpe mgeni simu aandike maoni kwa lugha yake.', 'Hand the phone to a guest to write in their own language.')}
+    ${bigBtn('data-action="go" data-screen="guests"', ICON_MAIL, L('Washukuru wageni', 'Thank guests'), toThank ? L(`Wageni ${toThank} wanasubiri`, `${toThank} waiting`) : L('Ujumbe kwa lugha ya mgeni', 'A message in the guest’s language'), 'tile-cherry', 'ui_thank', 'Washukuru wageni kwa lugha yao.', 'Thank guests in their own language.')}
+    ${bigBtn('data-action="go" data-screen="week"', ICON_CAL, L('Wiki ijayo', 'Next week'), weekSub, 'tile-sky', 'ui_week', 'Wiki ijayo. Nani anakuja, na lugha gani.', 'Next week: who is coming, and which language.')}
   </div>
   <div class="row home-links">
     <button class="link-btn" data-action="guide-open">${L('Jinsi ya kutumia', 'How to use')}</button>
@@ -918,6 +930,7 @@ async function saveVisitor() {
 
 // ---------------------------------------------------------------- first-time guide
 let guideEl = null;
+let spotEl = null;
 function renderGuide() {
   if (!guideEl) {
     guideEl = document.createElement('div');
@@ -926,11 +939,26 @@ function renderGuide() {
     guideEl.setAttribute('aria-modal', 'true');
     guideEl.setAttribute('aria-labelledby', 'guide-title');
     document.body.appendChild(guideEl);
+    spotEl = document.createElement('div');
+    spotEl.className = 'spot hidden';
+    spotEl.innerHTML = '<span class="spot-hand">👆</span>';
+    document.body.appendChild(spotEl);
   }
   guideEl.classList.toggle('hidden', !state.guide.open);
-  if (!state.guide.open) { guideEl.innerHTML = ''; return; }
+  if (!state.guide.open) { guideEl.innerHTML = ''; spotEl.classList.add('hidden'); return; }
   guideEl.innerHTML = guideHTML(state.guide.step);
   guideEl.querySelector('[data-action="guide-next"], [data-action="guide-try"]')?.focus();
+  // Spotlight: the step points at the real button on the screen behind the card.
+  const target = GUIDE_STEPS[state.guide.step].target && document.querySelector(GUIDE_STEPS[state.guide.step].target);
+  if (target) {
+    target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    setTimeout(() => {
+      const r = target.getBoundingClientRect();
+      spotEl.style.left = `${r.left - 6}px`; spotEl.style.top = `${r.top - 6}px`;
+      spotEl.style.width = `${r.width + 12}px`; spotEl.style.height = `${r.height + 12}px`;
+      spotEl.classList.remove('hidden');
+    }, 350);
+  } else spotEl.classList.add('hidden');
 }
 function openGuide(step = 0) {
   state.guide = { open: true, step };
@@ -1236,7 +1264,7 @@ async function analyzePending() {
   }
   hideBusy();
   await refreshModels();
-  toast(L('Imekamilika', 'Done'));
+  toast(`✓ ${L('Imekamilika', 'Done')}`);
   render();
 }
 
@@ -1327,6 +1355,7 @@ async function chooseRole(role) {
 }
 
 const actions = {
+  say: el => sayLabel(el.dataset.clip, getLang() === 'sw' ? el.dataset.sw : el.dataset.en, getLang(), speak),
   'choose-role': el => chooseRole(el.dataset.role),
   'open-host': el => { state.book = { hostId: el.dataset.id, day: null, form: {}, done: null }; go('host'); },
   'book-day': el => { captureBookForm(); state.book.day = el.dataset.day; render(); },
@@ -1532,6 +1561,8 @@ document.addEventListener('click', e => {
   const fn = actions[el.dataset.action];
   if (!fn) return;
   if (el.tagName === 'BUTTON') e.preventDefault();
+  if (navigator.vibrate) navigator.vibrate(8);
+  if (state.guide.open && el.dataset.action !== 'say' && !el.closest('.guide-card')) closeGuide();
   Promise.resolve(fn(el, e)).catch(err => {
     console.error(err);
     hideBusy();

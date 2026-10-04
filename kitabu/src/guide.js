@@ -6,6 +6,7 @@ const I = {
   book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5M9 8h7M9 11.5h5"/></svg>',
   steps: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h3M11 6h9M4 12h3M11 12h9M4 18h3M11 18h9"/></svg>',
   play: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z"/></svg>',
+  speaker: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4h4l5 4V6L8 10z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>',
 };
 
 export const GUIDE_STEPS = [
@@ -21,6 +22,7 @@ export const GUIDE_STEPS = [
   },
   {
     icon: I.steps,
+    target: '[data-action="go"][data-screen="add"]',
     title: () => L('Hatua tatu', 'Three steps'),
     list: () => [
       L('Mgeni anaandika kwenye kitabu cha karatasi, au unampa simu.', 'A guest writes in the paper guestbook, or you hand them the phone.'),
@@ -31,6 +33,7 @@ export const GUIDE_STEPS = [
   },
   {
     icon: I.play,
+    target: '[data-action="guide-try"], [data-action="speak"]',
     title: () => L('Jaribu sasa', 'Try it now'),
     body: () => [
       L('Mgeni wa kubuni ameandika maoni kwa Kiingereza. Simu itapakua modeli ndogo mara moja (MB 90), kisha ikuonyeshe muhtasari.',
@@ -58,7 +61,7 @@ export function guideHTML(step) {
       <button class="guide-close" data-action="guide-close">${L('Ruka', 'Skip')} ✕</button>
     </div>
     <div class="guide-icon" aria-hidden="true">${s.icon}</div>
-    <h2 id="guide-title">${s.title()}</h2>
+    <h2 id="guide-title">${s.title()} <button class="say" data-action="say" data-clip="${['ui_who', 'ui_add', 'ui_summary'][step] || 'ui_help'}" data-sw="${[...(s.list ? s.list() : []), ...s.body()].join(' ').replace(/"/g, '&quot;')}" data-en="${[...(s.list ? s.list() : []), ...s.body()].join(' ').replace(/"/g, '&quot;')}" aria-label="Sikiliza">${I.speaker}</button></h2>
     ${list}
     ${body}
     ${final}

@@ -48,6 +48,20 @@
     "p_souvenir": "zawadi na vinyago,",
     "p_honey": "asali,",
     "p_beer": "mbege, pombe ya ndizi,",
-    "p_class": "darasa la kupika,"
+    "p_class": "darasa la kupika,",
+    "ui_host": "Mwenyeji.",
+    "ui_visitor": "Mgeni.",
+    "ui_company": "Kampuni ya utalii au mwongozaji.",
+    "ui_who": "Karibu! Wewe ni nani? Chagua: mwenyeji, mgeni, au kampuni ya utalii.",
+    "ui_add": "Ongeza maoni ya mgeni. Piga picha ya kitabu, rekodi sauti, au andika.",
+    "ui_hand": "Mpe mgeni simu aandike maoni kwa lugha yake.",
+    "ui_thank": "Washukuru wageni kwa lugha yao.",
+    "ui_week": "Wiki ijayo. Nani anakuja, na lugha gani.",
+    "ui_summary": "Wageni walisema. Bonyeza Sikiliza kusikia muhtasari.",
+    "ui_analyse": "Changanua sasa.",
+    "ui_help": "Jinsi ya kutumia.",
+    "ui_find": "Tafuta mahali pa kutembelea. Andika jina la kijiji.",
+    "ui_book": "Weka nafasi. Chagua siku, idadi ya wageni, na lugha yenu.",
+    "ui_done": "Imekamilika."
   }
 }

@@ -1,0 +1,14 @@
+ok   roles (12 s)
+ok   guide (11 s)
+ok   example (32 s)
+ok   thank-you (11 s)
+ok   visitor (22 s)
+ok   analyse-italian (9 s)
+ok   photo (30 s)
+ok   voice (39 s)
+ok   company (21 s)
+ok   next-week (23 s)
+ok   end (5 s)
+
+uploaded demo-assets/note-de.png via "Photo of box A"
+uploaded demo-assets/voice-fr.wav via "Upload an audio file"

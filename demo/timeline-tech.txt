@@ -1,0 +1,6 @@
+0:00.0  A plain-JavaScript web app installed from the browser. No server, no a
+0:10.2  The models run in the browser: Whisper for speech, one Opus-MT pack pe
+0:24.9  Measured with the app's own code in CI: topic accuracy ninety-three pe
+0:38.2  Every SMS ends with a code line, so a request, an answer, a receipt or
+0:47.5  All Swahili is human-written; the model fills counts and flags what it
+0:59.8  end

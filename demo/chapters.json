@@ -1,0 +1,71 @@
+{
+  "chapters": [
+    {
+      "t": 3.377,
+      "title": "A friend’s tip is enough",
+      "body": "The search understands a friend’s tip and locks on the host. Vivian books one of Noor’s published days and pays the deposit by M-Pesa to Noor’s own phone.",
+      "file": "demo-out/part-01-tip.webm",
+      "end": 21.521,
+      "busy": []
+    },
+    {
+      "t": 3.404,
+      "title": "Noor decides",
+      "body": "The booking waits for Noor’s answer: Accept or Decline, in the app or by SMS from her basic phone. Then a guestbook photo (German) is read and translated on the phone, offline.",
+      "file": "demo-out/part-02-decide.webm",
+      "end": 29.5,
+      "busy": [
+        [
+          13.735,
+          15.691
+        ],
+        [
+          19.683,
+          25.629
+        ]
+      ]
+    },
+    {
+      "t": 3.435,
+      "title": "A voice note",
+      "body": "Sophie left a voice message in French. Whisper, on the phone, writes it down and translates it to English.",
+      "file": "demo-out/part-03-voice.webm",
+      "end": 29.569,
+      "busy": [
+        [
+          9.335,
+          21.773
+        ],
+        [
+          26.252,
+          27.049
+        ]
+      ]
+    },
+    {
+      "t": 3.287,
+      "title": "The week, in Swahili",
+      "body": "Ten fixed topics, good or bad; unsure sentences are marked “Check” for a person. The summary is human-written Swahili with the AI’s counts filled in; “Sikiliza” reads it aloud.",
+      "file": "demo-out/part-04-swahili.webm",
+      "end": 17.514,
+      "busy": []
+    },
+    {
+      "t": 4.756,
+      "title": "A thank-you, with consent",
+      "body": "A human-written note in the guest’s language with its meaning underneath. Sent only with consent, and only when the host taps send.",
+      "file": "demo-out/part-05-thanks.webm",
+      "end": 10.895,
+      "busy": []
+    },
+    {
+      "t": 2.48,
+      "title": "Evidence",
+      "body": "The app’s own code on a labelled set and on FLORES-200, run in GitHub Actions on every change: topic accuracy, mood, chrF per language pack, and the share of “not sure”.",
+      "file": "demo-out/part-06-evidence.webm",
+      "end": 8.906,
+      "busy": []
+    }
+  ],
+  "perPart": true
+}

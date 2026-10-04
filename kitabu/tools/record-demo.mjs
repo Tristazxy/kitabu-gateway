@@ -326,9 +326,10 @@ async function walkthrough() {
 
     // ---- chapter 4: the thank-you (consent, host taps send)
     await part('thanks', async () => {
-      chapter('A thank-you, with consent', 'A human-written note in the guest’s language with its meaning underneath. Sent only with consent, and only when the host taps send.');
       await tap('[data-action="go"][data-screen="guests"]', 200);
-      await pause(700);
+      await pause(300);
+      chapter('A thank-you, with consent', 'A human-written note in the guest’s language with its meaning underneath. Sent only with consent, and only when the host taps send.');
+      await pause(400);
       await tap('[data-action="toggle-draft"]', 200);
       await scrollTo('.list li', 'start', 900);
       await pause(2500);
@@ -339,9 +340,10 @@ async function walkthrough() {
 
     // ---- technical walkthrough: the accuracy page
     await part('evidence', async () => {
-      chapter('Evidence', 'The app’s own code on a labelled set and on FLORES-200, run in GitHub Actions on every change: topic accuracy, mood, chrF per language pack, and the share of “not sure”.');
       await page.goto(BASE.replace('index.html', 'eval.html'), { waitUntil: 'networkidle' });
-      await pause(2500);
+      await pause(400);
+      chapter('Evidence', 'The app’s own code on a labelled set and on FLORES-200, run in GitHub Actions on every change: topic accuracy, mood, chrF per language pack, and the share of “not sure”.');
+      await pause(2100);
       await snap('evidence');
       await scrollBy(600, 1800);
       await scrollBy(600, 1800);

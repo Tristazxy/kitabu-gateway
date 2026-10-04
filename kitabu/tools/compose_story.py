@@ -64,13 +64,13 @@ def app_clip(ci, chapter, nxt, busy, narr, index, total, k, rate=1.0):
     # background: one still per (chapter, sped) — the sped-up label follows the busy segments
     lines, made = ['ffconcat version 1.0'], {}
     for i, s in enumerate(segs):
-        key = s['speed'] > 1
+        key = s['speed'] > rate  # only the spans where the phone was busy are labelled
         if key not in made:
             made[key] = os.path.join(TMP, f'bg-{ci:02d}-{int(key)}.png')
             background(chapter, index, total, key).save(made[key])
         d = (s['b'] - s['a']) / s['speed'] + (hold if i == n - 1 else 0)
         lines += [f"file '{os.path.basename(made[key])}'", f'duration {d:.3f}']
-    lines.append(f"file '{os.path.basename(made[segs[-1]['speed'] > 1])}'")
+    lines.append(f"file '{os.path.basename(made[segs[-1]['speed'] > rate])}'")
     concat_file = os.path.join(TMP, f'bg-{ci:02d}.ffconcat')
     with open(concat_file, 'w') as f:
         f.write('\n'.join(lines) + '\n')

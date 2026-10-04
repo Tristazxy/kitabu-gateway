@@ -26,11 +26,11 @@ BEZEL, RADIUS = 12, 34
 TEXT_X, TEXT_W = 130, 880
 HOLD_END = 2.5
 
-BG = (59, 38, 24)
-CREAM = (246, 239, 230)
-SOFT = (222, 204, 184)
-MUTED = (176, 150, 128)
-GOLD = (226, 168, 92)
+BG = (14, 36, 26)
+CREAM = (244, 247, 243)
+SOFT = (205, 220, 210)
+MUTED = (150, 172, 158)
+GOLD = (233, 179, 91)
 
 FONT_DIRS = ['/usr/share/fonts/opentype/inter', '/usr/share/fonts/truetype/noto', '/usr/share/fonts/truetype/dejavu']
 FONT_FILES = {
@@ -71,7 +71,7 @@ def background(chapter, index, total, sped):
     sh = Image.new('L', (W, H), 0)
     ImageDraw.Draw(sh).rounded_rectangle(
         [PX - BEZEL + 14, PY - BEZEL + 22, PX + PHONE_W + BEZEL + 14, PY + PHONE_H + BEZEL + 22], RADIUS + BEZEL, fill=150)
-    img.paste((30, 18, 10), mask=sh.filter(ImageFilter.GaussianBlur(26)))
+    img.paste((6, 18, 12), mask=sh.filter(ImageFilter.GaussianBlur(26)))
     d = ImageDraw.Draw(img)
     d.text((TEXT_X, 118), 'WEKARIBU  ·  THE REAL APP', font=font('semi', 26), fill=GOLD)
     if 0 < index < total - 1:

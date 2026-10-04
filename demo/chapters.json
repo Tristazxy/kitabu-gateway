@@ -1,0 +1,121 @@
+{
+  "chapters": [
+    {
+      "t": 0.669,
+      "title": "Kitabu cha Wageni",
+      "body": "A small AI guestbook for Noor, who runs coffee tours on her family farm in the Tanzanian highlands. Guests write in their own language; Noor hears it in Swahili."
+    },
+    {
+      "t": 5.738,
+      "title": "A three-step guide",
+      "body": "Opens by itself the first time. The whole app is one home screen; everything else is one tap away."
+    },
+    {
+      "t": 15.12,
+      "title": "Try one example",
+      "body": "An invented English-speaking guest. On the phone, the AI splits the feedback into sentences, matches each to a fixed list of 10 topics, and reads the mood."
+    },
+    {
+      "t": 19.287,
+      "title": "The home screen",
+      "body": "What guests said, in two lines, and the four things Noor does: add feedback, hand the phone to a guest, thank guests, see next week."
+    },
+    {
+      "t": 24.358,
+      "title": "Noor’s phone shows it in Swahili",
+      "body": "The interface follows the phone’s language. The summary is built from human-written Swahili sentences; the AI only fills in counts and topic names. “Sikiliza” reads it aloud."
+    },
+    {
+      "t": 31.863,
+      "title": "Details: what guests said",
+      "body": "Each topic keeps the guests’ own words. Anything the AI is unsure about is marked “Check” for a person to look at."
+    },
+    {
+      "t": 49.463,
+      "title": "Thank the guest in their language",
+      "body": "A human-written message in the guest’s language, with its meaning underneath. Noor sends it herself, and only if the guest agreed."
+    },
+    {
+      "t": 58.452,
+      "title": "Hand the phone to a guest",
+      "body": "The visitor screen speaks 8 languages. Giulia writes in Italian, ticks that she would buy coffee, and agrees to be contacted."
+    },
+    {
+      "t": 80.924,
+      "title": "Analysed on the phone",
+      "body": "Italian → English with a translation model on the phone (about 130 MB, downloaded once), then topics and mood. The feedback never leaves the phone."
+    },
+    {
+      "t": 86.444,
+      "title": "Two guests now",
+      "body": "Giulia’s wish to buy coffee is counted under products, so Noor (and, if she agrees, the tour company) can see the demand."
+    },
+    {
+      "t": 92.583,
+      "title": "A photo of the paper guestbook",
+      "body": "Lukas wrote in German in box A (what he liked). The text reader on the phone reads the photo; words it is unsure of are shown in yellow for the helper to fix."
+    },
+    {
+      "t": 110.264,
+      "title": "Results to check",
+      "body": "Each sentence shows the original, the English, a topic and a mood. A person can correct any label or press “OK”."
+    },
+    {
+      "t": 123.436,
+      "title": "A voice message",
+      "body": "Sophie left a voice message in French. Whisper (about 77 MB, on the phone) writes it down and translates it to English."
+    },
+    {
+      "t": 150.816,
+      "title": "Four guests, four languages",
+      "body": "What guests loved, what to improve, and what they wanted to buy. At the bottom: an anonymous report for the tour company, shared only if Noor agrees."
+    },
+    {
+      "t": 162.395,
+      "title": "The tour company sends a booking",
+      "body": "The app writes a short Swahili SMS for Noor’s basic phone; the company sends it from its own phone. No internet needed on Noor’s side."
+    },
+    {
+      "t": 178.483,
+      "title": "Next week, and the languages to prepare",
+      "body": "Polish guests are booked in 3 days, so the app asks to download Polish while the helper has Wi-Fi. Rare languages can be deleted afterwards."
+    },
+    {
+      "t": 192.886,
+      "title": "Language packs on the phone",
+      "body": "Swahili and English are built in. The 3 most common guest languages stay; others are downloaded before a visit and can be deleted afterwards."
+    },
+    {
+      "t": 201.637,
+      "title": "Kitabu cha Wageni",
+      "body": "Try it: kitabu-cha-wageni.lovable.app\nCode: github.com/Tristazxy/kitabu-gateway"
+    }
+  ],
+  "busy": [
+    [
+      16.689,
+      19.287
+    ],
+    [
+      83.988,
+      86.444
+    ],
+    [
+      98.487,
+      100.082
+    ],
+    [
+      108.81,
+      110.264
+    ],
+    [
+      129.141,
+      138.825
+    ],
+    [
+      145.684,
+      145.689
+    ]
+  ],
+  "end": 206.637
+}

@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-04T03:04:50.300Z",
+ "generated": "2026-10-04T03:16:51.778Z",
  "runner": "GitHub Actions (CPU, onnxruntime-node); same code as the app",
  "thresholds": {
   "topicMin": 0.3,
@@ -93,6 +93,10 @@
    "pl": {
     "model": "Xenova/opus-mt-pl-en",
     "chrF": 52.9
+   },
+   "xx": {
+    "model": "Xenova/opus-mt-mul-en",
+    "chrF": 49.4
    }
   }
  },
@@ -306,7 +310,42 @@
      "hyp": "The waterfall was beautiful."
     }
    ]
+  },
+  "xx": {
+   "model": "Xenova/opus-mt-mul-en",
+   "chrF": 71.6,
+   "topicAfterTranslation": {
+    "correct": 4,
+    "total": 4
+   },
+   "samples": [
+    {
+     "src": "O café estava delicioso e a família foi muito acolhedora.",
+     "ref": "The coffee was delicious and the family was very welcoming.",
+     "hyp": "The tea was delicious and the family was very welcoming."
+    },
+    {
+     "src": "Kahve harikaydı ama yol çok çamurluydu.",
+     "ref": "The coffee was great but the road was very muddy.",
+     "hyp": "The coffee was great, but the road was very busy."
+    },
+    {
+     "src": "أردنا شراء حبوب القهوة لنأخذها إلى المنزل.",
+     "ref": "We wanted to buy coffee beans to take home.",
+     "hyp": "We wanted to buy the love of the Emperor to take her home."
+    },
+    {
+     "src": "दोपहर का खाना बहुत स्वादिष्ट था।",
+     "ref": "The lunch was very tasty.",
+     "hyp": "The lunch was very self-adhesive."
+    },
+    {
+     "src": "Jalan menuju kebun sulit ditemukan.",
+     "ref": "The road to the farm was hard to find.",
+     "hyp": "The road to the garden is hard to find."
+    }
+   ]
   }
  },
- "seconds": 337
+ "seconds": 462
 }

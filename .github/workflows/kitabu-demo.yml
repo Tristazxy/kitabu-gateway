@@ -77,6 +77,18 @@ jobs:
         if: always()
         run: node tools/intro/render_scenes.mjs
 
+      - name: Reuse narration clips from the last recording (saves ElevenLabs credits)
+        if: always()
+        working-directory: .
+        run: |
+          B=$(git ls-remote --heads origin 'demo-video-*' | sed 's#.*refs/heads/##' | sort -t- -k3 -n | tail -1)
+          if [ -n "$B" ]; then
+            git fetch --depth=1 origin "refs/heads/$B" && mkdir -p kitabu/cache && \
+            git --work-tree=kitabu/cache checkout FETCH_HEAD -- demo/narration 2>/dev/null && \
+            mv kitabu/cache/demo/narration kitabu/cache/narration && echo "reused clips from $B" || echo "no clips to reuse"
+            git reset -q
+          fi
+
       - name: Narration (stock ElevenLabs voice; espeak-ng placeholder without the key)
         if: always()
         env:
@@ -116,6 +128,7 @@ jobs:
           cp kitabu/demo-out/*.png demo/ 2>/dev/null || true
           cp kitabu/demo-out/*.txt kitabu/demo-out/*.json demo/ 2>/dev/null || true
           cp kitabu/demo-out/narration/index.json demo/narration-index.json 2>/dev/null || true
+          mkdir -p demo/narration && cp kitabu/demo-out/narration/*.m4a demo/narration/ 2>/dev/null || true
           cp kitabu/demo-assets/note-de.png demo/input-note-de.png 2>/dev/null || true
           cp kitabu/demo-assets/voice-fr.wav demo/input-voice-fr.wav 2>/dev/null || true
           git add -f demo

@@ -16,6 +16,7 @@ import time
 import urllib.request
 
 OUT = os.path.join('demo-out', 'narration')
+CACHE = os.environ.get('NARRATION_CACHE', os.path.join('cache', 'narration'))  # clips from earlier runs (same text -> same file name)
 SPEC = json.load(open(os.path.join('tools', 'story.json'), encoding='utf-8'))
 
 
@@ -71,9 +72,16 @@ def main():
     index = []
     for i, line in enumerate(SPEC['items']):
         text = line['text'].strip()
-        stem = f'{i:02d}-{hashlib.sha1(text.encode()).hexdigest()[:8]}'
+        stem = f'{i:02d}-{hashlib.sha1((SPEC["voice"] + "|" + text).encode()).hexdigest()[:8]}'
         final = os.path.join(OUT, stem + '.m4a')
         source = 'silence'
+        cached = os.path.join(CACHE, stem + '.m4a')
+        if not silent and os.path.exists(cached) and os.path.getsize(cached) > 1000:
+            shutil.copy(cached, final)
+            source = 'cached:' + SPEC.get('voice_name', SPEC['voice'])
+            index.append({'index': i, 'kind': line['kind'], 'title': line.get('title'), 'scene': line.get('scene'), 'file': final, 'seconds': round(seconds_of(final), 2), 'source': source})
+            print(f'{i:02d} {index[-1]["seconds"]:5.1f}s {source:28s} {line.get("title") or line.get("scene")}')
+            continue
         if silent:
             raw = os.path.join(OUT, stem + '.wav')
             silence(len(text.split()) / 2.6, raw)
@@ -97,6 +105,9 @@ def main():
             subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', raw, '-ac', '2', '-ar', '48000', '-c:a', 'aac', final], check=True)
             source = 'silence'
         os.remove(raw)
+        if source.startswith('elevenlabs'):
+            os.makedirs(CACHE, exist_ok=True)
+            shutil.copy(final, cached)
         label = line.get('title') or line.get('scene')
         index.append({'index': i, 'kind': line['kind'], 'title': line.get('title'), 'scene': line.get('scene'), 'file': final, 'seconds': round(seconds_of(final), 2), 'source': source})
         print(f'{i:02d} {index[-1]["seconds"]:5.1f}s {source:28s} {label}')

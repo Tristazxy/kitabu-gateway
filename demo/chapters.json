@@ -1,0 +1,126 @@
+{
+  "chapters": [
+    {
+      "t": 0.785,
+      "title": "WeKaribu",
+      "body": "A small AI guestbook for small tourism hosts. Guests write in their own language; the host hears it in theirs. In this demo the host is Noor, who runs coffee tours on her family farm in Tanzania."
+    },
+    {
+      "t": 6.785,
+      "title": "Three sides of one phone",
+      "body": "Host, visitor, or tour company. The choice is remembered, so the phone opens on the right screen next time."
+    },
+    {
+      "t": 13.464,
+      "title": "A three-step guide",
+      "body": "Opens by itself the first time. The host side is one home screen; everything else is one tap away."
+    },
+    {
+      "t": 22.756,
+      "title": "Try one example",
+      "body": "An invented English-speaking guest. On the phone, the AI splits the feedback into sentences, matches each to a fixed list of 10 topics, and reads the mood."
+    },
+    {
+      "t": 25.836,
+      "title": "The home screen",
+      "body": "What guests said, in two lines, and the four things a host does: add feedback, hand the phone to a guest, thank guests, see next week."
+    },
+    {
+      "t": 30.882,
+      "title": "In the host’s own language",
+      "body": "The interface follows the phone’s language: here Swahili. The summary is built from human-written sentences; the AI only fills in counts and topic names. “Sikiliza” reads it aloud."
+    },
+    {
+      "t": 43.607,
+      "title": "Details: what guests said",
+      "body": "Each topic keeps the guests’ own words. Anything the AI is unsure about is marked “Check” for a person to look at."
+    },
+    {
+      "t": 61.111,
+      "title": "Thank the guest in their language",
+      "body": "A human-written message in the guest’s language, with its meaning underneath. The host sends it, and only if the guest agreed."
+    },
+    {
+      "t": 70.076,
+      "title": "Hand the phone to a guest",
+      "body": "The visitor screen speaks 8 languages. Giulia writes in Italian, ticks that she would buy coffee, and agrees to be contacted."
+    },
+    {
+      "t": 92.309,
+      "title": "Analysed on the phone",
+      "body": "Italian to English with a translation model on the phone (about 130 MB, downloaded once), then topics and mood. The feedback never leaves the phone."
+    },
+    {
+      "t": 96.966,
+      "title": "Two guests now",
+      "body": "Giulia’s wish to buy coffee is counted under products, so the host (and, if she agrees, the tour company) can see the demand."
+    },
+    {
+      "t": 103.073,
+      "title": "A photo of the paper guestbook",
+      "body": "Lukas wrote in German in box A (what he liked). A text reader on the phone reads the photo; words it is unsure of are shown in yellow for a helper to fix."
+    },
+    {
+      "t": 119.463,
+      "title": "Results to check",
+      "body": "Each sentence shows the original, the English, a topic and a mood. A person can correct any label or press “OK”."
+    },
+    {
+      "t": 132.588,
+      "title": "A voice message",
+      "body": "Sophie left a voice message in French. Whisper (about 77 MB, on the phone) writes it down and translates it to English."
+    },
+    {
+      "t": 158.092,
+      "title": "Four guests, four languages",
+      "body": "What guests loved, what to improve, and what they wanted to buy. At the bottom: an anonymous report for the tour company, shared only if the host agrees."
+    },
+    {
+      "t": 169.659,
+      "title": "The tour company sends a booking",
+      "body": "The app writes a short SMS in the host’s language for a basic phone; the company sends it from its own phone. No internet needed on the host’s side."
+    },
+    {
+      "t": 190.723,
+      "title": "Next week, and the languages to prepare",
+      "body": "Polish guests are booked in 3 days, so the app asks to download Polish while the helper has Wi-Fi. Rare languages can be deleted afterwards."
+    },
+    {
+      "t": 205.09,
+      "title": "Language packs on the phone",
+      "body": "Swahili and English are built in. The 3 most common guest languages stay; others are downloaded before a visit and can be deleted afterwards."
+    },
+    {
+      "t": 213.805,
+      "title": "WeKaribu",
+      "body": "Any host, any guest language, no account.\nTry it: wekaribu.lovable.app\nCode: github.com/Tristazxy/kitabu-gateway"
+    }
+  ],
+  "busy": [
+    [
+      24.32,
+      25.836
+    ],
+    [
+      95.368,
+      96.966
+    ],
+    [
+      108.965,
+      110.056
+    ],
+    [
+      118.75,
+      119.463
+    ],
+    [
+      138.251,
+      146.229
+    ],
+    [
+      152.979,
+      152.983
+    ]
+  ],
+  "end": 218.805
+}

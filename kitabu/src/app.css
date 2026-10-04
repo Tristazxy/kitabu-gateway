@@ -1,17 +1,18 @@
 :root {
-  --bg: #F3F2EC;
-  --surface: #FFFFFF;
-  --ink: #1C2420;
-  --muted: #545E58;
-  --line: #DAD8CE;
-  --primary: #24533F;
-  --primary-soft: #E3EDE7;
-  --cherry: #9E3B26;
-  --cherry-soft: #F7E6E1;
+  /* coffee theme: roasted brown, latte cream, coffee-cherry red */
+  --bg: #F6EFE6;
+  --surface: #FFFCF8;
+  --ink: #2B1D14;
+  --muted: #6B5A4E;
+  --line: #E3D6C8;
+  --primary: #5B3A24;
+  --primary-soft: #EFE2D3;
+  --cherry: #A33F2A;
+  --cherry-soft: #F8E4DE;
   --warn-ink: #7A4F00;
-  --warn-soft: #FFF2D2;
+  --warn-soft: #FFF1CC;
   --radius: 14px;
-  --shadow: 0 1px 2px rgba(28, 36, 32, .06), 0 4px 14px rgba(28, 36, 32, .05);
+  --shadow: 0 1px 2px rgba(43, 29, 20, .06), 0 4px 14px rgba(43, 29, 20, .06);
   color-scheme: light;
 }
 
@@ -97,7 +98,7 @@ label.btn { position: relative; }
 }
 .chip.neg { background: var(--cherry-soft); color: var(--cherry); }
 .chip.warn { background: var(--warn-soft); color: var(--warn-ink); }
-.chip.plain { background: #EEEDE6; color: var(--ink); }
+.chip.plain { background: #EFE8DF; color: var(--ink); }
 button.chip { cursor: pointer; min-height: 36px; font: inherit; font-size: .85rem; }
 button.chip[aria-pressed="true"] { border-color: var(--primary); background: var(--primary); color: #fff; }
 .badge-num {
@@ -116,11 +117,11 @@ button.chip[aria-pressed="true"] { border-color: var(--primary); background: var
 label.field { display: flex; flex-direction: column; gap: 4px; font-weight: 600; font-size: .95rem; }
 input[type=text], input[type=tel], input[type=email], input[type=date], input[type=number], select, textarea {
   font: inherit; font-weight: 400; color: var(--ink); background: #fff;
-  border: 1px solid #B9B8AE; border-radius: 10px; padding: 10px 12px; min-height: 48px; width: 100%;
+  border: 1px solid #C4B5A3; border-radius: 10px; padding: 10px 12px; min-height: 48px; width: 100%;
 }
 textarea { min-height: 120px; resize: vertical; line-height: 1.4; }
 input:focus, select:focus, textarea:focus, .btn:focus-visible, button:focus-visible {
-  outline: 3px solid #8FBFA6; outline-offset: 2px;
+  outline: 3px solid #C9A27E; outline-offset: 2px;
 }
 .check { display: flex; gap: 10px; align-items: flex-start; font-weight: 500; cursor: pointer; }
 .check input { width: 24px; height: 24px; margin: 2px 0 0; flex: none; accent-color: var(--primary); }
@@ -138,11 +139,11 @@ input:focus, select:focus, textarea:focus, .btn:focus-visible, button:focus-visi
 .big-summary p { margin: 0 0 .6em; }
 .topic-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
 .topic-row:first-of-type { border-top: 0; }
-.bar { height: 8px; border-radius: 99px; background: #E7E6DF; overflow: hidden; margin-top: 6px; }
+.bar { height: 8px; border-radius: 99px; background: #EBE2D7; overflow: hidden; margin-top: 6px; }
 .bar > span { display: block; height: 100%; background: var(--primary); }
 .bar.neg > span { background: var(--cherry); }
 details.quotes summary { cursor: pointer; color: var(--primary); font-weight: 600; font-size: .9rem; padding: 6px 0; min-height: 36px; }
-blockquote.q { margin: 8px 0; padding: 8px 12px; border-left: 3px solid var(--line); background: #FAFAF7; border-radius: 0 8px 8px 0; }
+blockquote.q { margin: 8px 0; padding: 8px 12px; border-left: 3px solid var(--line); background: #FBF7F1; border-radius: 0 8px 8px 0; }
 blockquote.q .orig { font-style: italic; }
 blockquote.q .trans { color: var(--muted); font-size: .9rem; margin-top: 4px; }
 
@@ -153,14 +154,14 @@ blockquote.q .trans { color: var(--muted); font-size: .9rem; margin-top: 4px; }
 mark.low { background: var(--warn-soft); color: var(--warn-ink); border-bottom: 2px solid #D9A400; padding: 0 2px; border-radius: 3px; }
 
 /* progress */
-.progress { height: 10px; border-radius: 99px; background: #E7E6DF; overflow: hidden; }
+.progress { height: 10px; border-radius: 99px; background: #EBE2D7; overflow: hidden; }
 .progress > span { display: block; height: 100%; width: 0; background: var(--primary); transition: width .2s; }
 .progress-label { font-size: .85rem; color: var(--muted); margin-top: 4px; }
 
 /* sms preview */
 .sms {
   font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .9rem;
-  background: #1F2A24; color: #D7F0DF; border-radius: 12px; padding: 14px; white-space: pre-wrap; line-height: 1.45;
+  background: #2B1D14; color: #EAD9C5; border-radius: 12px; padding: 14px; white-space: pre-wrap; line-height: 1.45;
 }
 
 /* media */
@@ -201,7 +202,7 @@ body.mode-visitor .host-only { display: none !important; }
 
 /* first-time guide */
 .guide-backdrop {
-  position: fixed; inset: 0; z-index: 40; background: rgba(20, 28, 24, .55);
+  position: fixed; inset: 0; z-index: 40; background: rgba(43, 29, 20, .55);
   display: flex; align-items: flex-end; justify-content: center;
 }
 .guide-card {
@@ -211,7 +212,7 @@ body.mode-visitor .host-only { display: none !important; }
 }
 .guide-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .guide-dots { display: flex; gap: 6px; }
-.guide-dots span { width: 8px; height: 8px; border-radius: 99px; background: #D3D1C6; }
+.guide-dots span { width: 8px; height: 8px; border-radius: 99px; background: #D9CCBC; }
 .guide-dots span.on { background: var(--primary); width: 22px; }
 .guide-close { border: 0; background: none; color: var(--muted); font: inherit; font-weight: 600; min-height: 44px; padding: 0 6px; cursor: pointer; }
 .guide-icon {
@@ -230,14 +231,14 @@ body.mode-visitor .host-only { display: none !important; }
 /* toast */
 .toast {
   position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%);
-  background: #1C2420; color: #fff; padding: 10px 16px; border-radius: 12px; font-size: .92rem;
+  background: #2B1D14; color: #fff; padding: 10px 16px; border-radius: 12px; font-size: .92rem;
   max-width: calc(100% - 28px); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 20;
 }
 .toast.show { opacity: 1; }
 
 /* steps */
 .steps { display: flex; gap: 6px; margin-bottom: 14px; }
-.steps span { flex: 1; height: 6px; border-radius: 99px; background: #DEDCD2; }
+.steps span { flex: 1; height: 6px; border-radius: 99px; background: #E3D6C8; }
 .steps span.on { background: var(--primary); }
 
 .lang-pill { font-weight: 700; }

@@ -54,6 +54,7 @@ async function warmUp() {
   try {
   const click = async sel => { await page.locator(sel).first().evaluate(n => n.click()); await page.waitForTimeout(400); };
   await page.goto(BASE, { waitUntil: 'networkidle' });
+  await click('[data-role="host"]');
   await click('[data-action="guide-close"]');
   await click('[data-action="go"][data-screen="more"]');
   await click('[data-action="go"][data-screen="langs"]');
@@ -158,6 +159,8 @@ async function toHome() {
   await page.goto(BASE, { waitUntil: 'networkidle' });
   await pause(800);
   if (await exists('[data-action="visitor-exit"]')) await tap('[data-action="visitor-exit"]');
+  if (await exists('body.mode-company [data-action="switch-role"], .home-btn[data-role]') && !(await exists('[data-role="host"]'))) await tap('[data-action="switch-role"]');
+  if (await exists('[data-role="host"]')) await tap('[data-role="host"]');
   if (await exists('[data-action="guide-close"]')) await tap('[data-action="guide-close"]');
   if (await exists('[data-action="back"]')) await tap('[data-action="back"]');
 }
@@ -193,7 +196,7 @@ async function walkthrough() {
     window.__tap = (x, y) => {
       const d = document.createElement('div');
       d.style.cssText = `position:fixed;left:${x - 24}px;top:${y - 24}px;width:48px;height:48px;border-radius:50%;`
-        + 'background:rgba(36,83,63,.25);border:3px solid rgba(36,83,63,.8);z-index:2147483647;pointer-events:none;'
+        + 'background:rgba(91,58,36,.25);border:3px solid rgba(91,58,36,.8);z-index:2147483647;pointer-events:none;'
         + 'transition:transform .45s ease-out,opacity .45s ease-out;';
       document.documentElement.appendChild(d);
       setTimeout(() => { d.style.transform = 'scale(1.7)'; d.style.opacity = '0'; }, 260);
@@ -204,12 +207,20 @@ async function walkthrough() {
   watch(page, 'demo');
 
   try {
-    await part('guide', async () => {
+    await part('roles', async () => {
       await page.goto(BASE, { waitUntil: 'networkidle' });
-      chapter('WeKaribu', 'A small AI guestbook for Noor, who runs coffee tours on her family farm in the Tanzanian highlands. Guests write in their own language; Noor hears it in Swahili.');
-      await pause(5000);
+      chapter('WeKaribu', 'A small AI guestbook for small tourism hosts. Guests write in their own language; the host hears it in theirs. In this demo the host is Noor, who runs coffee tours on her family farm in Tanzania.');
+      await pause(6000);
+      chapter('Three sides of one phone', 'Host, visitor, or tour company. The choice is remembered, so the phone opens on the right screen next time.');
+      await pause(3500);
+      await snap('choose-role');
+      await tap('[data-role="host"]');
+    });
+
+    await part('guide', async () => {
+      await pause(1500);
       await snap('guide-1');
-      chapter('A three-step guide', 'Opens by itself the first time. The whole app is one home screen; everything else is one tap away.');
+      chapter('A three-step guide', 'Opens by itself the first time. The host side is one home screen; everything else is one tap away.');
       await tap('[data-action="guide-next"]', 150);
       await pause(4500);
       await snap('guide-2');
@@ -221,10 +232,10 @@ async function walkthrough() {
       chapter('Try one example', 'An invented English-speaking guest. On the phone, the AI splits the feedback into sentences, matches each to a fixed list of 10 topics, and reads the mood.');
       await tap('[data-action="guide-try"]');
       await busy(() => page.waitForSelector('.big-summary', { timeout: LONG }));
-      chapter('The home screen', 'What guests said, in two lines, and the four things Noor does: add feedback, hand the phone to a guest, thank guests, see next week.');
+      chapter('The home screen', 'What guests said, in two lines, and the four things a host does: add feedback, hand the phone to a guest, thank guests, see next week.');
       await pause(5000);
       await snap('home-example');
-      chapter('Noor’s phone shows it in Swahili', 'The interface follows the phone’s language. The summary is built from human-written Swahili sentences; the AI only fills in counts and topic names. “Sikiliza” reads it aloud.');
+      chapter('In the host’s own language', 'The interface follows the phone’s language: here Swahili. The summary is built from human-written sentences; the AI only fills in counts and topic names. “Sikiliza” reads it aloud.');
       await tap('[data-action="toggle-lang"]');
       await pause(3500);
       await snap('home-swahili');
@@ -251,7 +262,7 @@ async function walkthrough() {
 
     await part('thank-you', async () => {
       await tap('[data-action="go"][data-screen="guests"]');
-      chapter('Thank the guest in their language', 'A human-written message in the guest’s language, with its meaning underneath. Noor sends it herself, and only if the guest agreed.');
+      chapter('Thank the guest in their language', 'A human-written message in the guest’s language, with its meaning underneath. The host sends it, and only if the guest agreed.');
       await tap('[data-action="toggle-draft"]');
       await scrollTo('.list li', 'start', 1500);
       await pause(3500);
@@ -284,14 +295,14 @@ async function walkthrough() {
       await pause(1500);
       await tap('[data-action="analyze-pending"]');
       await busy(() => page.waitForFunction(() => !document.querySelector('[data-action="analyze-pending"]') && !document.querySelector('.busy:not(.hidden)'), null, { timeout: LONG }));
-      chapter('Two guests now', 'Giulia’s wish to buy coffee is counted under products, so Noor (and, if she agrees, the tour company) can see the demand.');
+      chapter('Two guests now', 'Giulia’s wish to buy coffee is counted under products, so the host (and, if she agrees, the tour company) can see the demand.');
       await pause(4500);
       await snap('home-two-guests');
     });
 
     await part('photo', async () => {
       await tap('[data-action="go"][data-screen="add"]');
-      chapter('A photo of the paper guestbook', 'Lukas wrote in German in box A (what he liked). The text reader on the phone reads the photo; words it is unsure of are shown in yellow for the helper to fix.');
+      chapter('A photo of the paper guestbook', 'Lukas wrote in German in box A (what he liked). A text reader on the phone reads the photo; words it is unsure of are shown in yellow for a helper to fix.');
       await type('#ng-name', 'Lukas');
       await choose('#ng-lang', 'de');
       await tap('[data-action="save-new-guest"]');
@@ -339,7 +350,7 @@ async function walkthrough() {
       await pause(3500);
       await snap('voice-results');
       await tap('[data-action="finish-add"]');
-      chapter('Four guests, four languages', 'What guests loved, what to improve, and what they wanted to buy. At the bottom: an anonymous report for the tour company, shared only if Noor agrees.');
+      chapter('Four guests, four languages', 'What guests loved, what to improve, and what they wanted to buy. At the bottom: an anonymous report for the tour company, shared only if the host agrees.');
       await pause(3500);
       await scrollBy(500);
       await scrollBy(500);
@@ -350,8 +361,10 @@ async function walkthrough() {
     });
 
     await part('company', async () => {
-      chapter('The tour company sends a booking', 'The app writes a short Swahili SMS for Noor’s basic phone; the company sends it from its own phone. No internet needed on Noor’s side.');
-      await tap('[data-action="go"][data-screen="company"]');
+      chapter('The tour company sends a booking', 'The app writes a short SMS in the host’s language for a basic phone; the company sends it from its own phone. No internet needed on the host’s side.');
+      await tap('[data-action="switch-role"]');
+      await pause(1200);
+      await tap('[data-role="company"]');
       await type('#c-phone', '+255 700 000 000');
       await choose('#c-lang', 'pl');
       await type('#c-name', 'Anna K.');
@@ -363,7 +376,9 @@ async function walkthrough() {
       await tap('[data-action="company-save"]');
       await pause(1500);
       await top();
-      await tap('[data-action="back"]');
+      await tap('[data-action="switch-role"]');
+      await pause(800);
+      await tap('[data-role="host"]');
     });
 
     await part('next-week', async () => {
@@ -388,7 +403,7 @@ async function walkthrough() {
     });
 
     await part('end', async () => {
-      chapter('WeKaribu', 'Try it: wekaribu.lovable.app\nCode: github.com/Tristazxy/kitabu-gateway');
+      chapter('WeKaribu', 'Any host, any guest language, no account.\nTry it: wekaribu.lovable.app\nCode: github.com/Tristazxy/kitabu-gateway');
       await pause(5000);
     });
   } finally {

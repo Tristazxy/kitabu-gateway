@@ -12,14 +12,15 @@ import { analyze } from './pipeline.js';
 import { h, L, getLang, setLang, host, setHost, toast, showBusy, progress, hideBusy, speak, isoDate, dayStamp, addDays, daysFromToday, copyText } from './ui.js';
 import { summaryClipIds, playClips, prefetchVoice, loadVoiceManifest } from './voice.js';
 import { guideHTML, GUIDE_STEPS } from './guide.js';
-import { visitorHTML, companyHTML, pickVisitorLang, visitorStrings } from './roles.js';
+import { roleChooserHTML, visitorHTML, companyHTML, pickVisitorLang, visitorStrings } from './roles.js';
 
 const view = document.getElementById('view');
 
 const freshAdd = () => ({ step: 1, guestId: null, inputs: [], results: [] });
 
 const state = {
-  screen: 'home',      // home | add | summary | guests | week | langs | more | visitor | company
+  screen: 'home',      // choose | home | add | summary | guests | week | langs | more | visitor | company
+  role: null,          // null (not chosen yet) | host | visitor | company — remembered on this phone
   guests: [],
   entries: [],
   bookings: [],
@@ -42,6 +43,7 @@ async function loadAll() {
   const [g, e, b, m] = await Promise.all(['guests', 'entries', 'bookings', 'messages'].map(s => db.all(s)));
   Object.assign(state, { guests: g, entries: e, bookings: b, messages: m });
   state.lastSync = await db.getSetting('lastSync');
+  state.role = await db.getSetting('role', null);
   setHost(await db.getSetting('hostName', 'Noor'));
   document.documentElement.classList.toggle('big-text', await db.getSetting('bigText', false));
 }
@@ -266,7 +268,7 @@ function screenHome() {
   </div>
   <div class="row home-links">
     <button class="link-btn" data-action="guide-open">${L('Jinsi ya kutumia', 'How to use')}</button>
-    <button class="link-btn" data-action="go" data-screen="company">${L('Kwa kampuni ya utalii', 'For tour companies')}</button>
+    <button class="link-btn" data-action="switch-role">${L('Badilisha upande', 'Switch side')}</button>
     <button class="link-btn" data-action="go" data-screen="more">${L('Zaidi', 'More')}</button>
   </div>`;
 }
@@ -764,7 +766,10 @@ function screenCompany() {
   const today = isoDate(addDays(new Date(), 3));
   const { s } = currentSummary();
   const report = s.entries ? guideReport(s, L('Mfano', 'Example'), host()) : null;
-  return backBtn() + companyHTML({
+  const back = state.role === 'company'
+    ? `<button class="btn small secondary" data-action="switch-role" style="margin-bottom:12px">← ${L('Badilisha upande', 'Switch side')}</button>`
+    : backBtn();
+  return back + companyHTML({
     langOptionsHTML: langOptions('en'), today,
     sms: bookingSms({ date: dayStamp(today), guests: 2, language: 'en', guide: '' }), report,
   });
@@ -866,6 +871,7 @@ async function tryExample() {
 
 // ---------------------------------------------------------------- render
 const SCREENS = {
+  choose: roleChooserHTML,
   home: screenHome, add: screenAdd, summary: screenSummary, guests: screenGuests, week: screenWeek,
   langs: screenLangs, more: screenMore, company: screenCompany,
   visitor: () => visitorHTML(state.visitor.lang, state.visitor.saved, state.visitor.draft),
@@ -873,7 +879,7 @@ const SCREENS = {
 
 function render() {
   const sc = state.screen;
-  document.body.classList.toggle('mode-visitor', sc === 'visitor');
+  document.body.classList.toggle('mode-visitor', sc === 'visitor' || sc === 'choose');
   document.body.classList.toggle('home', sc === 'home');
   view.innerHTML = SCREENS[sc]();
   document.getElementById('net').textContent = state.online ? L('Mtandaoni', 'Online') : L('Nje ya mtandao', 'Offline');
@@ -1203,13 +1209,23 @@ async function readAloud() {
   speak(text[lang].join(' '), lang);
 }
 
-async function startVisitor() {
+async function startVisitor(from = 'home') {
   state.visitor = { lang: pickVisitorLang(), saved: false, draft: {} };
-  await db.setSetting('kiosk', true);
+  await db.setSetting('kiosk', from);
   go('visitor');
 }
 
+async function chooseRole(role) {
+  state.role = role;
+  await db.setSetting('role', role);
+  if (role === 'visitor') return startVisitor('choose');
+  go(role === 'company' ? 'company' : 'home');
+  if (role === 'host' && !(await db.getSetting('guideSeen', false))) openGuide(0);
+}
+
 const actions = {
+  'choose-role': el => chooseRole(el.dataset.role),
+  'switch-role': async () => { state.role = null; await db.setSetting('role', null); go('choose'); },
   back: () => go('home'),
   go: el => go(el.dataset.screen),
   'toggle-lang': async () => {
@@ -1217,14 +1233,15 @@ const actions = {
     await db.setSetting('lang', getLang());
     render();
   },
-  'hand-to-guest': startVisitor,
+  'hand-to-guest': () => startVisitor('home'),
   'visitor-lang': el => { captureVisitorDraft(); state.visitor.lang = el.dataset.lang; render(); },
   'visitor-save': saveVisitor,
   'visitor-next': () => { state.visitor = { lang: pickVisitorLang(), saved: false, draft: {} }; render(); window.scrollTo(0, 0); },
   'visitor-exit': async () => {
-    if (!confirm(L(`Kwa ${host()} tu: rudi nyumbani?`, `${host()} only: back to the home screen?`))) return;
+    const from = await db.getSetting('kiosk', 'home');
+    if (from === 'home' && !confirm(L(`Kwa ${host()} tu: rudi nyumbani?`, `${host()} only: back to the home screen?`))) return;
     await db.setSetting('kiosk', false);
-    go('home');
+    if (from === 'choose') { state.role = null; await db.setSetting('role', null); go('choose'); } else go('home');
   },
   'company-sms': () => {
     const b = readCompanyForm();
@@ -1327,8 +1344,9 @@ const actions = {
     await db.setSetting('lang', lang);
     await loadAll();
     state.add = freshAdd();
+    setHost('Noor');
     toast(L('Data yote imefutwa', 'All data deleted'));
-    go('home');
+    go('choose');
   },
 };
 
@@ -1447,7 +1465,9 @@ async function pickUiLang() {
 async function start() {
   setLang(await pickUiLang());
   await loadAll();
-  if (await db.getSetting('kiosk', false)) state.visitor = { lang: pickVisitorLang(), saved: false, draft: {} }, state.screen = 'visitor';
+  const kiosk = await db.getSetting('kiosk', false);
+  if (kiosk) { state.visitor = { lang: pickVisitorLang(), saved: false, draft: {} }; state.screen = 'visitor'; }
+  else state.screen = state.role === 'host' ? 'home' : state.role === 'company' ? 'company' : 'choose';
   render();
   if (state.screen === 'home' && !(await db.getSetting('guideSeen', false))) openGuide(0);
   await refreshModels();

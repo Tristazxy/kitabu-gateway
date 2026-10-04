@@ -100,7 +100,29 @@ export function pickVisitorLang() {
   return 'en';
 }
 
-const ICON_VISITOR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7.5" r="3.5"/><path d="M5 21c.9-4 3.6-6 7-6s6.1 2 7 6"/></svg>';
+const ICON = {
+  host: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10M10 20v-6h4v6"/></svg>',
+  visitor: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7.5" r="3.5"/><path d="M5 21c.9-4 3.6-6 7-6s6.1 2 7 6"/></svg>',
+  company: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></svg>',
+};
+const ICON_VISITOR = ICON.visitor;
+
+// The first screen: three sides of the same phone app.
+export function roleChooserHTML() {
+  const card = (role, title, sub) => `
+    <button class="home-btn" data-action="choose-role" data-role="${role}">
+      <span class="role-icon" aria-hidden="true">${ICON[role]}</span>
+      <span class="role-text"><strong>${title}</strong><span class="small muted">${sub}</span></span>
+    </button>`;
+  return `
+  <h1>${L('Karibu! Wewe ni nani?', 'Welcome! Who are you?')}</h1>
+  <div class="stack" style="margin-top:12px">
+    ${card('host', L('Mwenyeji', 'Host'), L('Ongeza maoni, sikiliza muhtasari, washukuru wageni.', 'Add feedback, hear the summary, thank guests.'))}
+    ${card('visitor', L('Mgeni', 'Visitor'), L('Andika maoni yako kwa lugha yako.', 'Leave feedback in your own language.'))}
+    ${card('company', L('Kampuni ya utalii au mwongozaji', 'Tour company or guide'), L('Tuma ratiba ya wageni kwa SMS.', 'Send guest bookings by SMS.'))}
+  </div>
+  <p class="small muted" style="margin-top:14px">${L('Unaweza kubadilisha baadaye.', 'You can switch later.')}</p>`;
+}
 
 export function visitorHTML(lang, saved, draft = {}) {
   const t = visitorStrings(lang);

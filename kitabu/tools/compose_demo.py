@@ -24,11 +24,11 @@ BEZEL, RADIUS = 12, 34
 TEXT_X, TEXT_W = 130, 880
 HOLD_END = 2.5
 
-BG = (31, 69, 53)
-CREAM = (243, 242, 236)
-SOFT = (205, 222, 212)
-MUTED = (150, 180, 165)
-GOLD = (233, 184, 114)
+BG = (59, 38, 24)
+CREAM = (246, 239, 230)
+SOFT = (222, 204, 184)
+MUTED = (176, 150, 128)
+GOLD = (226, 168, 92)
 
 FONT_DIRS = ['/usr/share/fonts/opentype/inter', '/usr/share/fonts/truetype/noto', '/usr/share/fonts/truetype/dejavu']
 FONT_FILES = {
@@ -69,7 +69,7 @@ def background(chapter, index, total, sped):
     sh = Image.new('L', (W, H), 0)
     ImageDraw.Draw(sh).rounded_rectangle(
         [PX - BEZEL + 14, PY - BEZEL + 22, PX + PHONE_W + BEZEL + 14, PY + PHONE_H + BEZEL + 22], RADIUS + BEZEL, fill=150)
-    img.paste((14, 32, 25), mask=sh.filter(ImageFilter.GaussianBlur(26)))
+    img.paste((30, 18, 10), mask=sh.filter(ImageFilter.GaussianBlur(26)))
     d = ImageDraw.Draw(img)
     d.text((TEXT_X, 118), 'WEKARIBU  ·  MVP DEMO', font=font('semi', 26), fill=GOLD)
     if 0 < index < total - 1:

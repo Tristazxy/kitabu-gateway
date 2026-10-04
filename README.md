@@ -21,11 +21,12 @@
 | | **Thank-you messages** in each guest's language with the exact Swahili equivalent beside it, sent only if the guest ticked consent, and only after Noor approves. | Picks the topic the guest liked |
 | | An **anonymized report** (counts only — no names, contacts or quotes) for the guide / tourism centre, shared only when Noor agrees. | No |
 
-### One home screen (one phone, no server)
+### Three sides, one home screen (one phone, no server)
 
-The app opens on a single home screen, in the phone's language (Swahili or English; one tap switches):
-two lines of *what guests said* with **Listen** and **Details**, then four big buttons. A three-step guide
-opens on the first visit.
+The first screen asks who is holding the phone: **host**, **visitor** or **tour company**; the choice is
+remembered. The host lands on a single home screen, in the phone's language (Swahili or English; one tap
+switches): two lines of *what guests said* with **Listen** and **Details**, then four big buttons. A
+three-step guide opens on the first visit.
 
 * **Add guest feedback** — pick the guest, photograph box A / box B, record or upload a voice note, or type. Analyse. Correct anything marked "Check".
 * **Let a guest write** — Noor hands over the phone. The screen switches to the guest's own language (Italian, French, German, Chinese, Spanish, Polish, English or Swahili, picked from the phone's settings): two boxes, optional email with a consent tick, *Save*. The guest cannot see anyone else's data; returning is marked "host only".

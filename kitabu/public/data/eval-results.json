@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-04T03:16:51.778Z",
+ "generated": "2026-10-04T06:42:02.975Z",
  "runner": "GitHub Actions (CPU, onnxruntime-node); same code as the app",
  "thresholds": {
   "topicMin": 0.3,
@@ -72,11 +72,11 @@
   "results": {
    "it": {
     "model": "Xenova/opus-mt-it-en",
-    "chrF": 57.8
+    "chrF": 57.7
    },
    "fr": {
     "model": "Xenova/opus-mt-fr-en",
-    "chrF": 64.7
+    "chrF": 64.8
    },
    "de": {
     "model": "Xenova/opus-mt-de-en",
@@ -84,11 +84,11 @@
    },
    "zh": {
     "model": "Xenova/opus-mt-zh-en",
-    "chrF": 53.4
+    "chrF": 53.3
    },
    "es": {
     "model": "Xenova/opus-mt-es-en",
-    "chrF": 56.2
+    "chrF": 56.4
    },
    "pl": {
     "model": "Xenova/opus-mt-pl-en",
@@ -96,7 +96,7 @@
    },
    "xx": {
     "model": "Xenova/opus-mt-mul-en",
-    "chrF": 49.4
+    "chrF": 49.2
    }
   }
  },
@@ -347,5 +347,5 @@
    ]
   }
  },
- "seconds": 462
+ "seconds": 352
 }

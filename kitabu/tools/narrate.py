@@ -12,6 +12,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 import urllib.request
 
 OUT = os.path.join('demo-out', 'narration')
@@ -36,13 +37,16 @@ def elevenlabs(text, mp3):
     req = urllib.request.Request(
         f'https://api.elevenlabs.io/v1/text-to-speech/{voice}?output_format=mp3_44100_128',
         data=json.dumps(body).encode(), headers={'xi-api-key': key, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg'})
-    try:
-        with urllib.request.urlopen(req, timeout=120) as r, open(mp3, 'wb') as f:
-            f.write(r.read())
-        return True
-    except Exception as err:
-        print(f'ElevenLabs failed ({err}); falling back', file=sys.stderr)
-        return False
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(req, timeout=120) as r, open(mp3, 'wb') as f:
+                f.write(r.read())
+            return True
+        except Exception as err:
+            print(f'ElevenLabs failed (attempt {attempt + 1}: {err})', file=sys.stderr)
+            time.sleep(4 * (attempt + 1))
+    print('ElevenLabs failed three times; falling back', file=sys.stderr)
+    return False
 
 
 def espeak(text, wav):

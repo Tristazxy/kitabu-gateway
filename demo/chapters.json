@@ -1,0 +1,62 @@
+{
+  "chapters": [
+    {
+      "t": 3.433,
+      "title": "A friend’s tip is enough",
+      "body": "The search understands a friend’s tip and locks on the host. Vivian books one of Noor’s published days and pays the deposit by M-Pesa to Noor’s own phone.",
+      "file": "demo-out/part-01-tip.webm",
+      "end": 21.736,
+      "busy": []
+    },
+    {
+      "t": 3.397,
+      "title": "Noor decides",
+      "body": "The booking waits for Noor’s answer: Accept or Decline, in the app or by SMS from her basic phone. Then the guestbook photo (German) and a voice note (French) are read on the phone, offline.",
+      "file": "demo-out/part-02-decide.webm",
+      "end": 54.221,
+      "busy": [
+        [
+          13.176,
+          15.091
+        ],
+        [
+          18.765,
+          24.53
+        ],
+        [
+          35.193,
+          47.549
+        ],
+        [
+          51.727,
+          51.742
+        ]
+      ]
+    },
+    {
+      "t": 3.301,
+      "title": "The week, in Swahili",
+      "body": "Ten fixed topics, good or bad; unsure sentences are marked “Check” for a person. The summary is human-written Swahili with the AI’s counts filled in; “Sikiliza” reads it aloud.",
+      "file": "demo-out/part-03-swahili.webm",
+      "end": 16.972,
+      "busy": []
+    },
+    {
+      "t": 4.88,
+      "title": "A thank-you, with consent",
+      "body": "A human-written note in the guest’s language with its meaning underneath. Sent only with consent, and only when the host taps send.",
+      "file": "demo-out/part-04-thanks.webm",
+      "end": 10.622,
+      "busy": []
+    },
+    {
+      "t": 2.506,
+      "title": "Evidence",
+      "body": "The app’s own code on a labelled set and on FLORES-200, run in GitHub Actions on every change: topic accuracy, mood, chrF per language pack, and the share of “not sure”.",
+      "file": "demo-out/part-05-evidence.webm",
+      "end": 8.9,
+      "busy": []
+    }
+  ],
+  "perPart": true
+}

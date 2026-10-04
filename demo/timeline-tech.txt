@@ -1,0 +1,6 @@
+0:00.0  Card: stack
+0:10.5  Card: models
+0:25.7  Evidence
+0:39.6  Card: sms
+0:49.2  Card: guardrails
+0:59.8  end

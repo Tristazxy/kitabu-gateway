@@ -1,0 +1,41 @@
+{
+  "_note": "Product demo of the website (desktop recording, full frame, subtitles burned in), 60 s max. Chapters from tools/record-demo.mjs (DEMO_DESKTOP=1), narrated by Brian.",
+  "name": "web",
+  "output": "wekaribu-product-demo-web.mp4",
+  "max_seconds": 60,
+  "busy_speed": 10,
+  "voice": "nPczCjzI2devNBz1zQrb",
+  "voice_name": "Brian (ElevenLabs stock voice, warm narrator)",
+  "model": "eleven_multilingual_v2",
+  "speed": 1.04,
+  "items": [
+    {
+      "kind": "app",
+      "title": "A friend’s tip is enough",
+      "label": "1 · Find a place and book",
+      "rate": 1.35,
+      "text": "WeKaribu: guests write in their language, the host hears it in hers. Vivian types what a friend told her, and the search locks on Noor's farm. She books a day Noor published, and pays the deposit by M-Pesa, straight to Noor's phone."
+    },
+    {
+      "kind": "app",
+      "title": "Noor decides",
+      "label": "2 · The host decides; feedback is read on the phone",
+      "rate": 1.4,
+      "text": "Noor accepts: the final call is hers, by app or by SMS. After the visit, a guestbook page in German is read and translated on the phone, offline; voice notes work the same way."
+    },
+    {
+      "kind": "app",
+      "title": "The week, in Swahili",
+      "label": "3 · The week, in Swahili",
+      "rate": 1.35,
+      "text": "Ten fixed topics, good or bad; anything unsure is flagged for a person. The summary is human-written Swahili the AI only fills in, and Noor can listen to it."
+    },
+    {
+      "kind": "app",
+      "title": "A thank-you, with consent",
+      "label": "4 · A thank-you, with consent",
+      "rate": 1.35,
+      "text": "A thank-you in the guest's language, sent only with consent, and only when Noor taps send. No server, no account, and it works offline. WeKaribu: we welcome."
+    }
+  ]
+}

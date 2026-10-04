@@ -21,11 +21,13 @@ const OUT = 'demo-out';
 const PROFILE = 'demo-profile';
 const LONG = 15 * 60 * 1000;
 const mock = process.env.DEMO_MOCK ? (await import(resolve(process.env.DEMO_MOCK))).default : null;
-// A 390x844 phone screen rendered at 2x (CSS zoom), so the recording is a crisp 780x1688.
+// DEMO_DESKTOP=1 records the website in a 1920x1080 browser window (zoomed a little so the UI reads well);
+// otherwise a 390x844 phone screen rendered at 2x (CSS zoom), so the recording is a crisp 780x1688.
 // (Playwright never upscales the video, so a plain 390-wide viewport would record at 390 px.)
-const ZOOM = 2;
+const DESKTOP = !!process.env.DEMO_DESKTOP;
+const ZOOM = DESKTOP ? 1.5 : 2;
 const PHONE = {
-  viewport: { width: 390 * ZOOM, height: 844 * ZOOM },
+  viewport: DESKTOP ? { width: 1920, height: 1080 } : { width: 390 * ZOOM, height: 844 * ZOOM },
   deviceScaleFactor: 1,
   locale: 'en-US',
   timezoneId: 'Africa/Dar_es_Salaam',
@@ -253,21 +255,21 @@ async function walkthrough() {
       await fresh('visitor');
       chapter('A friend’s tip is enough', 'The search understands a friend’s tip and locks on the host. Vivian books one of Noor’s published days and pays the deposit by M-Pesa to Noor’s own phone.');
       await type('#find-q', 'my friend Emma went to a coffee farm');
-      await pause(1600);
+      await pause(900);
       await snap('search');
       await tap('[data-action="open-host"]', 300);
-      await pause(900);
+      await pause(500);
       await scrollTo('[data-action="book-day"]', 'center', 700);
       await tap('[data-action="book-day"]', 200);
       await type('#bk-v-name', 'Vivian & Frank');
       await type('#bk-v-ref', 'Emma');
       await tap('[data-action="book-submit"]', 200);
-      await pause(1200);
+      await pause(800);
       await snap('trip');
       await scrollTo('#pay-ref', 'center', 700);
       await type('#pay-ref', 'RJ7K2X9Q');
       await tap('[data-action="pay-deposit"]', 200);
-      await pause(1300);
+      await pause(900);
       await snap('deposit-paid');
       await endPart('tip');
     });
@@ -275,7 +277,7 @@ async function walkthrough() {
     // ---- chapter 2: the host accepts; a photo and a voice note are read on the phone
     await part('decide', async () => {
       await fresh('host');
-      chapter('Noor decides', 'The booking waits for Noor’s answer: Accept or Decline, in the app or by SMS from her basic phone. Then the guestbook photo (German) and a voice note (French) are read on the phone, offline.');
+      chapter('Noor decides', 'The booking waits for Noor’s answer: Accept or Decline, in the app or by SMS from her basic phone. Then a guestbook photo (German) is read and translated on the phone, offline.');
       await scrollTo('[data-action="host-answer"][data-answer="accepted"]', 'center', 900);
       await tap('[data-action="host-answer"][data-answer="accepted"]', 200);
       await pause(1200);
@@ -300,8 +302,14 @@ async function walkthrough() {
       await pause(1400);
       await snap('photo-results');
       await tap('[data-action="finish-add"]', 200);
-      await pause(400);
-      await tap('[data-action="back"]', 200);
+      await pause(500);
+      await endPart('decide');
+    });
+
+    // ---- a voice note (its own chapter, used by the longer stories)
+    await part('voice', async () => {
+      await fresh('host');
+      chapter('A voice note', 'Sophie left a voice message in French. Whisper, on the phone, writes it down and translates it to English.');
       await tap('[data-action="go"][data-screen="add"]', 200);
       await tap('[data-action="lang-chip"][data-lang="fr"]', 150);
       await type('#ng-name', 'Sophie');
@@ -321,7 +329,7 @@ async function walkthrough() {
       await pause(900);
       await tap('[data-action="finish-add"]', 200);
       await pause(400);
-      await endPart('decide');
+      await endPart('voice');
     });
 
     // ---- chapter 3: the week in Swahili, read aloud

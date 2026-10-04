@@ -1,0 +1,78 @@
+{
+  "_note": "Human-written Swahili phrasebook for visitors. Saved on the guest's phone after booking; audio clips come from audio/sw when available.",
+  "language": "sw",
+  "phrases": [
+    {
+      "id": "ph_hello",
+      "sw": "Habari!",
+      "en": "Hello! (How are things?)",
+      "say": "ha-BA-ri"
+    },
+    {
+      "id": "ph_fine",
+      "sw": "Nzuri, asante.",
+      "en": "Fine, thank you.",
+      "say": "n-ZOO-ri a-SAN-te"
+    },
+    {
+      "id": "ph_welcome",
+      "sw": "Karibu!",
+      "en": "Welcome! (also: you are welcome)",
+      "say": "ka-REE-boo"
+    },
+    {
+      "id": "ph_thanks",
+      "sw": "Asante sana.",
+      "en": "Thank you very much.",
+      "say": "a-SAN-te SA-na"
+    },
+    {
+      "id": "ph_please",
+      "sw": "Tafadhali.",
+      "en": "Please.",
+      "say": "ta-fa-DHA-li"
+    },
+    {
+      "id": "ph_yes_no",
+      "sw": "Ndiyo. / Hapana.",
+      "en": "Yes. / No.",
+      "say": "n-DEE-yo / ha-PA-na"
+    },
+    {
+      "id": "ph_name",
+      "sw": "Jina langu ni ...",
+      "en": "My name is ...",
+      "say": "JEE-na LAN-gu ni"
+    },
+    {
+      "id": "ph_delicious",
+      "sw": "Chakula ni kitamu!",
+      "en": "The food is delicious!",
+      "say": "cha-KOO-la ni ki-TA-mu"
+    },
+    {
+      "id": "ph_coffee",
+      "sw": "Kahawa hii ni nzuri sana.",
+      "en": "This coffee is very good.",
+      "say": "ka-HA-wa HEE ni n-ZOO-ri SA-na"
+    },
+    {
+      "id": "ph_howmuch",
+      "sw": "Bei gani?",
+      "en": "How much is it?",
+      "say": "BAY GA-ni"
+    },
+    {
+      "id": "ph_where",
+      "sw": "Choo kiko wapi?",
+      "en": "Where is the toilet?",
+      "say": "CHO-o KEE-ko WA-pi"
+    },
+    {
+      "id": "ph_goodbye",
+      "sw": "Kwaheri! Tutaonana.",
+      "en": "Goodbye! See you again.",
+      "say": "kwa-HE-ri tu-ta-o-NA-na"
+    }
+  ]
+}

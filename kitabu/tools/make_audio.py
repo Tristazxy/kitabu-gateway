@@ -88,16 +88,25 @@ for f in os.listdir(OUT):
     if f.endswith(".mp3") and f not in keep:
         os.remove(os.path.join(OUT, f))
 
+manifest_path = os.path.join(OUT, "manifest.json")
+previous = {}
+if os.path.exists(manifest_path):
+    with open(manifest_path, encoding="utf-8") as f:
+        previous = json.load(f)
 manifest = {
     "source": "ElevenLabs text-to-speech (synthetic voice), generated from audio/phrases-sw.json",
     "model": model,
     "voice": voice,
-    "generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    "generated": previous.get("generated", ""),
     "complete": not failed,
     "files": files,
 }
-with open(os.path.join(OUT, "manifest.json"), "w", encoding="utf-8") as f:
-    json.dump(manifest, f, ensure_ascii=False, indent=1)
+# Only touch the manifest (and so the git history) when the set of clips actually changed.
+unchanged = {k: v for k, v in previous.items() if k != "generated"} == {k: v for k, v in manifest.items() if k != "generated"}
+if not unchanged or not manifest["generated"]:
+    manifest["generated"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    with open(manifest_path, "w", encoding="utf-8") as f:
+        json.dump(manifest, f, ensure_ascii=False, indent=1)
 
 print(f"{len(files)} clips ready, {len(failed)} failed")
 if failed and not files:

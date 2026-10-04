@@ -62,6 +62,18 @@
     "ui_help": "Jinsi ya kutumia.",
     "ui_find": "Tafuta mahali pa kutembelea. Andika jina la kijiji.",
     "ui_book": "Weka nafasi. Chagua siku, idadi ya wageni, na lugha yenu.",
-    "ui_done": "Imekamilika."
+    "ui_done": "Imekamilika.",
+    "ph_hello": "Habari!",
+    "ph_fine": "Nzuri, asante.",
+    "ph_welcome": "Karibu!",
+    "ph_thanks": "Asante sana.",
+    "ph_please": "Tafadhali.",
+    "ph_yes_no": "Ndiyo. / Hapana.",
+    "ph_name": "Jina langu ni ...",
+    "ph_delicious": "Chakula ni kitamu!",
+    "ph_coffee": "Kahawa hii ni nzuri sana.",
+    "ph_howmuch": "Bei gani?",
+    "ph_where": "Choo kiko wapi?",
+    "ph_goodbye": "Kwaheri! Tutaonana."
   }
 }

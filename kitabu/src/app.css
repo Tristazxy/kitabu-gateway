@@ -372,3 +372,9 @@ label.field.search { margin-top: 4px; }
 .nature.real ~ main > p, .nature.real ~ main > .hint, .nature.real ~ main .home-links { background: rgba(255, 255, 255, .82); }
 .credit { font-size: .72rem; color: #fff; opacity: .75; text-align: right; padding: 0 4px 6px; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
 @media (prefers-reduced-motion: reduce) { .nature .bg-photo { animation: none !important; } }
+
+.home-btn.locked { border: 2px solid #F2B662; box-shadow: 0 0 0 4px rgba(242, 182, 98, .25), var(--shadow); }
+.spot-map { width: 100%; height: auto; display: block; border-radius: 12px; border: 1px solid var(--line); }
+
+.link-line { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.link-arrow { color: var(--muted); font-weight: 700; }

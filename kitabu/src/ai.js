@@ -263,6 +263,11 @@ async function protos(onProgress) {
 
 const dot = (a, b) => { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] * b[i]; return s; };
 
+// Sentence vectors for anything else that needs "is this like that" (the visitor's search).
+export async function embedTexts(texts, onProgress) {
+  return embed(texts, onProgress);
+}
+
 export async function classifyTopics(clauses, onProgress) {
   if (!clauses.length) return [];
   const P = await protos(onProgress);

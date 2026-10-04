@@ -6,40 +6,125 @@
       "id": "noor",
       "name": "Noor’s coffee farm",
       "town": "Materuni",
-      "tags": ["coffee roasting", "waterfall walk", "family lunch"],
-      "languages": ["sw", "en"],
+      "tags": [
+        "coffee roasting",
+        "waterfall walk",
+        "family lunch"
+      ],
+      "languages": [
+        "sw",
+        "en"
+      ],
       "blurb": "Pick, roast and grind coffee with Noor’s family on the slopes of Kilimanjaro, walk to the Materuni waterfall, and share lunch at the farm.",
       "guide": "Juma",
       "company": "Ondera Coffee Trails (fictional)",
       "price": "TZS 60,000 per person, lunch included (fictional)",
-      "availableOffsets": [2, 4, 6, 9, 11],
-      "sample": { "guests": 12, "liked": ["coffee", "walk", "food"], "improve": ["access"], "products": ["coffee"] }
+      "availableOffsets": [
+        2,
+        4,
+        6,
+        9,
+        11
+      ],
+      "sample": {
+        "guests": 12,
+        "liked": [
+          "coffee",
+          "walk",
+          "food"
+        ],
+        "improve": [
+          "access"
+        ],
+        "products": [
+          "coffee"
+        ]
+      },
+      "lat": -3.252,
+      "lng": 37.395,
+      "meet": "Materuni village office, then 20 minutes on foot with the guide",
+      "directions": "From Moshi, 30 minutes by car to Materuni (Uru). The farm road is steep; the tour company’s car or a boda-boda from the village office. No signs: the guide walks you up.",
+      "phone": "+255 700 000 001 (guide Juma, fictional)"
     },
     {
       "id": "asha",
       "name": "Mama Asha’s spice garden",
       "town": "Marangu",
-      "tags": ["spices", "cooking class"],
-      "languages": ["sw"],
+      "tags": [
+        "spices",
+        "cooking class"
+      ],
+      "languages": [
+        "sw"
+      ],
       "blurb": "A morning in a spice garden and a cooking class in Mama Asha’s kitchen. The guide translates.",
       "guide": "Neema",
       "company": "Ondera Coffee Trails (fictional)",
       "price": "TZS 45,000 per person (fictional)",
-      "availableOffsets": [3, 5, 8, 12],
-      "sample": { "guests": 7, "liked": ["food", "host"], "improve": ["timing"], "products": [] }
+      "availableOffsets": [
+        3,
+        5,
+        8,
+        12
+      ],
+      "sample": {
+        "guests": 7,
+        "liked": [
+          "food",
+          "host"
+        ],
+        "improve": [
+          "timing"
+        ],
+        "products": []
+      },
+      "lat": -3.283,
+      "lng": 37.52,
+      "meet": "Marangu Gate car park",
+      "directions": "From Moshi, 45 minutes by car to Marangu. The spice garden is 5 minutes from the gate; the guide meets you in the car park.",
+      "phone": "+255 700 000 002 (guide Neema, fictional)"
     },
     {
       "id": "kibo",
       "name": "Kibo honey & coffee",
       "town": "Mweka",
-      "tags": ["honey", "coffee", "forest walk"],
-      "languages": ["sw", "en"],
+      "tags": [
+        "honey",
+        "coffee",
+        "forest walk"
+      ],
+      "languages": [
+        "sw",
+        "en"
+      ],
       "blurb": "Beehives at the forest edge, a short coffee tasting, and a walk to the Mweka viewpoint.",
       "guide": "Juma",
       "company": "Ondera Coffee Trails (fictional)",
       "price": "TZS 50,000 per person (fictional)",
-      "availableOffsets": [1, 7, 10, 13],
-      "sample": { "guests": 5, "liked": ["walk", "explain"], "improve": ["facilities"], "products": ["honey"] }
+      "availableOffsets": [
+        1,
+        7,
+        10,
+        13
+      ],
+      "sample": {
+        "guests": 5,
+        "liked": [
+          "walk",
+          "explain"
+        ],
+        "improve": [
+          "facilities"
+        ],
+        "products": [
+          "honey"
+        ]
+      },
+      "lat": -3.23,
+      "lng": 37.33,
+      "meet": "Mweka village centre, by the church",
+      "directions": "From Moshi, 40 minutes by car to Mweka. Walk 15 minutes to the beehives at the forest edge with the guide.",
+      "phone": "+255 700 000 001 (guide Juma, fictional)"
     }
   ]
 }

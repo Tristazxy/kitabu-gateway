@@ -21,25 +21,55 @@ export function hostDays(host, availableSetting, today = new Date()) {
 const ICON_SEARCH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
 const ICON_PIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.5 7-12a7 7 0 0 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>';
 
-export function findHTML({ q, hosts, lang, loading }) {
-  const needle = (q || '').trim().toLowerCase();
-  const rows = needle
-    ? hosts.filter(x => [x.name, x.town, ...(x.tags || [])].join(' ').toLowerCase().includes(needle))
-    : hosts;
-  const card = x => `
-    <button class="home-btn" data-action="open-host" data-id="${x.id}">
-      <span class="role-icon tile-leaf" aria-hidden="true">${ICON_PIN}</span>
-      <span class="role-text"><strong>${h(x.name)}</strong>
-        <span class="small muted">${h(x.town)} · ${(x.tags || []).slice(0, 3).map(h).join(' · ')}</span>
-        <span class="small">${L('Lugha', 'Languages')}: ${x.languages.map(c => h(langName(c, lang))).join(', ')}</span></span>
+// Understands a sentence, not just a keyword: "my friend Emma went to a coffee place near Moshi".
+// Scores each host on the words that match, on a friend's name found in the host's guest list,
+// and (when the on-device topic model is already on the phone) on meaning. Returns ranked matches
+// with the reasons, so the best one can be shown as "locked".
+const STOP = new Set('a an the to of in at on for my our their his her and or with near by from went go visit visited place friend friends told said about some that this is was were are be we i they it like want wanting looking'.split(' '));
+const words = str => String(str || '').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).filter(w => w && !STOP.has(w));
+
+export function rankHosts(query, hosts, guests = [], lang = 'en', semantic = null) {
+  const qw = words(query);
+  if (!qw.length) return hosts.map(x => ({ host: x, score: 0, reasons: [] }));
+  const out = hosts.map(x => {
+    const hay = [x.name, x.town, ...(x.tags || []), x.blurb].join(' ').toLowerCase();
+    const hayWords = new Set(words(hay));
+    let score = 0;
+    const reasons = [];
+    for (const w of qw) {
+      if (hayWords.has(w) || hay.includes(w)) {
+        score += (x.town.toLowerCase().includes(w) || x.name.toLowerCase().includes(w)) ? 3 : 1;
+        reasons.push(w);
+      }
+    }
+    // a friend's name: the host's own guest list (only on the host's phone; here the demo guests)
+    const friend = guests.find(g => qw.includes((g.name || '').toLowerCase().split(' ')[0]));
+    if (friend && x.id === 'noor') { score += 6; reasons.push(L(`${friend.name} alitembelea hapa`, `${friend.name} visited here`)); }
+    if (semantic && semantic[x.id] != null) score += semantic[x.id] * 4;
+    return { host: x, score, reasons: [...new Set(reasons)] };
+  });
+  return out.sort((a, b) => b.score - a.score);
+}
+
+export function findHTML({ q, hosts, lang, loading, ranked, thinking }) {
+  const needle = (q || '').trim();
+  const rows = needle && ranked ? ranked.filter(r => r.score > 0) : hosts.map(x => ({ host: x, score: 0, reasons: [] }));
+  const best = needle && rows.length && rows[0].score >= 3 ? rows[0] : null;
+  const card = (r, locked) => `
+    <button class="home-btn ${locked ? 'locked' : ''}" data-action="open-host" data-id="${r.host.id}">
+      <span class="role-icon ${locked ? 'tile-caramel' : 'tile-leaf'}" aria-hidden="true">${ICON_PIN}</span>
+      <span class="role-text">${locked ? `<span class="chip" style="align-self:flex-start;margin-bottom:4px">${L('Mahali pako', 'Best match')}</span>` : ''}<strong>${h(r.host.name)}</strong>
+        <span class="small muted">${h(r.host.town)} · ${(r.host.tags || []).slice(0, 3).map(h).join(' · ')}</span>
+        ${r.reasons.length ? `<span class="small">${L('Kwa nini', 'Why')}: ${r.reasons.map(h).join(', ')}</span>` : `<span class="small">${L('Lugha', 'Languages')}: ${r.host.languages.map(c => h(langName(c, lang))).join(', ')}</span>`}</span>
     </button>`;
   return `
   <h1>${L('Tafuta mahali pa kutembelea', 'Find a place to visit')}</h1>
-  <p class="small muted">${L('Wenyeji wadogo ambao hawana tovuti wala intaneti. Rafiki akikuambia jina la kijiji, tafuta hapa.', 'Small hosts with no website and no internet. If a friend told you the name of a village, search for it here.')}</p>
-  <label class="field search">${ICON_SEARCH}<input type="search" id="find-q" value="${h(q || '')}" placeholder="${L('Kijiji, jina au shughuli… k.m. Materuni', 'Village, name or activity… e.g. Materuni')}" autocomplete="off" data-input="find-q"></label>
+  <p class="small muted">${L('Andika unachokumbuka: jina la kijiji, jina la rafiki aliyekwenda, au “shamba la kahawa karibu na Moshi”. Simu inatafuta mahali pako.', 'Type what you remember: a village, the friend who went, or “a coffee farm near Moshi”. The phone finds the place.')}</p>
+  <label class="field search">${ICON_SEARCH}<input type="search" id="find-q" value="${h(q || '')}" placeholder="${L('k.m. rafiki yangu Emma alikwenda shamba la kahawa', 'e.g. my friend Emma went to a coffee farm')}" autocomplete="off" data-input="find-q"></label>
   ${loading ? `<p class="muted">${L('Inapakia…', 'Loading…')}</p>` : ''}
+  ${thinking ? `<p class="small muted">${L('Inalinganisha maana…', 'Matching by meaning…')}</p>` : ''}
   <div class="stack" style="margin-top:12px">
-    ${rows.length ? rows.map(card).join('') : `<div class="notice">${L('Hakuna matokeo. Jaribu jina la kijiji.', 'No results. Try the name of the village.')}</div>`}
+    ${rows.length ? rows.map((r, i) => card(r, best && i === 0)).join('') : `<div class="notice">${L('Hakuna matokeo. Jaribu jina la kijiji au la rafiki.', 'No results. Try the name of the village or of your friend.')}</div>`}
   </div>
   <p class="small muted" style="margin-top:14px">${L('Orodha ya mfano (data bandia). Toleo halisi linapata orodha kutoka kwa kampuni ya utalii au ofisi ya utalii.', 'Example directory (synthetic). The real version gets the list from the tour company or the tourism office.')}</p>
   <div class="row home-links">
@@ -112,6 +142,51 @@ export function hostHTML({ host, days, selected, summaryLine, form, lang, knownG
       <button class="btn block" data-action="book-submit" ${selected ? '' : 'disabled'}>${L('Tuma ombi', 'Send the request')}</button>
       <p class="small muted" style="margin:0">${L('Hakuna malipo hapa. Kampuni ya utalii inathibitisha kwa barua pepe au WhatsApp.', 'No payment here. The tour company confirms by email or WhatsApp.')}</p>
     </div>
+  </div>`;
+}
+
+export function tripHTML({ host, booking, lang, phrasebook, saved, audioReady }) {
+  const map = `<svg viewBox="0 0 320 170" class="spot-map" role="img" aria-label="map">
+    <rect width="320" height="170" rx="12" fill="#E4EFE2"/>
+    <path d="M0 120 C 60 90 120 150 200 110 S 290 80 320 100" fill="none" stroke="#8CC6DC" stroke-width="10" stroke-linecap="round"/>
+    <path d="M20 40 L70 15 L120 45 L170 10 L230 50 L300 20" fill="none" stroke="#A9C4CE" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M40 150 L120 120 L200 140 L300 125" fill="none" stroke="#7DAA5A" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="60" cy="140" r="5" fill="#1F4D3A"/><text x="70" y="145" font-size="12" fill="#1F4D3A">Moshi</text>
+    <g transform="translate(205 70)"><path d="M0 22 c -14 -16 -14 -32 0 -32 s 14 16 0 32z" fill="#B2452C"/><circle cy="-10" r="5" fill="#fff"/></g>
+    <text x="210" y="100" font-size="12" font-weight="700" fill="#1F4D3A">${h(host.town)}</text>
+  </svg>`;
+  const phrases = (phrasebook || []).map(p => `
+    <li class="row between"><div><strong lang="sw">${h(p.sw)}</strong><div class="small muted">${h(p.en)} · <i>${h(p.say)}</i></div></div>
+      <button class="say" data-action="say-phrase" data-clip="${p.id}" data-text="${h(p.sw)}" aria-label="Listen">${'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4h4l5 4V6L8 10z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>'}</button></li>`).join('');
+  return `
+  <div class="card" style="text-align:center;padding:22px 18px">
+    <div class="role-icon tile-caramel" style="margin:0 auto 10px" aria-hidden="true">${ICON_PIN}</div>
+    <h1>${L('Ombi limetumwa', 'Request sent')}</h1>
+    <p class="lead" style="margin:0">${L(`${h(host.company)} itathibitisha kwa barua pepe au WhatsApp. Mwenyeji anapata SMS.`, `${h(host.company)} confirms by email or WhatsApp. The host gets an SMS.`)}</p>
+  </div>
+  <div class="card">
+    <h2>${L('Safari yako', 'Your trip')} <span class="chip">${L('Imehifadhiwa kwenye simu', 'Saved on your phone')}</span></h2>
+    <p style="margin:0 0 8px"><strong>${h(host.name)}</strong> · ${h(day(booking.date, lang))} · ${L('wageni', 'guests')} ${h(booking.guests)} · ${h(langName(booking.language, lang))}</p>
+    ${map}
+    <dl class="kv" style="margin-top:10px">
+      <dt>${L('Mahali pa kukutana', 'Meeting point')}</dt><dd>${h(host.meet)}</dd>
+      <dt>${L('Njia', 'Getting there')}</dt><dd>${h(host.directions)}</dd>
+      <dt>${L('Mwongozaji', 'Guide')}</dt><dd>${h(host.guide)} · ${h(host.phone)}</dd>
+    </dl>
+    <div class="row" style="margin-top:10px">
+      <a class="btn small secondary" href="geo:${host.lat},${host.lng}?q=${host.lat},${host.lng}(${encodeURIComponent(host.name)})">${L('Fungua kwenye ramani', 'Open in maps')}</a>
+      <a class="btn small secondary" href="https://www.google.com/maps/search/?api=1&query=${host.lat},${host.lng}" target="_blank" rel="noopener">Google Maps</a>
+    </div>
+    <p class="small muted" style="margin:8px 0 0">${L('Maelezo haya yanabaki kwenye simu yako bila mtandao.', 'These details stay on your phone, offline.')}</p>
+  </div>
+  <div class="card">
+    <h2>${L('Kiswahili kwa safari yako', 'Swahili for your trip')} ${saved ? `<span class="chip">${L('Imepakuliwa', 'Downloaded')}</span>` : ''}</h2>
+    <p class="small muted">${L('Lugha ya mwenyeji, imehifadhiwa kwenye simu yako.', `The host’s language, saved on your phone${audioReady ? ' with sound' : ''}.`)}</p>
+    ${saved ? `<ul class="list">${phrases}</ul>` : `<button class="btn block" data-action="download-phrasebook">${L('Pakua misemo 12 (na sauti)', 'Download 12 phrases (with sound)')}</button>`}
+  </div>
+  <div class="stack">
+    <button class="btn secondary block" data-action="go" data-screen="find">${L('Tafuta mahali pengine', 'Find another place')}</button>
+    <button class="btn secondary block" data-action="switch-role">${L('Maliza', 'Done')}</button>
   </div>`;
 }
 

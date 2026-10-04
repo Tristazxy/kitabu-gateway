@@ -5,7 +5,7 @@
 import { db, uid } from './db.js';
 import { LANGS, SHARED_MODELS, PACK_MB, packLangs, planPacks, langName, KEEP_TOP_N } from './langs.js';
 import { TOPICS, OTHER, topicById, PRODUCTS } from './topics.js';
-import { weeklySms, summaryText, thankYou, guideReport, daySw, dayEn, SUBJECTS, bookingSms, strongProduct } from './templates.js';
+import { weeklySms, summaryText, thankYou, guideReport, daySw, dayEn, SUBJECTS, bookingSms, touristSms, strongProduct } from './templates.js';
 import { summarize, inPeriod, guestTopLiked, needsCheck } from './summary.js';
 import * as ai from './ai.js';
 import { analyze } from './pipeline.js';
@@ -13,7 +13,7 @@ import { h, L, getLang, setLang, host, setHost, toast, showBusy, progress, hideB
 import { summaryClipIds, playClips, prefetchVoice, loadVoiceManifest, sayLabel } from './voice.js';
 import { guideHTML, GUIDE_STEPS } from './guide.js';
 import { roleChooserHTML, visitorHTML, companyHTML, pickVisitorLang, visitorStrings } from './roles.js';
-import { findHTML, hostHTML, bookedHTML, hostDays, hostSummaryLine } from './visit.js';
+import { findHTML, hostHTML, tripHTML, hostDays, hostSummaryLine, rankHosts } from './visit.js';
 import { mountBackground, setScene, SCENE_FOR, sceneCredit, allCredits } from './nature.js';
 
 const view = document.getElementById('view');
@@ -39,7 +39,10 @@ const state = {
   guide: { open: false, step: 0 },
   visitor: { lang: 'en', saved: false, draft: {} },
   hosts: null,           // directory from data/hosts.json (loaded on first use)
-  find: { q: '' },
+  find: { q: '', ranked: null, semantic: null, thinking: false },
+  phrasebook: { phrases: null, saved: false, audioReady: false },
+  translate: { lang: 'it', text: '', result: '' },
+  cloud: { uploads: [] },
   book: { hostId: null, day: null, form: {}, done: null },
   availableDays: [],     // days the host published (ISO dates)
 };
@@ -51,6 +54,7 @@ async function loadAll() {
   state.lastSync = await db.getSetting('lastSync');
   state.role = await db.getSetting('role', null);
   state.availableDays = await db.getSetting('availableDays', []);
+  state.cloud.uploads = await db.getSetting('cloudUploads', []);
   setHost(await db.getSetting('hostName', 'Noor'));
   document.documentElement.classList.toggle('big-text', await db.getSetting('bigText', false));
 }
@@ -272,6 +276,17 @@ function screenHome() {
       <span class="role-text"><strong>${title}</strong><span class="small muted">${sub}</span></span>
     </button>${clip ? sayBtn(clip, sw, en) : ''}</div>`;
 
+  const reservations = state.bookings
+    .filter(b => daysFromToday(b.date) >= 0).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(0, 4);
+  const reservationsCard = reservations.length ? `
+    <div class="card">
+      <div class="card-title"><h2>${L('Wageni wanaokuja', 'Reservations')}</h2><button class="btn small secondary" data-action="go" data-screen="week">${L('Zote', 'All')}</button></div>
+      <ul class="list">${reservations.map(b => `
+        <li class="row between">
+          <div><strong>${h(day(b.date))}</strong> · ${h(b.leadName || 'Mgeni')} <span class="small muted">· ${L('wageni', 'guests')} ${h(b.guests)}</span>
+            <div class="row small" style="margin-top:4px">${langPill(b.language)} ${packChip(b.language)} ${b.status === 'requested' ? `<span class="chip warn">${L('Inasubiri kampuni', 'Awaiting the company')}</span>` : `<span class="chip">${L('Imethibitishwa', 'Confirmed')}</span>`}</div></div>
+        </li>`).join('')}</ul>
+    </div>` : '';
   const weekSub = next7.length
     ? L(`Wageni ${next7.reduce((n, b) => n + (Number(b.guests) || 1), 0)} siku 7 zijazo`, `${next7.reduce((n, b) => n + (Number(b.guests) || 1), 0)} guests in the next 7 days`)
       + (plan.download.length ? ` · ${L('pakua', 'download')} ${plan.download.map(c => langName(c, getLang())).join(', ')}` : '')
@@ -279,6 +294,7 @@ function screenHome() {
 
   return `
   ${summaryCard}
+  ${reservationsCard}
   <div class="stack">
     ${bigBtn('data-action="go" data-screen="add"', ICON_CAMERA, L('Ongeza maoni ya mgeni', 'Add guest feedback'), L('Picha ya kitabu, sauti au kuandika', 'Photo of the guestbook, voice or typing'), 'tile-caramel', 'ui_add', 'Ongeza maoni ya mgeni. Piga picha ya kitabu, rekodi sauti, au andika.', 'Add guest feedback: photograph the guestbook, record a voice note, or type.')}
     ${bigBtn('data-action="hand-to-guest"', ICON_HAND, L('Mpe mgeni simu aandike', 'Let a guest write'), L('Kwa lugha yake, kwenye simu hii', 'In their own language, on this phone'), 'tile-leaf', 'ui_hand', 'Mpe mgeni simu aandike maoni kwa lugha yake.', 'Hand the phone to a guest to write in their own language.')}
@@ -286,6 +302,7 @@ function screenHome() {
     ${bigBtn('data-action="go" data-screen="week"', ICON_CAL, L('Wiki ijayo', 'Next week'), weekSub, 'tile-sky', 'ui_week', 'Wiki ijayo. Nani anakuja, na lugha gani.', 'Next week: who is coming, and which language.')}
   </div>
   <div class="row home-links">
+    <button class="link-btn" data-action="go" data-screen="translate">${L('Tafsiri', 'Translate')}</button>
     <button class="link-btn" data-action="guide-open">${L('Jinsi ya kutumia', 'How to use')}</button>
     <button class="link-btn" data-action="switch-role">${L('Badilisha upande', 'Switch side')}</button>
     <button class="link-btn" data-action="go" data-screen="more">${L('Zaidi', 'More')}</button>
@@ -580,7 +597,11 @@ function screenSummary() {
     <div class="sms" id="report-text">${h(report)}</div>
     <label class="check" style="margin-top:10px"><input type="checkbox" data-change="share-ok" ${state.shareOk ? 'checked' : ''}>
       <span>${L('Nimeisoma na nakubali ishirikiwe', 'I have read it and agree to share it')}</span></label>
-    <button class="btn block" id="share-btn" style="margin-top:10px" data-action="share" ${state.shareOk ? '' : 'disabled'}>${L('Shiriki', 'Share')}</button>
+    <div class="grid2" style="margin-top:10px">
+      <button class="btn" id="share-btn" data-action="share" ${state.shareOk ? '' : 'disabled'}>${L('Shiriki', 'Share')}</button>
+      <button class="btn secondary" id="cloud-btn" data-action="cloud-upload" ${state.shareOk ? '' : 'disabled'}>${L('Pakia kwenye wingu', 'Upload to cloud')}</button>
+    </div>
+    ${state.cloud.uploads.length ? `<p class="small muted" style="margin:8px 0 0">✓ ${L('Imepakiwa', 'Uploaded')} ${h(new Date(state.cloud.uploads[state.cloud.uploads.length - 1].at).toLocaleString())} · ${L('maoni', 'entries')} ${state.cloud.uploads[state.cloud.uploads.length - 1].entries} → ${h(state.cloud.uploads[state.cloud.uploads.length - 1].to)}</p>` : `<p class="small muted" style="margin:8px 0 0">${L('Kupakia kunatuma ripoti hii (jumla tu) kwa kampuni ya utalii na ofisi ya utalii, mtandao ukiwepo.', 'Uploading sends this report (counts only) to the tour company and the tourism office when there is internet.')}</p>`}
   </div>`}
   `;
 }
@@ -700,6 +721,52 @@ function screenLangs() {
   </div>`;
 }
 
+// ---------------------------------------------------------------- screen: translate (host <-> guest, on the phone)
+// Guest language -> English runs on the phone (the same packs). Towards the guest, the app offers
+// human-written phrases in their language (no machine translation into Swahili exists at this size).
+function screenTranslate() {
+  const t = state.translate;
+  const lang = getLang();
+  const phrases = PHRASES_TO_GUEST.map(ph => `<li class="row between"><div><strong lang="${t.lang}">${h(ph[t.lang] || ph.en)}</strong><div class="small muted">${h(ph[lang] || ph.en)}</div></div><button class="btn small secondary" data-action="copy-text" data-text="${h(ph[t.lang] || ph.en)}">${L('Nakili', 'Copy')}</button></li>`).join('');
+  return `
+  ${backBtn()}
+  <h1>${L('Tafsiri', 'Translate')}</h1>
+  <div class="card">
+    <label class="field">${L('Lugha ya mgeni', 'Guest’s language')}<select id="tr-lang" data-change="tr-lang">${langOptions(t.lang)}</select></label>
+    <label class="field" style="margin-top:10px">${L('Mgeni alisema au aliandika', 'What the guest said or wrote')}<textarea id="tr-text" lang="${t.lang}" placeholder="${L('Andika hapa…', 'Type or paste here…')}">${h(t.text)}</textarea></label>
+    <button class="btn block" style="margin-top:10px" data-action="translate-run">${L('Tafsiri kwa Kiingereza', 'Translate to English')}</button>
+    ${t.result ? `<div class="card flat" style="margin-top:12px"><div class="small muted">${L('Kwa Kiingereza', 'In English')}</div><p style="margin:6px 0 0">${h(t.result)}</p></div>` : ''}
+    <p class="small muted" style="margin:8px 0 0">${L('Inafanyika kwenye simu hii, bila mtandao, kwa pakiti ya lugha. Hakuna tafsiri ya mashine kwenda Kiswahili bado; misemo hapa chini imeandikwa na watu.', 'Runs on this phone, offline, with the language pack. There is no machine translation into Swahili yet; the phrases below are human-written.')}</p>
+  </div>
+  <div class="card">
+    <h2>${L('Mwambie mgeni', 'Say to the guest')} <span class="small muted">${h(langName(t.lang, lang))}</span></h2>
+    <ul class="list">${phrases}</ul>
+  </div>`;
+}
+
+const PHRASES_TO_GUEST = [
+  { sw: 'Karibu!', en: 'Welcome!', it: 'Benvenuti!', fr: 'Bienvenue !', de: 'Willkommen!', zh: '欢迎！', es: '¡Bienvenidos!', pl: 'Witamy!' },
+  { sw: 'Chakula kiko tayari.', en: 'Lunch is ready.', it: 'Il pranzo è pronto.', fr: 'Le déjeuner est prêt.', de: 'Das Mittagessen ist fertig.', zh: '午饭准备好了。', es: 'La comida está lista.', pl: 'Obiad gotowy.' },
+  { sw: 'Tafadhali andika maoni yako kwenye kitabu.', en: 'Please write your feedback in the book.', it: 'Scrivete le vostre impressioni nel libro, per favore.', fr: 'Écrivez vos impressions dans le livre, s’il vous plaît.', de: 'Bitte schreiben Sie Ihre Eindrücke ins Buch.', zh: '请把您的感想写在留言本上。', es: 'Por favor, escriban sus comentarios en el libro.', pl: 'Proszę wpisać swoje wrażenia do księgi.' },
+  { sw: 'Kahawa hii ni ya kupeleka nyumbani.', en: 'This coffee is to take home.', it: 'Questo caffè è da portare a casa.', fr: 'Ce café est à emporter.', de: 'Dieser Kaffee ist zum Mitnehmen.', zh: '这包咖啡可以带回家。', es: 'Este café es para llevar.', pl: 'Ta kawa jest na wynos.' },
+  { sw: 'Asante kwa kuja. Karibu tena!', en: 'Thank you for coming. Welcome back any time!', it: 'Grazie per essere venuti. Tornate quando volete!', fr: 'Merci d’être venus. Revenez quand vous voulez !', de: 'Danke für Ihren Besuch. Kommen Sie gern wieder!', zh: '谢谢光临，欢迎再来！', es: 'Gracias por venir. ¡Vuelvan cuando quieran!', pl: 'Dziękujemy za wizytę. Zapraszamy ponownie!' },
+  { sw: 'Njia ni mbaya; tutawasaidia.', en: 'The road is bad; we will help you.', it: 'La strada è brutta; vi aiutiamo noi.', fr: 'La route est mauvaise ; nous vous aiderons.', de: 'Der Weg ist schlecht; wir helfen Ihnen.', zh: '路不好走，我们会帮您。', es: 'El camino está mal; les ayudaremos.', pl: 'Droga jest zła; pomożemy.' },
+];
+
+async function translateRun() {
+  const t = state.translate;
+  t.text = document.getElementById('tr-text')?.value || '';
+  if (!t.text.trim()) return toast(L('Andika kitu kwanza', 'Type something first'));
+  if (t.lang === 'en') { t.result = t.text.trim(); return render(); }
+  if (t.lang === 'sw') { t.result = L('Hii ni Kiswahili tayari.', 'This is already Swahili; the host reads it directly.'); return render(); }
+  if (LANGS[t.lang]?.mt && !state.installed.includes(t.lang) && !(await confirmDownload([['pack', t.lang]]))) return;
+  showBusy(L('Inatafsiri', 'Translating'));
+  try {
+    const r = await ai.toEnglish(t.text.trim(), t.lang, progress);
+    t.result = r.english;
+  } catch (err) { toast(err.message, 6000); } finally { hideBusy(); await refreshModels(); render(); }
+}
+
 // ---------------------------------------------------------------- screen: more
 function screenMore() {
   const demo = state.guests.some(g => g.synthetic);
@@ -765,25 +832,53 @@ function readCompanyForm() {
 
 function requestsHTML() {
   const reqs = state.bookings.filter(b => b.status === 'requested').sort((a, b) => new Date(a.date) - new Date(b.date));
-  const confirmed = state.bookings.filter(b => b.status === 'confirmed' && b.source === 'visitor').slice(-3);
-  if (!reqs.length && !confirmed.length) return '';
+  const confirmed = state.bookings.filter(b => b.status === 'confirmed' && b.source === 'visitor').slice(-4);
+  const hostRec = (state.hosts || []).find(x => x.id === 'noor') || { meet: 'Materuni village office', phone: '' };
+  const smsHost = b => bookingSms(b);
+  const smsTourist = b => touristSms({ ...b, hostName: `${host()}’s farm`, meet: hostRec.meet });
   const row = b => `
     <li>
       <div class="row between"><strong>${h(b.leadName)}</strong><span class="badge-num">${h(b.guests)}</span></div>
       <div class="row small" style="margin-top:6px">${h(day(b.date))} ${langPill(b.language)}${b.referredBy ? `<span class="muted">${L('alipendekezwa na', 'recommended by')} ${h(b.referredBy)}</span>` : ''}${b.consent && b.email ? `<span class="muted">${h(b.email)}</span>` : ''}</div>
       ${b.status === 'requested'
-        ? `<button class="btn small block" style="margin-top:8px" data-action="company-confirm" data-id="${b.id}">${L(`Thibitisha na tuma SMS kwa ${host()}`, `Confirm and send the SMS to ${host()}`)}</button>`
-        : `<div class="sms small" style="margin-top:8px">${h(bookingSms(b))}</div><a class="btn small secondary block" style="margin-top:6px" href="sms:?body=${encodeURIComponent(bookingSms(b))}">${L('Fungua kwenye programu ya SMS', 'Open in the SMS app')}</a>`}
+        ? `<button class="btn small block" style="margin-top:8px" data-action="company-confirm" data-id="${b.id}">${L('Thibitisha: SMS kwa mwenyeji na kwa mgeni', 'Confirm: SMS to the host and to the tourist')}</button>`
+        : `
+        <div class="link-line"><span class="chip">${h(host())}</span><span class="link-arrow">⇄</span><span class="chip plain">${h(b.company || 'Ondera Coffee Trails')}</span><span class="link-arrow">⇄</span><span class="chip">${h(b.leadName)}</span></div>
+        <div class="small muted" style="margin:6px 0 4px">${L('SMS kwa mwenyeji (Kiswahili)', 'SMS to the host (Swahili)')}</div>
+        <div class="sms small">${h(smsHost(b))}</div>
+        <a class="btn small secondary block" style="margin-top:6px" href="sms:${encodeURIComponent(hostRec.phone || '')}?body=${encodeURIComponent(smsHost(b))}" data-action="sms-sent" data-id="${b.id}" data-to="host">${L(`Tuma kwa ${host()}`, `Send to ${host()}`)} ${b.smsHost ? '✓' : ''}</a>
+        <div class="small muted" style="margin:10px 0 4px">${L('SMS kwa mgeni', 'SMS to the tourist')} (${h(langName(b.language, getLang()))})</div>
+        <div class="sms small">${h(smsTourist(b))}</div>
+        <a class="btn small secondary block" style="margin-top:6px" href="sms:?body=${encodeURIComponent(smsTourist(b))}" data-action="sms-sent" data-id="${b.id}" data-to="tourist">${L(`Tuma kwa ${h(b.leadName)}`, `Send to ${h(b.leadName)}`)} ${b.smsTourist ? '✓' : ''}</a>`}
     </li>`;
+  const list = reqs.length || confirmed.length ? `
+  <div class="card">
+    <h2>${L('Maombi na miunganisho', 'Requests and connections')}</h2>
+    <p class="small muted">${L('Ombi la mgeni linakuja hapa. Ukithibitisha, wote wawili wanapata SMS: mwenyeji kwa Kiswahili, mgeni kwa lugha yake. Hakuna upande unaohitaji intaneti.', 'A visitor’s request lands here. When you confirm, both sides get an SMS: the host in Swahili, the tourist in their language. Neither side needs internet.')}</p>
+    <ul class="list">${[...reqs, ...confirmed].map(row).join('')}</ul>
+  </div>` : '';
+  return list + feedbackInboxHTML();
+}
+
+// What the company receives back: the host's uploaded reports and, from tourists, counts only.
+function feedbackInboxHTML() {
+  const ups = state.cloud.uploads.slice(-3).reverse();
+  const touristEntries = state.entries.filter(e => e.source === 'visitor');
+  const touristGuests = new Set(touristEntries.map(e => e.guestId)).size;
+  if (!ups.length && !touristGuests) return '';
   return `
   <div class="card">
-    <h2>${L('Maombi mapya kutoka kwa wageni', 'New requests from visitors')}</h2>
-    <p class="small muted">${L('Yametumwa kutoka ukurasa wa “Tafuta mahali”. Ukithibitisha, mwenyeji anapata SMS; haitaji intaneti.', 'Sent from the “Find a place” page. When you confirm, the host gets an SMS; no internet needed on her side.')}</p>
-    <ul class="list">${[...reqs, ...confirmed].map(row).join('')}</ul>
+    <h2>${L('Maoni yaliyopokelewa', 'Feedback received')}</h2>
+    ${ups.length ? ups.map(u => `
+      <div class="small muted" style="margin-top:6px">${L('Kutoka kwa mwenyeji', 'From the host')} ${h(u.host)} · ${h(new Date(u.at).toLocaleDateString())} · ${L('maoni', 'entries')} ${u.entries}</div>
+      <div class="sms small" style="margin-top:4px">${h(u.report)}</div>`).join('')
+      : `<p class="small muted">${L('Mwenyeji bado hajapakia ripoti.', 'The host has not uploaded a report yet.')}</p>`}
+    ${touristGuests ? `<p class="small" style="margin:10px 0 0">${L(`Kutoka kwa wageni: watu ${touristGuests} waliandika kwenye simu ya mwenyeji (jumla tu, hakuna majina).`, `From tourists: ${touristGuests} wrote on the host’s phone (counts only, no names).`)}</p>` : ''}
   </div>`;
 }
 
 function screenCompany() {
+  if (!state.hosts) loadHosts().then(render);
   const today = isoDate(addDays(new Date(), 3));
   const { s } = currentSummary();
   const report = s.entries ? guideReport(s, L('Mfano', 'Example'), host()) : null;
@@ -810,9 +905,29 @@ async function loadHosts() {
 
 const hostById = id => (state.hosts || []).find(x => x.id === id);
 
+let semanticTimer = null;
 function screenFind() {
   if (!state.hosts) loadHosts().then(render);
-  return findHTML({ q: state.find.q, hosts: state.hosts || [], lang: getLang(), loading: !state.hosts });
+  const hosts = state.hosts || [];
+  const ranked = rankHosts(state.find.q, hosts, state.guests, getLang(), state.find.semantic);
+  return findHTML({ q: state.find.q, hosts, lang: getLang(), loading: !state.hosts, ranked, thinking: state.find.thinking });
+}
+
+// Meaning-based matching with the on-device topic model (only if it is already on the phone, never a download).
+async function semanticRank(query) {
+  if (!state.shared.topics || !state.hosts || !query.trim()) return;
+  state.find.thinking = true;
+  try {
+    const texts = [query, ...state.hosts.map(x => `${x.name}. ${x.tags.join(', ')}. ${x.blurb}`)];
+    const vecs = await ai.embedTexts(texts);
+    const q = vecs[0];
+    const sem = {};
+    state.hosts.forEach((x, i) => { const v = vecs[i + 1]; let d = 0; for (let k = 0; k < q.length; k++) d += q[k] * v[k]; sem[x.id] = Math.max(0, d); });
+    state.find.semantic = sem;
+  } catch { /* keyword ranking only */ } finally {
+    state.find.thinking = false;
+    if (state.screen === 'find') { const pos = document.getElementById('find-q')?.selectionStart; render(); const el = document.getElementById('find-q'); if (el) { el.focus(); if (pos != null) el.setSelectionRange(pos, pos); } }
+  }
 }
 
 function screenHost() {
@@ -829,7 +944,35 @@ function screenHost() {
 function screenBooked() {
   const hostRec = hostById(state.book.hostId);
   if (!hostRec || !state.book.done) { state.screen = 'find'; return screenFind(); }
-  return bookedHTML({ host: hostRec, booking: state.book.done, lang: getLang() });
+  if (!state.phrasebook.phrases) loadPhrasebook();
+  return tripHTML({ host: hostRec, booking: state.book.done, lang: getLang(), phrasebook: state.phrasebook.phrases, saved: state.phrasebook.saved, audioReady: state.phrasebook.audioReady });
+}
+
+async function loadPhrasebook() {
+  try {
+    const res = await fetch('data/phrasebook-sw.json');
+    state.phrasebook.phrases = (await res.json()).phrases;
+    state.phrasebook.saved = await db.getSetting('phrasebookSaved', false);
+    const m = await loadVoiceManifest();
+    state.phrasebook.audioReady = Boolean(m && state.phrasebook.phrases.every(p => m.files[p.id]));
+  } catch { state.phrasebook.phrases = []; }
+  if (state.screen === 'booked') render();
+}
+
+// Keep the phrasebook and its sound on the guest's phone (cache + a setting), so it works with no signal at the farm.
+async function downloadPhrasebook() {
+  showBusy(L('Inapakua misemo', 'Downloading phrases'));
+  try {
+    if ('caches' in window) {
+      const cache = await caches.open('kitabu-phrases-v1');
+      await cache.add('data/phrasebook-sw.json').catch(() => null);
+      const m = await loadVoiceManifest();
+      if (m) await Promise.all(state.phrasebook.phrases.map(p => (m.files[p.id] ? cache.add(`audio/sw/${m.files[p.id]}`).catch(() => null) : null)));
+    }
+    state.phrasebook.saved = true;
+    await db.setSetting('phrasebookSaved', true);
+    toast(`✓ ${L('Misemo iko kwenye simu yako', 'Phrases saved on your phone')}`);
+  } finally { hideBusy(); render(); }
 }
 
 function captureBookForm() {
@@ -972,7 +1115,7 @@ async function tryExample() {
 const SCREENS = {
   choose: roleChooserHTML,
   home: screenHome, add: screenAdd, summary: screenSummary, guests: screenGuests, week: screenWeek,
-  langs: screenLangs, more: screenMore, company: screenCompany,
+  langs: screenLangs, more: screenMore, company: screenCompany, translate: screenTranslate,
   find: screenFind, host: screenHost, booked: screenBooked,
   visitor: () => visitorHTML(state.visitor.lang, state.visitor.saved, state.visitor.draft),
 };
@@ -1299,6 +1442,23 @@ async function deleteGuest(id) {
   render();
 }
 
+// "Cloud" upload: the counts-only report goes to the tour company and the tourism office. On this demo
+// phone it is stored locally and appears on the company side; a real deployment posts it to their system.
+async function cloudUpload() {
+  if (!state.shareOk) return;
+  if (!navigator.onLine) return toast(L('Hakuna mtandao. Itapakiwa msaidizi akiunganisha.', 'Offline. It will upload when the helper connects.'), 5000);
+  const { s } = currentSummary();
+  const report = guideReport(s, `${PERIODS[state.period]()}`, host());
+  showBusy(L('Inapakia kwenye wingu', 'Uploading to the cloud'));
+  await new Promise(r => setTimeout(r, 900));
+  const up = { id: uid('up'), at: new Date().toISOString(), entries: s.entries, guests: s.guests, to: 'Ondera Coffee Trails · ' + L('Ofisi ya utalii', 'Tourism office'), report, period: state.period, host: host() };
+  state.cloud.uploads.push(up);
+  await db.setSetting('cloudUploads', state.cloud.uploads);
+  hideBusy();
+  toast(`✓ ${L('Imepakiwa', 'Uploaded')}`);
+  render();
+}
+
 async function shareReport() {
   if (!state.shareOk) return;
   const text = document.getElementById('report-text')?.textContent || '';
@@ -1335,6 +1495,11 @@ const actions = {
   say: el => sayLabel(el.dataset.clip, getLang() === 'sw' ? el.dataset.sw : el.dataset.en, getLang(), speak),
   'choose-role': el => chooseRole(el.dataset.role),
   'open-host': el => { state.book = { hostId: el.dataset.id, day: null, form: {}, done: null }; go('host'); },
+  'download-phrasebook': downloadPhrasebook,
+  'translate-run': translateRun,
+  'copy-text': el => copyText(el.dataset.text || ''),
+  'cloud-upload': cloudUpload,
+  'say-phrase': el => sayLabel(el.dataset.clip, el.dataset.text, 'sw', speak),
   'book-day': el => { captureBookForm(); state.book.day = el.dataset.day; render(); },
   'book-submit': submitBooking,
   'toggle-day': async el => {
@@ -1347,9 +1512,17 @@ const actions = {
     const b = state.bookings.find(x => x.id === el.dataset.id);
     if (!b) return;
     b.status = 'confirmed';
+    b.confirmedAt = new Date().toISOString();
     await db.put('bookings', b);
-    toast(L(`Imethibitishwa. SMS kwa ${host()} iko tayari.`, `Confirmed. The SMS to ${host()} is ready.`));
+    toast(L('Imethibitishwa. SMS mbili ziko tayari.', 'Confirmed. Two SMS are ready: host and tourist.'));
     render();
+  },
+  'sms-sent': async el => {
+    const b = state.bookings.find(x => x.id === el.dataset.id);
+    if (!b) return;
+    if (el.dataset.to === 'host') b.smsHost = new Date().toISOString(); else b.smsTourist = new Date().toISOString();
+    await db.put('bookings', b);
+    setTimeout(render, 400);
   },
   'switch-role': async () => { state.role = null; await db.setSetting('role', null); go('choose'); },
   back: () => go('home'),
@@ -1482,6 +1655,7 @@ const changeHandlers = {
     if (el) el.textContent = bookingSms(readCompanyForm());
   },
   'company-consent': el => document.getElementById('c-email-wrap')?.classList.toggle('hidden', !el.checked),
+  'tr-lang': el => { state.translate.lang = el.value; state.translate.result = ''; state.translate.text = document.getElementById('tr-text')?.value || ''; render(); },
   'consent-toggle': el => document.getElementById('contact-fields')?.classList.toggle('hidden', !el.checked),
   'bk-consent-toggle': el => document.getElementById('bk-email-wrap')?.classList.toggle('hidden', !el.checked),
   box: el => { const i = state.add.inputs.find(x => x.id === el.dataset.id); if (i) i.box = el.value; },
@@ -1505,6 +1679,8 @@ const changeHandlers = {
     state.shareOk = el.checked;
     const b = document.getElementById('share-btn');
     if (b) b.disabled = !el.checked;
+    const c = document.getElementById('cloud-btn');
+    if (c) c.disabled = !el.checked;
   },
 };
 
@@ -1514,8 +1690,11 @@ const inputHandlers = {
   'input-english': el => { const i = state.add.inputs.find(x => x.id === el.dataset.id); if (i) i.english = el.value; },
   'find-q': el => {
     state.find.q = el.value;
+    state.find.semantic = null;
     clearTimeout(findTimer);
     findTimer = setTimeout(() => { const pos = el.selectionStart; render(); const q = document.getElementById('find-q'); if (q) { q.focus(); q.setSelectionRange(pos, pos); } }, 250);
+    clearTimeout(semanticTimer);
+    semanticTimer = setTimeout(() => semanticRank(el.value), 900);
   },
   'bk-v-ref': el => {
     clearTimeout(findTimer);

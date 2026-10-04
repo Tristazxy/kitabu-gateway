@@ -40,6 +40,22 @@ export function bookingSms(b) {
   return `WeKaribu: Wageni wapya. ${daySw(b.date)}: wageni ${b.guests} (${langName(b.language, 'sw')})${b.guide ? `, mwongozaji ${b.guide}` : ''}.\nJibu NDIYO kukubali au HAPANA kukataa.`;
 }
 
+// Confirmation to the tourist, in their language when we have it (human-written; English otherwise).
+const CONFIRM = {
+  en: b => `${b.company}: your visit to ${b.hostName} is confirmed for ${dayEn(b.date)} (${b.guests} guests). Meet at: ${b.meet}. Guide: ${b.guide}. Reply to this number with questions.`,
+  it: b => `${b.company}: la vostra visita a ${b.hostName} è confermata per ${dayEn(b.date)} (${b.guests} persone). Punto d’incontro: ${b.meet}. Guida: ${b.guide}.`,
+  fr: b => `${b.company} : votre visite chez ${b.hostName} est confirmée pour ${dayEn(b.date)} (${b.guests} pers.). Rendez-vous : ${b.meet}. Guide : ${b.guide}.`,
+  de: b => `${b.company}: Ihr Besuch bei ${b.hostName} ist bestätigt für ${dayEn(b.date)} (${b.guests} Pers.). Treffpunkt: ${b.meet}. Guide: ${b.guide}.`,
+  es: b => `${b.company}: su visita a ${b.hostName} está confirmada para ${dayEn(b.date)} (${b.guests} pers.). Punto de encuentro: ${b.meet}. Guía: ${b.guide}.`,
+  pl: b => `${b.company}: wizyta u ${b.hostName} potwierdzona na ${dayEn(b.date)} (${b.guests} os.). Miejsce spotkania: ${b.meet}. Przewodnik: ${b.guide}.`,
+  zh: b => `${b.company}：您在 ${b.hostName} 的参观已确认，时间 ${dayEn(b.date)}（${b.guests} 人）。集合地点：${b.meet}。向导：${b.guide}。`,
+  sw: b => `${b.company}: ziara yenu kwa ${b.hostName} imethibitishwa ${daySw(b.date)} (wageni ${b.guests}). Kutana: ${b.meet}. Mwongozaji: ${b.guide}.`,
+};
+export function touristSms(b) {
+  const f = CONFIRM[b.language] || CONFIRM.en;
+  return f({ company: b.company || 'Tour company', hostName: b.hostName || 'the host', date: b.date, guests: b.guests, meet: b.meet || 'the village office', guide: b.guide || '-', language: b.language });
+}
+
 // ---------- Swahili summary for Noor ----------
 /**
  * @param {Object} s  stats from summarize()

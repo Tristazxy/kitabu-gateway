@@ -1,0 +1,51 @@
+name: Kitabu — Swahili voice clips (ElevenLabs)
+
+# Generates Noor's spoken-summary clips from kitabu/audio/phrases-sw.json, rebuilds the static
+# app into public/kitabu, and commits both. Needs the repository secret ELEVENLABS_API_KEY.
+# Only missing clips are generated, so running on every push costs nothing once all exist.
+# Commits made by this workflow do not trigger workflows again.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'kitabu/**'
+      - '.github/workflows/kitabu-voice.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kitabu-voice
+  cancel-in-progress: false
+
+jobs:
+  clips:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: kitabu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Generate clips
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ELEVENLABS_VOICE_ID: ${{ vars.ELEVENLABS_VOICE_ID }}
+          ELEVENLABS_MODEL_ID: ${{ vars.ELEVENLABS_MODEL_ID }}
+        run: python3 tools/make_audio.py
+      - name: Rebuild the static app
+        run: npm ci --no-audit --no-fund && npm run site
+      - name: Commit
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A kitabu/public/audio/sw public/kitabu
+          if git diff --cached --quiet; then echo "Nothing new"; exit 0; fi
+          git commit -m "Kitabu: Swahili voice clips (ElevenLabs, synthetic voice)"
+          git pull --rebase origin main
+          git push origin HEAD:main

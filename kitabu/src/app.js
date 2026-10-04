@@ -1223,7 +1223,7 @@ function updateMotionBtn() {
   const icon = on
     ? '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="1" width="3.5" height="10" rx="1" fill="currentColor"/><rect x="7.5" y="1" width="3.5" height="10" rx="1" fill="currentColor"/></svg>'
     : '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1.2v9.6L10.5 6z" fill="currentColor"/></svg>';
-  b.innerHTML = `${icon} Video`;
+  b.innerHTML = `${icon}<span class="btn-word"> Video</span>`;
   b.setAttribute('aria-pressed', String(!on));
   b.setAttribute('aria-label', on ? L('Simamisha mandhari inayosogea', 'Stop the moving background') : L('Cheza mandhari inayosogea', 'Play the moving background'));
   b.title = b.getAttribute('aria-label');
@@ -1249,8 +1249,8 @@ function render() {
     net.title = state.online ? L('Bonyeza kufanya kazi bila mtandao', 'Tap to work offline') : (state.forceOffline ? L('Bonyeza kurudi mtandaoni', 'Tap to go back online') : L('Hakuna mtandao sasa', 'No internet right now'));
   }
   if (!state.online) view.insertAdjacentHTML('afterbegin', `<div class="netbar">${L('Bila mtandao: maoni, muhtasari, tafsiri na ratiba vinafanya kazi kwenye simu hii. Maombi na ripoti huenda kwa SMS.', 'No internet: feedback, summary, translate and reservations work on this phone. Requests and reports go by SMS.')}</div>`);
-  const lb = document.getElementById('lang-btn');
-  if (lb) lb.textContent = getLang() === 'sw' ? 'English' : 'Kiswahili';
+  const ls = document.getElementById('ui-lang');
+  if (ls && ls.value !== getLang()) ls.value = getLang();
   if (state.guide.open) renderGuide();
   if (sc === 'langs') {
     ai.storageEstimate().then(est => {
@@ -1830,6 +1830,12 @@ const changeHandlers = {
     s.topic = el.value;
     entry.sentences = [s];
     await saveEntry(entry);
+  },
+  // The host's language, chosen in the top-right menu: never only the phone's setting
+  'ui-lang': async el => {
+    setLang(el.value === 'sw' ? 'sw' : 'en');
+    await db.setSetting('lang', getLang());
+    render();
   },
   'share-ok': el => {
     state.shareOk = el.checked;

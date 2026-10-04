@@ -23,10 +23,11 @@
 
 ### Three sides, one home screen (one phone, no server)
 
-The first screen asks who is holding the phone: **host**, **visitor** or **tour company**; the choice is
-remembered. The host lands on a single home screen, in the phone's language (Swahili or English; one tap
-switches): two lines of *what guests said* with **Listen** and **Details**, then four big buttons. A
-three-step guide opens on the first visit.
+The first screen always asks who is holding the phone: **host**, **visitor** or **tour company** — the last
+choice is never assumed. The host lands on a single home screen: two lines of *what guests said* with **Listen**
+and **Details**, then four big buttons. A three-step guide opens on the first visit. The host's language is
+a menu at the top right (**Kiswahili / English**), not only the phone's setting — a host whose phone does not
+offer her language still gets the app in it; the first launch follows the phone, the menu choice is remembered.
 
 * **Add guest feedback** — pick the guest, photograph box A / box B, record or upload a voice note, or type. Analyse. Correct anything marked "Check".
 * **Let a guest write** — Noor hands over the phone. The screen switches to the guest's own language (Italian, French, German, Chinese, Spanish, Polish, English or Swahili, picked from the phone's settings): two boxes, optional email with a consent tick, *Save*. The guest cannot see anyone else's data; returning is marked "host only".
@@ -47,7 +48,7 @@ Built around Noor, usable by any small host. What changes per host is data, not 
 |---|---|---|
 | **Host's name** | A setting (More → Host). It flows into the visitor screen (8 languages), thank-you notes, the report and the printable page. | — |
 | **Guest languages** | Dedicated packs for Italian, French, German, Chinese, Spanish, Polish, Dutch, Russian, Japanese, Korean; English and Swahili need no pack. **"Other language"** uses one multilingual fallback pack (100+ languages → English, lower quality, so every sentence is marked for a human check). Voice: Whisper detects the language. | A new dedicated pack is one line in `src/langs.js` (any Opus-MT `xx-en` model). |
-| **Host's language** (interface, summary, SMS, thank-you templates) | Swahili and English, following the phone's language, one tap to switch. | Every sentence a host reads is a human-written pair in the code (`L('Kiswahili', 'English')`) and the templates in `src/templates.js`; a third host language is a translation pass over those strings — by a person, never by a model, which is the point. |
+| **Host's language** (interface, summary, SMS, thank-you templates) | Swahili and English, chosen in the top-right menu (first launch follows the phone). | Every sentence a host reads is a human-written pair in the code (`L('Kiswahili', 'English')`) and the templates in `src/templates.js`; a third host language is a translation pass over those strings — by a person, never by a model, which is the point. |
 | **Country** | Nothing country-specific: no currency, addresses or regulation in the app. The SMS prefix and the printable page are plain text. | — |
 | **Accounts** | **No login, by design.** The phone is the account: data never leaves it, there is no server to breach, no sign-up wall for a host with patchy internet. | Multi-device sharing, when needed, will be an export/import file or QR code — still no account. |
 
@@ -72,7 +73,7 @@ The wordmark is set in [Inter](https://rsms.me/inter/) (SIL Open Font License), 
 
 ### Background videos (Pexels, free licence)
 
-Eight short real-nature clips play in turn behind the app; when one ends the next scrolls up from below, like a feed. Video plays only online and outside data-saver mode (the still frames take turns otherwise), and the **⏸ Video** button in the top bar freezes the background. All from [Pexels](https://www.pexels.com) under the Pexels licence: mountains and riders — RD King (12492499); bamboo grove — Anton Lukin (12311788); bamboo canopy — Vanessa Garcia (6318875); coffee cherries — Matthias Groeneveld (7116757); stream — Thierry Rossier (11902892); flower field — Michael Burrows (14482561); dunes — Dubang chang (14483416); snowy forest — iPhone Snaps (19806018).
+Eight short real-nature clips play in turn behind the app, each once and forwards; during the last seconds of one, the next fades in slowly on top of it, so the picture never freezes or jumps. Video plays only online and outside data-saver mode (the still frames take turns otherwise), and the **⏸ Video** button in the top bar freezes the background. All from [Pexels](https://www.pexels.com) under the Pexels licence: mountains and riders — RD King (12492499); bamboo grove — Anton Lukin (12311788); bamboo canopy — Vanessa Garcia (6318875); coffee cherries — Matthias Groeneveld (7116757); stream — Thierry Rossier (11902892); flower field — Michael Burrows (14482561); dunes — Dubang chang (14483416); snowy forest — iPhone Snaps (19806018).
 
 ## Why AI here — and what is deliberately *not* AI
 

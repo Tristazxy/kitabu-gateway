@@ -55,9 +55,9 @@ export const NATURE_SVG = `
 </svg>`;
 
 // Real-nature backgrounds: eight short Pexels clips (free licence) that play in turn behind the app,
-// each once and forwards. Just before a clip ends the next one scrolls up from below while the first
-// is still moving, so the picture never freezes; offline (or with data-saver / reduced motion) the
-// still frames take turns instead. The "Video" button in the top bar freezes it.
+// each once and forwards. During the last seconds of a clip the next one fades in slowly on top of it
+// while both are still moving, so the picture never freezes or jumps; offline (or with data-saver /
+// reduced motion) the still frames take turns the same way. The "Video" button in the top bar freezes it.
 // Files live in public/kitabu/bg/ (served, not rebuilt): <scene>.mp4 / <scene>-wide.mp4 and .jpg posters.
 export const SCENES = {
   mountains: { id: 12492499, by: 'RD King' },
@@ -75,7 +75,7 @@ export const allCredits = () => Object.entries(SCENES).map(([k, v]) => `${v.by} 
 
 const MOTION_KEY = 'wekaribu-motion';
 const PHOTO_SECONDS = 12;   // how long each still frame stays when the video cannot play
-const SLIDE_MS = 900;       // must match the transform transition in app.css
+const FADE_MS = 2400;       // must match the opacity transition in app.css
 
 let root = null;
 let index = -1;
@@ -120,14 +120,15 @@ function addVideo(el, scene) {
   el.classList.add('has-video');
   v.addEventListener('canplay', () => { if (canPlayVideo()) el.classList.add('video-ready'); });
   v.addEventListener('error', () => { v.remove(); el.classList.remove('video-ready', 'has-video'); }, { once: true });
-  // each clip plays exactly once, forwards; the next one scrolls in during its last second,
+  // each clip plays exactly once, forwards; the next one fades in during its last seconds,
   // or as soon as it is ready if the clip ended first
+  const isCurrent = () => PLAYLIST[index] === scene; // the old clip stays visible while the next fades in
   v.addEventListener('timeupdate', () => {
-    if (!el.classList.contains('on') || !isFinite(v.duration) || v.duration - v.currentTime > (SLIDE_MS + 300) / 1000) return;
+    if (!isCurrent() || !isFinite(v.duration) || v.duration - v.currentTime > (FADE_MS + 300) / 1000) return;
     const nv = layerFor(PLAYLIST[nextIndex()]).querySelector('video');
     if (!nv || nv.readyState >= 4) next();
   });
-  v.addEventListener('ended', () => { if (el.classList.contains('on')) advance(); });
+  v.addEventListener('ended', () => { if (isCurrent()) advance(); });
   el.appendChild(v);
   return v;
 }
@@ -170,28 +171,25 @@ function updateCredit() {
   for (const c of document.querySelectorAll('.credit')) c.textContent = text;
 }
 
+let zTop = 0;
 function show(i) {
   const scene = PLAYLIST[i];
   const el = layerFor(scene);
   const prev = index >= 0 ? layers[PLAYLIST[index]] : null;
   const first = index < 0;
   index = i;
-  if (first) el.classList.add('reset'); // the opening scene is simply there, nothing slides yet
-  void el.offsetWidth; // the start position is applied before it moves
+  el.style.zIndex = String(++zTop); // the new scene fades in on top of the old one
+  if (first) el.classList.add('reset'); // the opening scene is simply there, no fade yet
+  void el.offsetWidth; // the start state is applied before the transition
   el.classList.add('on');
   if (first) requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove('reset')));
   if (prev && prev !== el) {
-    // the old scene scrolls out at the top while the new one comes up from below
-    prev.classList.remove('on');
-    prev.classList.add('out');
-    const pv = prev.querySelector('video');
+    // the old scene keeps playing underneath until the new one is fully there, then it is stopped and rewound
     setTimeout(() => {
-      prev.classList.add('reset');
-      prev.classList.remove('out');
-      // the outgoing clip keeps moving while it leaves; it is stopped and rewound only now, out of sight
+      prev.classList.remove('on');
+      const pv = prev.querySelector('video');
       if (pv) { pv.pause(); try { pv.currentTime = 0; } catch (e) { /* not seekable yet */ } }
-      requestAnimationFrame(() => requestAnimationFrame(() => prev.classList.remove('reset')));
-    }, SLIDE_MS + 100);
+    }, FADE_MS + 100);
   }
   const v = el.querySelector('video');
   if (v && motion && canPlayVideo()) {

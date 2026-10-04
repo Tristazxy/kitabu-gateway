@@ -2,7 +2,7 @@
  "source": "ElevenLabs text-to-speech (synthetic voice), generated from audio/phrases-sw.json",
  "model": "eleven_v3",
  "voice": "EXAVITQu4vr4xnSDxMaL",
- "generated": "2026-10-04T04:05:46+00:00",
+ "generated": "2026-10-04T04:06:24+00:00",
  "complete": true,
  "files": {
   "period": "period-f7f0afd7a5.mp3",

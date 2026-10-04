@@ -145,7 +145,7 @@ export function hostHTML({ host, days, selected, summaryLine, form, lang, knownG
   </div>`;
 }
 
-export function tripHTML({ host, booking, lang, phrasebook, saved, audioReady, online = true, requestHref = '' }) {
+export function tripHTML({ host, booking, lang, phrasebook, saved, audioReady, online = true, requestHref = '', deposit = 0, paidHref = '' }) {
   const map = `<svg viewBox="0 0 320 170" class="spot-map" role="img" aria-label="map">
     <rect width="320" height="170" rx="12" fill="#E4EFE2"/>
     <path d="M0 120 C 60 90 120 150 200 110 S 290 80 320 100" fill="none" stroke="#8CC6DC" stroke-width="10" stroke-linecap="round"/>
@@ -182,6 +182,19 @@ export function tripHTML({ host, booking, lang, phrasebook, saved, audioReady, o
     </div>
     <p class="small muted" style="margin:8px 0 0">${L('Maelezo haya yanabaki kwenye simu yako bila mtandao.', 'These details stay on your phone, offline.')}</p>
   </div>
+  ${deposit ? `
+  <div class="card">
+    <h2>${L('Malipo ya awali', 'Deposit')} ${booking.payment ? `<span class="chip">${L('Imelipwa', 'Paid')}</span>` : ''}</h2>
+    <p style="margin:0 0 8px">${h(host.price)}</p>
+    <p style="margin:0 0 8px"><strong>${L('Wageni', 'Guests')} ${h(booking.guests)} × TZS ${Number(host.priceTZS).toLocaleString('en-US')} = TZS ${(Number(host.priceTZS) * Number(booking.guests)).toLocaleString('en-US')}</strong><br><span class="small muted">${L('Malipo ya awali (30%)', 'Deposit (30%)')}: <strong>TZS ${Number(deposit).toLocaleString('en-US')}</strong> · ${L('iliyobaki unalipa siku ya ziara', 'the rest on the day')}</span></p>
+    ${booking.payment ? `
+    <p class="small" style="margin:0">✓ M-Pesa ${h(booking.payment.ref)} · TZS ${Number(booking.payment.amount).toLocaleString('en-US')} · ${h(new Date(booking.payment.at).toLocaleDateString())}</p>
+    ${paidHref ? `<a class="btn small secondary block" style="margin-top:8px" href="${paidHref}">${L('Tuma risiti kwa kampuni (SMS)', 'Send the receipt to the company (SMS)')}</a>` : ''}` : `
+    <div class="notice" style="margin:0 0 10px"><strong>M-Pesa → ${h(host.mobileMoney)}</strong>${L('Pesa zinaenda moja kwa moja kwenye simu ya mwenyeji. Baada ya kulipa, andika msimbo wa uthibitisho hapa.', 'The money goes straight to the host’s own phone. After paying, enter the confirmation code here.')}</div>
+    <label class="field">${L('Msimbo wa uthibitisho wa M-Pesa', 'M-Pesa confirmation code')}<input type="text" id="pay-ref" autocomplete="off" placeholder="e.g. RJ7K2X9Q"></label>
+    <button class="btn block" style="margin-top:10px" data-action="pay-deposit">${L('Nimelipa', 'I have paid')}</button>
+    <p class="small muted" style="margin:8px 0 0">${L('Au lipa mwongozaji ukifika.', 'Or pay the guide on arrival.')}</p>`}
+  </div>` : ''}
   <div class="card">
     <h2>${L('Kiswahili kwa safari yako', 'Swahili for your trip')} ${saved ? `<span class="chip">${L('Imepakuliwa', 'Downloaded')}</span>` : ''}</h2>
     <p class="small muted">${L('Lugha ya mwenyeji, imehifadhiwa kwenye simu yako.', `The host’s language, saved on your phone${audioReady ? ' with sound' : ''}.`)}</p>

@@ -5,7 +5,7 @@
 import { db, uid } from './db.js';
 import { LANGS, SHARED_MODELS, PACK_MB, packLangs, planPacks, langName, KEEP_TOP_N } from './langs.js';
 import { TOPICS, OTHER, topicById, PRODUCTS } from './topics.js';
-import { weeklySms, summaryText, thankYou, guideReport, daySw, dayEn, SUBJECTS, bookingSms, touristSms, strongProduct, parseWkCode, requestSms, availabilitySms, reportSms } from './templates.js';
+import { weeklySms, summaryText, thankYou, guideReport, daySw, dayEn, SUBJECTS, bookingSms, touristSms, strongProduct, parseWkCode, requestSms, availabilitySms, reportSms, hostAnswerSms, paidSms } from './templates.js';
 import { summarize, inPeriod, guestTopLiked, needsCheck } from './summary.js';
 import * as ai from './ai.js';
 import { analyze } from './pipeline.js';
@@ -156,7 +156,7 @@ function sentenceRow(entry, idx, { open = false } = {}) {
       ${check ? `<span class="chip warn">${L('Angalia', 'Check')}</span>` : s.confirmed ? `<span class="chip plain">${L('Imethibitishwa', 'Confirmed')}</span>` : ''}
     </div>
     ${check && flags.length ? `<div class="small muted" style="margin-top:4px">${flags.map(flagText).join('; ')}</div>` : ''}
-    <details ${open || check ? 'open' : ''} style="margin-top:6px">
+    <details ${open ? 'open' : ''} style="margin-top:6px">
       <summary class="small" style="cursor:pointer;color:var(--primary);font-weight:600;min-height:32px">${L('Rekebisha', 'Correct')}</summary>
       <div class="stack" style="margin-top:6px">
         <label class="field small">${L('Mada', 'Topic')}
@@ -291,9 +291,10 @@ function screenHome() {
     <div class="card">
       <div class="card-title"><h2>${L('Wageni wanaokuja', 'Reservations')}</h2><button class="btn small secondary" data-action="go" data-screen="week">${L('Zote', 'All')}</button></div>
       <ul class="list">${reservations.map(b => `
-        <li class="row between">
-          <div><strong>${h(day(b.date))}</strong> · ${h(b.leadName || 'Mgeni')} <span class="small muted">· ${L('wageni', 'guests')} ${h(b.guests)}</span>
-            <div class="row small" style="margin-top:4px">${langPill(b.language)} ${packChip(b.language)} ${b.status === 'requested' ? `<span class="chip warn">${L('Inasubiri kampuni', 'Awaiting the company')}</span>` : `<span class="chip">${L('Imethibitishwa', 'Confirmed')}</span>`}</div></div>
+        <li>
+          <div class="row between"><div><strong>${h(day(b.date))}</strong> · ${h(b.leadName || 'Mgeni')} <span class="small muted">· ${L('wageni', 'guests')} ${h(b.guests)}</span></div>${bookingStatusChip(b)}</div>
+          <div class="row small" style="margin-top:4px">${langPill(b.language)} ${packChip(b.language)} ${b.payment ? `<span class="chip">${L('Malipo ya awali yamelipwa', 'Deposit paid')}</span>` : ''}</div>
+          ${hostAnswerButtons(b)}
         </li>`).join('')}</ul>
     </div>` : '';
   const weekSub = next7.length
@@ -563,7 +564,13 @@ function screenSummary() {
   const periodChips = Object.entries(PERIODS).map(([k, label]) =>
     `<button class="chip" data-action="period" data-period="${k}" aria-pressed="${state.period === k}">${label()}</button>`).join('');
 
-  const topicList = (items, neg) => items.filter(x => x.id !== 'other').map(x => {
+  // The top four topics are open; the long tail folds away so the page stays short.
+  const topicList = (items, neg) => {
+    const rows = items.filter(x => x.id !== 'other').map(x => topicRow(x, neg));
+    if (rows.length <= 5) return rows.join('');
+    return rows.slice(0, 4).join('') + `<details class="more-topics"><summary>${L(`Mada nyingine ${rows.length - 4}`, `${rows.length - 4} more topics`)}</summary>${rows.slice(4).join('')}</details>`;
+  };
+  const topicRow = (x, neg) => {
     const pct = s.guests ? Math.round((x.guests / s.guests) * 100) : 0;
     const quotes = x.quotes.slice(0, 5).map(q => `
       <blockquote class="q">${q.original && q.lang !== 'en' ? `<div class="orig" lang="${h(q.lang)}">“${h(q.original)}”</div><div class="trans">EN: ${h(q.en)}</div>` : `<div class="orig">“${h(q.en)}”</div>`}
@@ -574,7 +581,7 @@ function screenSummary() {
         <div class="bar ${neg ? 'neg' : ''}"><span style="width:${pct}%"></span></div>
         <details class="quotes"><summary>${L('Maneno ya wageni', 'What guests said')} (${x.quotes.length})</summary>${quotes}</details>
       </div>`;
-  }).join('');
+  };
 
   const flagged = [];
   for (const e of entries) (e.sentences || []).forEach((sen, i) => { if (needsCheck(sen)) flagged.push([e, i]); });
@@ -617,7 +624,7 @@ function screenSummary() {
   ${flagged.length ? `
   <div class="card">
     <h2>${L('Zinahitaji kuangaliwa', 'Needs a human check')}</h2>
-    ${flagged.map(([e, i]) => `<div class="small muted" style="margin-top:8px">${h(guestById(e.guestId)?.name || '')} · ${h(langName(e.lang, lang))}</div>${sentenceRow(e, i, { open: true })}`).join('')}
+    ${flagged.map(([e, i]) => `<div class="small muted" style="margin-top:8px">${h(guestById(e.guestId)?.name || '')} · ${h(langName(e.lang, lang))}</div>${sentenceRow(e, i, { open: false })}`).join('')}
   </div>` : ''}
 
   <div class="card">
@@ -880,13 +887,16 @@ function requestsHTML() {
   const confirmed = state.bookings.filter(b => b.status === 'confirmed' && b.source === 'visitor').slice(-4);
   const hostRec = (state.hosts || []).find(x => x.id === 'noor') || { meet: 'Materuni village office', phone: '' };
   const smsHost = b => bookingSms(b);
-  const smsTourist = b => touristSms({ ...b, hostName: `${host()}’s farm`, meet: hostRec.meet });
+  const smsTourist = b => touristSms({ ...b, hostName: `${host()}’s farm`, meet: hostRec.meet, deposit: depositFor(b, hostRec), mobileMoney: hostRec.mobileMoney });
   const row = b => `
     <li>
       <div class="row between"><strong>${h(b.leadName)}</strong><span class="badge-num">${h(b.guests)}</span></div>
       <div class="row small" style="margin-top:6px">${h(day(b.date))} ${langPill(b.language)}${b.referredBy ? `<span class="muted">${L('alipendekezwa na', 'recommended by')} ${h(b.referredBy)}</span>` : ''}${b.consent && b.email ? `<span class="muted">${h(b.email)}</span>` : ''}</div>
+      <div class="row small" style="margin-top:6px">${b.hostStatus === 'accepted' ? `<span class="chip">${L('Mwenyeji amekubali', 'Host accepted')}</span>` : b.hostStatus === 'declined' ? `<span class="chip neg">${L('Mwenyeji amekataa', 'Host declined')}</span>` : `<span class="chip warn">${L('Mwenyeji bado hajajibu', 'Host has not answered yet')}</span>`}${b.payment ? `<span class="chip">${L('Malipo ya awali', 'Deposit')} TZS ${Number(b.payment.amount).toLocaleString('en-US')} · ${h(b.payment.ref)}</span>` : ''}</div>
       ${b.status === 'requested'
-        ? `<button class="btn small block" style="margin-top:8px" data-action="company-confirm" data-id="${b.id}">${L('Thibitisha: SMS kwa mwenyeji na kwa mgeni', 'Confirm: SMS to the host and to the tourist')}</button>`
+        ? `
+        <a class="btn small secondary block" style="margin-top:8px" href="${smsHref(hostRec.phone, smsHost(b))}" data-action="sms-sent" data-id="${b.id}" data-to="host">1 · ${L(`Uliza ${host()} (SMS)`, `Ask ${host()} (SMS)`)} ${b.smsHost ? '✓' : ''}</a>
+        <button class="btn small block" style="margin-top:6px" data-action="company-confirm" data-id="${b.id}" ${b.hostStatus === 'declined' ? 'disabled' : ''}>2 · ${L('Thibitisha kwa mgeni (SMS)', 'Confirm to the tourist (SMS)')}${b.hostStatus === 'accepted' ? '' : ` · ${L('mwenyeji akisema ndiyo', 'once the host says yes')}`}</button>`
         : `
         <div class="link-line"><span class="chip">${h(host())}</span><span class="link-arrow">⇄</span><span class="chip plain">${h(b.company || 'Ondera Coffee Trails')}</span><span class="link-arrow">⇄</span><span class="chip">${h(b.leadName)}</span></div>
         <div class="small muted" style="margin:6px 0 4px">${L('SMS kwa mwenyeji (Kiswahili)', 'SMS to the host (Swahili)')}</div>
@@ -956,6 +966,24 @@ const smsTo = phone => String(phone || '').replace(/[^\d+]/g, '');
 const smsHref = (phone, body) => `sms:${smsTo(phone)}?body=${encodeURIComponent(body)}`;
 const companyPhone = () => ((state.hosts || []).find(x => x.id === 'noor') || {}).companyPhone || '';
 
+// The host makes the final call on every booking: accept or decline, in the app or by SMS.
+function bookingStatusChip(b) {
+  if (b.hostStatus === 'declined') return `<span class="chip neg">${L('Umekataa', 'Declined')}</span>`;
+  if (b.hostStatus === 'accepted') return `<span class="chip">${L('Umekubali', 'Accepted')}</span>`;
+  return `<span class="chip warn">${L('Inasubiri jibu lako', 'Awaiting your answer')}</span>`;
+}
+function hostAnswerButtons(b) {
+  if (b.hostStatus) return '';
+  const yes = hostAnswerSms(b, host(), true);
+  const no = hostAnswerSms(b, host(), false);
+  return `
+    <div class="grid2" style="margin-top:8px">
+      <a class="btn small" href="${smsHref(companyPhone(), yes)}" data-action="host-answer" data-id="${b.id}" data-answer="accepted">✓ ${L('Nakubali', 'Accept')}</a>
+      <a class="btn small secondary" href="${smsHref(companyPhone(), no)}" data-action="host-answer" data-id="${b.id}" data-answer="declined">✗ ${L('Siwezi', 'Decline')}</a>
+    </div>
+    <p class="small muted" style="margin:6px 0 0">${L('Jibu lako linaenda kwa kampuni kwa SMS; mgeni anapata uthibitisho baadaye.', 'Your answer goes to the company by SMS; the guest is confirmed after that.')}</p>`;
+}
+
 // A WeKaribu SMS pasted into the app, on whichever side received it. Nothing here needs internet.
 async function importSms(text) {
   const code = parseWkCode(text);
@@ -972,6 +1000,19 @@ async function importSms(text) {
     await db.put('bookings', b);
     state.bookings.push(b);
     toast(code.kind === 'BOOK' ? L('Wageni wameongezwa kwenye ratiba.', 'Booking added to your reservations.') : L('Ombi limeongezwa.', 'Request added.'));
+  } else if (code.kind === 'ACCEPT' || code.kind === 'DECLINE' || code.kind === 'PAID') {
+    const b = state.bookings.find(x => x.date.slice(0, 10) === code.date && x.leadName === code.leadName) || state.bookings.find(x => x.date.slice(0, 10) === code.date);
+    if (!b) return toast(L('Hakuna ombi linalolingana na tarehe hii.', 'No booking matches this date.'), 4000);
+    if (code.kind === 'PAID') {
+      const [ref, amount] = code.extra.split(':');
+      b.payment = { method: 'mpesa', ref: ref || '', amount: Number(amount) || 0, at: new Date().toISOString(), viaSms: true };
+      toast(L('Malipo ya awali yamerekodiwa.', 'Deposit recorded.'));
+    } else {
+      b.hostStatus = code.kind === 'ACCEPT' ? 'accepted' : 'declined';
+      b.hostAnsweredAt = new Date().toISOString();
+      toast(code.kind === 'ACCEPT' ? L('Mwenyeji amekubali.', 'The host accepted.') : L('Mwenyeji amekataa.', 'The host declined.'));
+    }
+    await db.put('bookings', b);
   } else if (code.kind === 'DAYS') {
     state.hostDaysBySms[code.hostId] = code.days;
     await db.setSetting('hostDaysBySms', state.hostDaysBySms);
@@ -1054,6 +1095,7 @@ function screenBooked() {
   return tripHTML({
     host: hostRec, booking: b, lang: getLang(), phrasebook: state.phrasebook.phrases, saved: state.phrasebook.saved, audioReady: state.phrasebook.audioReady,
     online: state.online, requestHref: smsHref(hostRec.companyPhone, requestSms(b, hostRec)),
+    deposit: depositFor(b, hostRec), paidHref: b.payment ? smsHref(hostRec.companyPhone, paidSms(b, hostRec, b.payment.ref, b.payment.amount)) : '',
   });
 }
 
@@ -1091,6 +1133,20 @@ function captureBookForm() {
     guests: Number(v('bk-v-guests')) || 2, language: v('bk-v-lang') || 'en', name: v('bk-v-name'),
     email: v('bk-v-email'), consent: Boolean(document.getElementById('bk-v-consent')?.checked), referredBy: v('bk-v-ref'),
   };
+}
+
+// Deposit: a share of the price, paid by mobile money straight to the host's own phone.
+const depositFor = (b, hostRec) => hostRec && hostRec.priceTZS ? Math.round(hostRec.priceTZS * (Number(b.guests) || 1) * (hostRec.depositShare || 0.3) / 1000) * 1000 : 0;
+async function payDeposit() {
+  const b = state.book.done;
+  const hostRec = b && hostById(b.hostId);
+  if (!b || !hostRec) return;
+  const ref = (document.getElementById('pay-ref')?.value || '').trim();
+  if (ref.length < 4) return toast(L('Andika msimbo wa uthibitisho wa M-Pesa', 'Enter the M-Pesa confirmation code'));
+  b.payment = { method: 'mpesa', ref, amount: depositFor(b, hostRec), at: new Date().toISOString() };
+  await db.put('bookings', b);
+  toast(`✓ ${L('Malipo ya awali yamerekodiwa', 'Deposit recorded')}`);
+  render();
 }
 
 async function submitBooking() {
@@ -1690,6 +1746,16 @@ const actions = {
   'copy-text': el => copyText(el.dataset.text || ''),
   'cloud-upload': cloudUpload,
   'sms-import': () => importSms(document.getElementById('sms-in')?.value || ''),
+  'host-answer': async el => {
+    const b = state.bookings.find(x => x.id === el.dataset.id);
+    if (!b) return;
+    b.hostStatus = el.dataset.answer;
+    b.hostAnsweredAt = new Date().toISOString();
+    await db.put('bookings', b);
+    toast(b.hostStatus === 'accepted' ? L('Umekubali. SMS kwa kampuni iko tayari.', 'Accepted. The SMS to the company is ready.') : L('Umekataa. SMS kwa kampuni iko tayari.', 'Declined. The SMS to the company is ready.'));
+    setTimeout(render, 300);
+  },
+  'pay-deposit': payDeposit,
   'translate-record': () => toggleRecordingWith(translateAudio),
   'toggle-net': toggleNet,
   'say-text': el => speak(el.dataset.text, el.dataset.lang || 'en'),

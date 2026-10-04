@@ -53,6 +53,14 @@ Built around Noor, usable by any small host. What changes per host is data, not 
 | **Accounts** | **No login, by design.** The phone is the account: data never leaves it, there is no server to breach, no sign-up wall for a host with patchy internet. | Multi-device sharing, when needed, will be an export/import file or QR code — still no account. |
 
 
+### A booking, start to finish — the host makes the final call
+
+1. **Visitor** finds the place (a friend's tip is enough: "my friend Emma went to a coffee farm"), picks one of the host's published days and sends a request; offline, the request goes by SMS.
+2. **Tour company** asks the host by SMS (Swahili, basic phone).
+3. **Host** accepts or declines — in the app or by SMS from her basic phone. Nothing is confirmed on her behalf.
+4. **Company** confirms to the tourist in the tourist's language.
+5. **Deposit** (30% of the price) by **M-Pesa straight to the host's own phone**; the tourist enters the confirmation code, the receipt reaches the company by SMS, and both the host and the company see "Deposit paid". No payment gateway is needed for mobile money; a card gateway (Stripe, Flutterwave) would be one extra button.
+
 ### No internet? Everything still moves by SMS
 
 The **Online / Offline** button in the top bar shows which mode the app is in and lets anyone switch to offline mode on purpose (no data used, still frames instead of video, SMS instead of cloud); when the phone really loses its connection the app switches by itself.
@@ -61,9 +69,9 @@ Every WeKaribu SMS ends with one short code line (`WK|BOOK|2026-10-07|2|it|Vivia
 
 | Side | Sends by SMS | Receives by pasting |
 |---|---|---|
-| Host | her available days; the weekly report (counts only) | the company's booking confirmation → straight into *Reservations* |
-| Tour company | booking confirmation to the host (Swahili) and to the tourist (their language) | a tourist's request, a host's days, a host's report |
-| Visitor | the booking request, when the phone has no internet | — |
+| Host | her available days; her accept / decline for each booking; the weekly report (counts only) | the company's booking request → straight into *Reservations* |
+| Tour company | the request to the host (Swahili) and the confirmation to the tourist (their language) | a tourist's request or deposit receipt, a host's answer, days or report |
+| Visitor | the booking request when the phone has no internet; the deposit receipt | — |
 
 Cloud uploads made offline are queued on the phone and sent by themselves when internet returns. The app shell, data, fonts and phrasebook are cached by the service worker after the first visit; the AI models are downloaded once and kept on the phone.
 

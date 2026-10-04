@@ -57,6 +57,11 @@ export function parseWkCode(text) {
     if (!isDay(date)) return null;
     return { kind, date, guests: Math.max(1, Number(guests) || 1), language: language || 'en', leadName: leadName || 'Guest', hostId: hostId || 'noor', referredBy: referredBy || '' };
   }
+  if (kind === 'ACCEPT' || kind === 'DECLINE' || kind === 'PAID') {
+    const [, , date, guests, language, leadName, hostId, extra] = parts;
+    if (!isDay(date)) return null;
+    return { kind, date, guests: Math.max(1, Number(guests) || 1), language: language || 'en', leadName: leadName || 'Guest', hostId: hostId || 'noor', extra: extra || '' };
+  }
   if (kind === 'DAYS') {
     const [, , hostId, days] = parts;
     return { kind, hostId: hostId || 'noor', days: (days || '').split(',').map(x => x.trim()).filter(isDay) };
@@ -71,6 +76,17 @@ export function parseWkCode(text) {
 export function requestSms(b, hostRec) {
   const who = `${b.leadName}, ${b.guests} ${b.guests === 1 ? 'guest' : 'guests'}`;
   return `WeKaribu booking request: ${who}, ${dayEn(b.date)}, at ${hostRec.name}${hostRec.town ? ` (${hostRec.town})` : ''}. Language: ${langName(b.language, 'en')}.${b.referredBy ? ` Recommended by ${b.referredBy}.` : ''}\n${wkCode(['REQ', isoDay(b.date), b.guests, b.language, b.leadName, hostRec.id, b.referredBy || ''])}`;
+}
+// Host -> tour company: her answer to a booking (the host makes the final call, from any phone).
+export function hostAnswerSms(b, hostName, accept) {
+  const code = wkCode([accept ? 'ACCEPT' : 'DECLINE', isoDay(b.date), b.guests, b.language, b.leadName || '', b.hostId || 'noor']);
+  return accept
+    ? `WeKaribu: ${hostName} anakubali / accepts: ${dayEn(b.date)}, wageni ${b.guests} (${b.leadName || 'guest'}).\n${code}`
+    : `WeKaribu: ${hostName} hawezi / cannot take guests on ${dayEn(b.date)} (${b.leadName || 'guest'}, ${b.guests}). Tafadhali chagua siku nyingine.\n${code}`;
+}
+// Tourist -> tour company: the deposit was paid by mobile money (the host's basic phone receives it).
+export function paidSms(b, hostRec, ref, amount) {
+  return `WeKaribu: deposit paid for ${dayEn(b.date)} at ${hostRec.name}: TZS ${Number(amount).toLocaleString('en-US')} by M-Pesa, code ${ref}. ${b.leadName}, ${b.guests} guests.\n${wkCode(['PAID', isoDay(b.date), b.guests, b.language, b.leadName, hostRec.id, `${ref}:${amount}`])}`;
 }
 // Host -> tour company: the days the host can take guests.
 export function availabilitySms(hostName, hostId, days) {
@@ -94,7 +110,9 @@ const CONFIRM = {
 };
 export function touristSms(b) {
   const f = CONFIRM[b.language] || CONFIRM.en;
-  return f({ company: b.company || 'Tour company', hostName: b.hostName || 'the host', date: b.date, guests: b.guests, meet: b.meet || 'the village office', guide: b.guide || '-', language: b.language });
+  const text = f({ company: b.company || 'Tour company', hostName: b.hostName || 'the host', date: b.date, guests: b.guests, meet: b.meet || 'the village office', guide: b.guide || '-', language: b.language });
+  const pay = b.deposit && !b.payment ? ` Deposit: TZS ${Number(b.deposit).toLocaleString('en-US')} by M-Pesa to ${b.mobileMoney || 'the host'}, or pay the guide on arrival.` : '';
+  return text + pay;
 }
 
 // ---------- Swahili summary for Noor ----------

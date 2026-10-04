@@ -88,15 +88,24 @@ def make_voice(path, stub=False):
             w.setframerate(16000)
             w.writeframes(b''.join(struct.pack('<h', int(4000 * math.sin(i / 16000 * 2 * math.pi * 220))) for i in range(16000 * 3)))
         return 'stub tone'
-    mp3 = os.path.join(OUT, 'voice-fr.mp3')
+    raw = os.path.join(OUT, 'voice-fr-raw')
+    mp3 = raw + '.mp3'
     if elevenlabs_voice(mp3):
-        subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', mp3, '-ac', '1', '-ar', '16000', path], check=True)
-        os.remove(mp3)
-        return 'ElevenLabs (eleven_multilingual_v2)'
-    if not shutil.which('espeak-ng'):
-        raise SystemExit('No voice source: set ELEVENLABS_API_KEY or install espeak-ng')
-    subprocess.run(['espeak-ng', '-v', 'fr', '-s', '135', '-w', path, VOICE], check=True)
-    return 'espeak-ng'
+        source, src = 'ElevenLabs (eleven_multilingual_v2)', mp3
+    else:
+        if not shutil.which('espeak-ng'):
+            raise SystemExit('No voice source: set ELEVENLABS_API_KEY or install espeak-ng')
+        # An MBROLA voice (apt: mbrola mbrola-fr4) sounds far more natural than espeak-ng's default.
+        voices = subprocess.run(['espeak-ng', '--voices=mb'], capture_output=True, text=True).stdout
+        voice = 'mb-fr4' if 'mb-fr4' in voices else 'mb-fr1' if 'mb-fr1' in voices else 'fr'
+        src = raw + '.wav'
+        subprocess.run(['espeak-ng', '-v', voice, '-s', '130', '-w', src, VOICE], check=True)
+        source = f'espeak-ng ({voice})'
+    # 16 kHz mono with half a second of silence at the start, like a real recording.
+    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', src, '-af', 'adelay=500|500,apad=pad_dur=0.4',
+                    '-ac', '1', '-ar', '16000', path], check=True)
+    os.remove(src)
+    return source
 
 
 if __name__ == '__main__':

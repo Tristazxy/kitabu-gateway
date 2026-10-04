@@ -123,7 +123,7 @@ export const TOPICS = [
     },
     proto: [
       'I wanted to buy coffee beans to take home', 'we would buy a bag of roasted coffee', 'souvenirs for sale',
-      'I wish we could buy the coffee', 'selling ground coffee to visitors',
+      'I wish we could buy the coffee', 'selling ground coffee to visitors', 'there was nothing for sale',
     ],
   },
   {

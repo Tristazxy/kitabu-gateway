@@ -41,6 +41,7 @@ jobs:
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q ffmpeg espeak-ng fonts-noto-core fonts-dejavu-core
+          sudo apt-get install -y -q mbrola mbrola-fr4 || echo "no MBROLA voice; using espeak-ng's own"
           python3 -m pip install --quiet pillow
           npm ci
           npm install --no-save playwright@1.56.0

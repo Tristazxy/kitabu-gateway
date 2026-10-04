@@ -123,9 +123,12 @@ export async function storageEstimate() {
 }
 
 // ---------- translation (guest language -> English pivot) ----------
+// A photo of a handwritten note has a line break after every line, so single line breaks are
+// treated as spaces; only blank lines and sentence punctuation separate sentences.
 function splitSentences(text, lang) {
-  const re = lang === 'zh' || lang === 'ja' ? /(?<=[。！？!?])/ : /(?<=[.!?])\s+|\n+/;
-  return text.split(re).map(s => s.trim()).filter(Boolean);
+  const flat = text.replace(/[ \t]*\n[ \t]*\n[ \t\n]*/g, '\u2029').replace(/\n/g, ' ');
+  const re = lang === 'zh' || lang === 'ja' ? /(?<=[。！？!?])|\u2029/ : /(?<=[.!?])\s+|\u2029/;
+  return flat.split(re).map(s => s.trim()).filter(Boolean);
 }
 
 export async function toEnglish(text, lang, onProgress) {

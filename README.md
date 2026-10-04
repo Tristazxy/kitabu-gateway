@@ -1,6 +1,6 @@
 # Karibu — a Small AI guestbook for a coffee-farm host
 
-*Karibu* is Swahili for "welcome" (and "come close"); the app is a *kitabu cha wageni*, a guestbook. This is our entry to the Hack-Nation × World Bank
+**Live app: https://karibu-noor.lovable.app** (open it on a phone). *Karibu* is Swahili for "welcome" (and "come close"); the app is a *kitabu cha wageni*, a guestbook. This is our entry to the Hack-Nation × World Bank
 **Small AI for Development** hackathon, tourism track (Annex C).
 
 > **Because of this tool, Noor will hear — in Swahili, within days of each visit — what her foreign

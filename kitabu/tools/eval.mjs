@@ -41,7 +41,7 @@ console.log('topics', out.topics.accuracy, 'mood', out.mood.accuracy);
 // 3-4. Per language pack: synthetic guest-style sentences, then FLORES-200 devtest
 // (published benchmark; only scores are kept, the data is not redistributed).
 const N = Number(process.env.FLORES_N || 100);
-const FL = { it: 'ita_Latn', fr: 'fra_Latn', de: 'deu_Latn', zh: 'zho_Hans', es: 'spa_Latn', pl: 'pol_Latn' };
+const FL = { it: 'ita_Latn', fr: 'fra_Latn', de: 'deu_Latn', zh: 'zho_Hans', es: 'spa_Latn', pl: 'pol_Latn', xx: 'por_Latn' }; // xx = the fallback pack, measured on Portuguese
 let floresDir = null;
 try {
   const base = '.cache/flores';
@@ -59,7 +59,13 @@ const floresRef = floresDir ? (await readFile(`${floresDir}/eng_Latn.devtest`, '
 out.translation = {};
 for (const [lang, rows] of Object.entries(set.translation)) {
   const hyps = [];
-  for (const r of rows) hyps.push((await toEnglish(r.src, lang)).english);
+  try {
+    for (const r of rows) hyps.push((await toEnglish(r.src, lang)).english);
+  } catch (err) {
+    out.translation[lang] = { model: LANGS[lang].mt, error: String(err.message || err) };
+    console.log('translation pack failed', lang, err.message);
+    continue;
+  }
   const labeled = rows.map((r, i) => ({ r, h: hyps[i] })).filter(x => x.r.topic);
   const tp = await classifyTopics(labeled.map(x => x.h));
   const correct = tp.filter((p, i) => p.topic === labeled[i].r.topic).length;
@@ -97,7 +103,9 @@ const lines = [
   '',
   '| Language | Model | chrF synthetic | Topic after translation | chrF FLORES-200 devtest |',
   '|---|---|---|---|---|',
-  ...Object.entries(out.translation).map(([l, r]) => `| ${LANGS[l].en} | ${r.model} | ${r.chrF} | ${r.topicAfterTranslation.correct}/${r.topicAfterTranslation.total} | ${out.flores?.results?.[l]?.chrF ?? '—'} |`),
+  ...Object.entries(out.translation).map(([l, r]) => (r.error
+    ? `| ${LANGS[l].en} | ${r.model} | failed: ${r.error} | | |`
+    : `| ${LANGS[l].en} | ${r.model} | ${r.chrF} | ${r.topicAfterTranslation.correct}/${r.topicAfterTranslation.total} | ${out.flores?.results?.[l]?.chrF ?? '—'} |`)),
   '',
   out.flores?.error ? `FLORES-200 not run: ${out.flores.error}` : `FLORES-200: first ${N} devtest sentences per language.`,
 ];

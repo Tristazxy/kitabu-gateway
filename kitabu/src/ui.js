@@ -15,6 +15,13 @@ export function setLang(code) {
 export const L = (sw, en) => (lang === 'sw' ? sw : en);
 export const Li = L;
 
+// The host's name (Noor in the design case). Any farm or homestay can put its own name here.
+let hostName = 'Noor';
+export const host = () => hostName;
+export function setHost(name) {
+  hostName = String(name || '').trim().slice(0, 40) || 'Noor';
+}
+
 let toastTimer = null;
 export function toast(msg, ms = 3200) {
   const el = document.getElementById('toast');

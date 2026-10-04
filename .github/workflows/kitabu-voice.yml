@@ -1,4 +1,4 @@
-name: Karibu — Swahili voice clips (ElevenLabs)
+name: WeKaribu — Swahili voice clips (ElevenLabs)
 
 # Generates Noor's spoken-summary clips from kitabu/audio/phrases-sw.json, rebuilds the static
 # app into public/kitabu, and commits both. Needs the repository secret ELEVENLABS_API_KEY.
@@ -46,6 +46,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A kitabu/public/audio/sw public/kitabu
           if git diff --cached --quiet; then echo "Nothing new"; exit 0; fi
-          git commit -m "Karibu: Swahili voice clips (ElevenLabs, synthetic voice)"
+          git commit -m "WeKaribu: Swahili voice clips (ElevenLabs, synthetic voice)"
           git pull --rebase origin main
           git push origin HEAD:main

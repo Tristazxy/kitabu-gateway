@@ -1,6 +1,6 @@
 {
-  "name": "Karibu",
-  "short_name": "Karibu",
+  "name": "WeKaribu",
+  "short_name": "WeKaribu",
   "description": "Offline guestbook and feedback assistant for a small coffee-farm tour operator. Swahili first.",
   "start_url": "./index.html",
   "scope": "./",

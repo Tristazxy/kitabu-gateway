@@ -71,7 +71,7 @@ def background(chapter, index, total, sped):
         [PX - BEZEL + 14, PY - BEZEL + 22, PX + PHONE_W + BEZEL + 14, PY + PHONE_H + BEZEL + 22], RADIUS + BEZEL, fill=150)
     img.paste((14, 32, 25), mask=sh.filter(ImageFilter.GaussianBlur(26)))
     d = ImageDraw.Draw(img)
-    d.text((TEXT_X, 118), 'KARIBU  ·  MVP DEMO', font=font('semi', 26), fill=GOLD)
+    d.text((TEXT_X, 118), 'WEKARIBU  ·  MVP DEMO', font=font('semi', 26), fill=GOLD)
     if 0 < index < total - 1:
         d.text((TEXT_X, 160), f'{index} / {total - 2}', font=font('regular', 24), fill=MUTED)
     y = 220

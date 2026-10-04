@@ -1,4 +1,4 @@
-// Karibu — main app: state, screens, actions.
+// WeKaribu — main app: state, screens, actions.
 // One home screen; every other screen is one tap away and has a back button.
 // The interface shows one language at a time (Swahili or English, following the phone; toggle at the top).
 
@@ -9,10 +9,10 @@ import { weeklySms, summaryText, thankYou, guideReport, daySw, dayEn, SUBJECTS, 
 import { summarize, inPeriod, guestTopLiked, needsCheck } from './summary.js';
 import * as ai from './ai.js';
 import { analyze } from './pipeline.js';
-import { h, L, getLang, setLang, toast, showBusy, progress, hideBusy, speak, isoDate, dayStamp, addDays, daysFromToday, copyText } from './ui.js';
+import { h, L, getLang, setLang, host, setHost, toast, showBusy, progress, hideBusy, speak, isoDate, dayStamp, addDays, daysFromToday, copyText } from './ui.js';
 import { summaryClipIds, playClips, prefetchVoice, loadVoiceManifest } from './voice.js';
 import { guideHTML, GUIDE_STEPS } from './guide.js';
-import { visitorHTML, companyHTML, pickVisitorLang, V } from './roles.js';
+import { visitorHTML, companyHTML, pickVisitorLang, visitorStrings } from './roles.js';
 
 const view = document.getElementById('view');
 
@@ -42,6 +42,7 @@ async function loadAll() {
   const [g, e, b, m] = await Promise.all(['guests', 'entries', 'bookings', 'messages'].map(s => db.all(s)));
   Object.assign(state, { guests: g, entries: e, bookings: b, messages: m });
   state.lastSync = await db.getSetting('lastSync');
+  setHost(await db.getSetting('hostName', 'Noor'));
   document.documentElement.classList.toggle('big-text', await db.getSetting('bigText', false));
 }
 
@@ -64,7 +65,7 @@ function currentPlan() {
 function currentSummary() {
   const entries = state.entries.filter(e => e.status !== 'pending' && inPeriod(e.visitDate || e.createdAt, state.period));
   const s = summarize(entries, state.guests);
-  return { s, entries, text: summaryText(s) };
+  return { s, entries, text: summaryText(s, host()) };
 }
 
 // ---------------------------------------------------------------- small render helpers
@@ -96,6 +97,7 @@ const FLAG_TEXT = {
   'conflict': ['Inapingana na kisanduku alichoandika', 'Contradicts the box it was written in'],
   'low-confidence': ['Hisia hazijulikani', 'Mood unclear'],
   'no-model': ['Hakuna modeli ya hisia', 'No sentiment model'],
+  'fallback-pack': ['Tafsiri ya pakiti ya lugha nyingine (ubora wa chini)', 'Translated with the other-language pack (lower quality)'],
 };
 const flagText = f => FLAG_TEXT[f][getLang() === 'sw' ? 0 : 1];
 
@@ -152,7 +154,7 @@ function swahiliEntryBlock(entry) {
   return `
   <div class="sent">
     <div lang="sw">“${h(entry.original)}”</div>
-    <div class="small muted">${L('Kiswahili: Noor anasoma mwenyewe. Weka mada kwa mkono (hiari).', 'Swahili: Noor reads it herself. Tag a topic by hand (optional).')}</div>
+    <div class="small muted">${L(`Kiswahili: ${host()} anasoma mwenyewe. Weka mada kwa mkono (hiari).`, `Swahili: ${host()} reads it directly. Tag a topic by hand (optional).`)}</div>
     <div class="row" style="margin-top:6px">
       <select data-change="sw-topic" data-entry="${entry.id}" aria-label="Topic">
         <option value="">— ${L('Mada', 'Topic')} —</option>${topicOptions(s?.topic)}
@@ -324,7 +326,7 @@ function screenWeek() {
   </div>
 
   <div class="card">
-    <h2>${L('SMS kwa simu ya Noor', 'SMS to Noor’s basic phone')}</h2>
+    <h2>${L(`SMS kwa simu ya ${host()}`, `SMS to ${host()}’s basic phone`)}</h2>
     <div class="sms" id="sms-text">${h(sms)}</div>
     <div class="row between" style="margin-top:8px">
       <span class="small muted">${L('Mfano', 'Preview')} · ${sms.length} ${L('herufi', 'characters')}</span>
@@ -348,7 +350,7 @@ function screenWeek() {
       </div>
       <label class="field">${L('Jina la mgeni mkuu', 'Lead guest name')}<input type="text" id="bk-name" autocomplete="off"></label>
       <label class="field">${L('Mwongozaji', 'Guide')}<input type="text" id="bk-guide" autocomplete="off"></label>
-      <label class="check"><input type="checkbox" id="bk-consent" data-change="bk-consent-toggle"> <span>${L('Mgeni amekubali Noor awasiliane naye', 'Guest agreed that Noor may contact them')}</span></label>
+      <label class="check"><input type="checkbox" id="bk-consent" data-change="bk-consent-toggle"> <span>${L(`Mgeni amekubali ${host()} awasiliane naye`, `Guest agreed that ${host()} may contact them`)}</span></label>
       <label class="field hidden" id="bk-email-wrap">${L('Barua pepe', 'Email')}<input type="email" id="bk-email" autocomplete="off"></label>
       <button class="btn" data-action="add-booking">${L('Hifadhi', 'Save')}</button>
     </div>
@@ -392,7 +394,7 @@ function addStep1() {
       <label class="field">${L('Lugha ya mgeni', 'Guest’s language')}<select id="ng-lang">${langOptions('en')}</select></label>
       <label class="field">${L('Tarehe ya ziara', 'Visit date')}<input type="date" id="ng-date" value="${isoDate(new Date())}"></label>
       <label class="check"><input type="checkbox" id="ng-consent" data-change="consent-toggle">
-        <span>${L('Mgeni aliweka alama: Noor anaweza kuhifadhi mawasiliano yangu', 'Guest ticked: Noor may keep my contact details')}</span></label>
+        <span>${L(`Mgeni aliweka alama: ${host()} anaweza kuhifadhi mawasiliano yangu`, `Guest ticked: ${host()} may keep my contact details`)}</span></label>
       <div id="contact-fields" class="stack hidden">
         <label class="field">${L('Barua pepe', 'Email')}<input type="email" id="ng-email" autocomplete="off"></label>
         <label class="field">${L('Simu / WhatsApp', 'Phone / WhatsApp')}<input type="tel" id="ng-phone" autocomplete="off"></label>
@@ -528,7 +530,7 @@ function screenSummary() {
   const flagged = [];
   for (const e of entries) (e.sentences || []).forEach((sen, i) => { if (needsCheck(sen)) flagged.push([e, i]); });
 
-  const report = guideReport(s, `${PERIODS[state.period]()}`);
+  const report = guideReport(s, `${PERIODS[state.period]()}`, host());
   const lang = getLang();
 
   return `
@@ -548,7 +550,7 @@ function screenSummary() {
     <button class="btn" data-action="go" data-screen="add">${L('Ongeza maoni', 'Add feedback')}</button>
   </div>`) : `
   <div class="card">
-    <div class="card-title"><h2>${L('Kwa Noor', 'For Noor')}</h2>
+    <div class="card-title"><h2>${L(`Kwa ${host()}`, `For ${host()}`)}</h2>
       <button class="btn small secondary" data-action="speak">${L('Sikiliza', 'Listen')}</button></div>
     <div class="big-summary" lang="${lang}">${text[lang].map(p => `<p>${h(p)}</p>`).join('')}</div>
     <p class="small muted" style="margin:0">${L('Sentensi hizi zimeandikwa na watu; AI inajaza idadi na mada tu.', 'Human-written sentences; the AI only fills in counts and topics.')}</p>
@@ -616,7 +618,7 @@ function screenGuests() {
 
 function draftCard(g) {
   const liked = guestTopLiked(state.entries, g.id);
-  const m = thankYou(g, liked);
+  const m = thankYou(g, liked, host());
   const c = g.contact || {};
   const subject = SUBJECTS[m.lang] || SUBJECTS.en;
   let send;
@@ -634,7 +636,7 @@ function draftCard(g) {
   <div class="stack" style="margin-top:12px">
     ${m.usedFallback ? `<div class="notice warn small">${L(`Hakuna kiolezo cha ${langName(g.language, 'sw')} bado; tumetumia Kiingereza.`, `No ${langName(g.language, 'en')} template yet; using English.`)}</div>` : ''}
     <div class="card flat" lang="${m.lang}"><div class="small muted">${L(`Kwa ${langName(m.lang, 'sw')}`, `In ${langName(m.lang, 'en')}`)}</div><p id="draft-${g.id}" style="margin:6px 0 0">${h(m.text)}</p></div>
-    ${m.lang !== lang ? `<div class="card flat" lang="${lang}"><div class="small muted">${L('Maana yake', 'What it says')}</div><p style="margin:6px 0 0">${h(lang === 'sw' ? m.sw : thankYou({ ...g, language: 'en' }, liked).text)}</p></div>` : ''}
+    ${m.lang !== lang ? `<div class="card flat" lang="${lang}"><div class="small muted">${L('Maana yake', 'What it says')}</div><p style="margin:6px 0 0">${h(lang === 'sw' ? m.sw : thankYou({ ...g, language: 'en' }, liked, host()).text)}</p></div>` : ''}
     <p class="small muted" style="margin:0">${liked ? L(`Mada aliyopenda: ${tName(liked)}`, `Liked topic: ${tName(liked)}`) : L('Hakuna mada iliyo wazi; ujumbe wa jumla.', 'No clear liked topic; general message.')}</p>
     ${send}
     <button class="btn small secondary" data-action="copy" data-copy-from="draft-${g.id}">${L('Nakili', 'Copy')}</button>
@@ -703,11 +705,18 @@ function screenMore() {
   <h1>${L('Zaidi', 'More')}</h1>
 
   <div class="card">
+    <h2>${L('Mwenyeji', 'Host')}</h2>
+    <label class="field">${L('Jina lako (linaonekana kwa wageni na kwenye ujumbe)', 'Your name (shown to guests and in messages)')}
+      <input type="text" id="host-name" value="${h(host())}" autocomplete="off" maxlength="40"></label>
+    <button class="btn secondary block" style="margin-top:10px" data-action="save-host">${L('Hifadhi jina', 'Save name')}</button>
+  </div>
+
+  <div class="card">
     <div class="stack">
       <button class="btn secondary block" data-action="guide-open">${L('Jinsi ya kutumia', 'How to use')}</button>
       <button class="btn secondary block" data-action="toggle-big">${document.documentElement.classList.contains('big-text') ? L('Herufi za kawaida', 'Normal text size') : L('Herufi kubwa', 'Large text')}</button>
       <button class="btn secondary block" data-action="go" data-screen="langs">${L('Lugha kwenye simu', 'Languages on this phone')}</button>
-      <a class="btn secondary block" href="print/guestbook.html" target="_blank" rel="noopener">${L('Chapisha ukurasa wa kitabu cha wageni', 'Print the guestbook page')}</a>
+      <a class="btn secondary block" href="print/guestbook.html?host=${encodeURIComponent(host())}" target="_blank" rel="noopener">${L('Chapisha ukurasa wa kitabu cha wageni', 'Print the guestbook page')}</a>
     </div>
   </div>
 
@@ -754,7 +763,7 @@ function readCompanyForm() {
 function screenCompany() {
   const today = isoDate(addDays(new Date(), 3));
   const { s } = currentSummary();
-  const report = s.entries ? guideReport(s, L('Mfano', 'Example')) : null;
+  const report = s.entries ? guideReport(s, L('Mfano', 'Example'), host()) : null;
   return backBtn() + companyHTML({
     langOptionsHTML: langOptions('en'), today,
     sms: bookingSms({ date: dayStamp(today), guests: 2, language: 'en', guide: '' }), report,
@@ -770,7 +779,7 @@ function captureVisitorDraft() {
 async function saveVisitor() {
   const v = id => document.getElementById(id)?.value?.trim() || '';
   const lang = state.visitor.lang;
-  const t = V[lang] || V.en;
+  const t = visitorStrings(lang);
   const liked = v('v-liked');
   const improve = v('v-improve');
   if (!liked && !improve) { toast(t.needText); return; }
@@ -1213,14 +1222,14 @@ const actions = {
   'visitor-save': saveVisitor,
   'visitor-next': () => { state.visitor = { lang: pickVisitorLang(), saved: false, draft: {} }; render(); window.scrollTo(0, 0); },
   'visitor-exit': async () => {
-    if (!confirm(L('Kwa Noor tu: rudi nyumbani?', 'Host only: back to the home screen?'))) return;
+    if (!confirm(L(`Kwa ${host()} tu: rudi nyumbani?`, `${host()} only: back to the home screen?`))) return;
     await db.setSetting('kiosk', false);
     go('home');
   },
   'company-sms': () => {
     const b = readCompanyForm();
     const phone = document.getElementById('c-phone')?.value?.trim() || '';
-    if (!phone) { toast(L('Weka namba ya simu ya Noor', 'Add Noor’s phone number')); return; }
+    if (!phone) { toast(L(`Weka namba ya simu ya ${host()}`, `Add ${host()}’s phone number`)); return; }
     window.location.href = `sms:${encodeURIComponent(phone)}?body=${encodeURIComponent(bookingSms(b))}`;
   },
   'company-save': async () => {
@@ -1233,6 +1242,12 @@ const actions = {
     const on = !document.documentElement.classList.contains('big-text');
     document.documentElement.classList.toggle('big-text', on);
     await db.setSetting('bigText', on);
+    render();
+  },
+  'save-host': async () => {
+    setHost(document.getElementById('host-name')?.value);
+    await db.setSetting('hostName', host());
+    toast(L(`Jina: ${host()}`, `Name: ${host()}`));
     render();
   },
   'guide-open': () => openGuide(0),

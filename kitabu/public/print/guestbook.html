@@ -3,19 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Karibu · Ukurasa wa kitabu cha wageni · Guestbook page</title>
+  <title>WeKaribu · Ukurasa wa kitabu cha wageni · Guestbook page</title>
   <link rel="stylesheet" href="print.css">
 </head>
 <body>
   <div class="toolbar">
-    <a href="../index.html">← Karibu</a>
+    <a href="../index.html">← WeKaribu</a>
     <button onclick="window.print()">Chapisha · Print (A4)</button>
   </div>
 
   <main class="sheet">
     <header>
       <div>
-        <h1>Karibu · Kitabu cha wageni · Guestbook</h1>
+        <h1>WeKaribu · Kitabu cha wageni · Guestbook</h1>
         <div class="sub">Shamba la kahawa la Noor · Noor’s coffee farm</div>
       </div>
       <div class="pageno">Ukurasa Na. · Page no. <span class="blank"></span></div>
@@ -106,5 +106,14 @@
       <b>Kwa msaidizi · For the helper:</b> piga picha kisanduku A na B kila kimoja peke yake · photograph box A and box B separately.
     </footer>
   </main>
+<script>
+  // The app opens this page with ?host=<name>; the printed page then carries that name instead of Noor.
+  (function () {
+    var host = new URLSearchParams(location.search).get('host');
+    if (!host || host === 'Noor') return;
+    var safe = host.replace(/[&<>"']/g, '');
+    document.body.innerHTML = document.body.innerHTML.replace(/Noor’s/g, safe + '’s').replace(/Noor/g, safe);
+  })();
+</script>
 </body>
 </html>

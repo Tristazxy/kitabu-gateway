@@ -8,6 +8,9 @@
 //  - Each guest language is a downloadable pack: an Opus-MT translation model
 //    (<lang> -> English, about 130 MB quantized) plus Tesseract handwriting/print data.
 //  - Speech uses one shared multilingual Whisper model, downloaded once.
+//  - "Other language" (code xx) is a fallback pack for any language without its own pack: one
+//    multilingual Opus-MT model (100+ languages -> English). Lower quality than a dedicated pack,
+//    so its sentences are always marked for a human check. Voice: Whisper detects the language.
 
 export const LANGS = {
   sw: { sw: 'Kiswahili', en: 'Swahili', native: 'Kiswahili', tess: 'swa', whisper: 'swahili', mt: null, core: true },
@@ -22,6 +25,7 @@ export const LANGS = {
   ru: { sw: 'Kirusi', en: 'Russian', native: 'Русский', tess: 'rus', whisper: 'russian', mt: 'Xenova/opus-mt-ru-en' },
   ja: { sw: 'Kijapani', en: 'Japanese', native: '日本語', tess: 'jpn', whisper: 'japanese', mt: 'Xenova/opus-mt-ja-en' },
   ko: { sw: 'Kikorea', en: 'Korean', native: '한국어', tess: 'kor', whisper: 'korean', mt: 'Xenova/opus-mt-ko-en' },
+  xx: { sw: 'Lugha nyingine', en: 'Other language', native: 'Other', tess: 'eng', whisper: null, mt: 'Xenova/opus-mt-mul-en', fallback: true },
 };
 
 // Approximate download sizes in MB (quantized ONNX: encoder + merged decoder),

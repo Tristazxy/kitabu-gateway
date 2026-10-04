@@ -1,4 +1,4 @@
-name: Karibu demo recording
+name: WeKaribu demo recording
 
 # Records the MVP walkthrough in a phone-sized browser with the real on-device models
 # (kitabu/tools/record-demo.mjs), composes a 16:9 video with captions, and commits the

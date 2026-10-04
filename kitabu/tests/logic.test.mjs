@@ -137,13 +137,23 @@ test('topic scoring counts abstentions', () => {
 
 test('every language has the fields the app uses', () => {
   for (const [c, l] of Object.entries(LANGS)) {
-    assert.ok(l.sw && l.en && l.native && l.tess && l.whisper, c);
+    assert.ok(l.sw && l.en && l.native && l.tess, c);
+    assert.ok(l.whisper || l.fallback, `${c}: whisper language or fallback`);
   }
+  assert.ok(LANGS.xx.fallback && LANGS.xx.mt, 'other-language fallback pack');
+});
+
+test('host name flows into messages and the report', () => {
+  const g = { id: 'g1', name: 'Marco', language: 'it', consent: true };
+  assert.ok(thankYou(g, 'coffee', 'Amina').text.endsWith('— Amina'));
+  assert.ok(thankYou(g, 'coffee', 'Amina').sw.endsWith('— Amina'));
+  assert.ok(thankYou(g, null).text.endsWith('— Noor'), 'default host');
+  assert.ok(guideReport(summarize([], []), 'x', 'Amina').includes('Approved by Amina'));
 });
 
 test('company booking becomes a Swahili SMS', () => {
   const sms = bookingSms({ date: day(4), guests: 3, language: 'pl', guide: 'Neema' });
-  assert.ok(sms.startsWith('Karibu: Wageni wapya.'));
+  assert.ok(sms.startsWith('WeKaribu: Wageni wapya.'));
   assert.ok(sms.includes('wageni 3 (Kipolandi)'));
 });
 

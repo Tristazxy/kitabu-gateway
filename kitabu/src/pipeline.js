@@ -2,6 +2,7 @@
 
 import { toEnglish, classifyTopics, sentiments, decideMood } from './ai.js';
 import { splitClauses, findProducts } from './topics.js';
+import { LANGS } from './langs.js';
 
 /**
  * @param {Object} input
@@ -43,6 +44,8 @@ export async function analyze(input, onProgress) {
     const mood = decideMood(box, moods[i]);
     const flags = [...mood.flags];
     if (topics[i].topic === 'other') flags.push('topic-unsure');
+    // The multilingual fallback pack is weaker than a dedicated one: always ask a person to check.
+    if (LANGS[lang]?.fallback && !input.english) flags.push('fallback-pack');
     return {
       en: c.en,
       original: c.original,

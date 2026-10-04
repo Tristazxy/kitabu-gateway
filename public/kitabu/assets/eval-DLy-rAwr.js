@@ -1,4 +1,4 @@
-import{T as v,M as y,h,L as k,t as g,s as b,c as T,p as w,a as x,b as f,d as A}from"./ui-ouIWinvE.js";function O(e,s){let t=0,o=0,n=0,d=0,i=0;const c=[];e.forEach((a,l)=>{const u=s[l].topic;if(a.topic==="other"){d++,u==="other"?i++:c.push({text:a.text,gold:a.topic,pred:u,score:s[l].score});return}t++,u!=="other"&&(o++,u===a.topic?n++:c.push({text:a.text,gold:a.topic,pred:u,score:s[l].score}))});const r=(a,l)=>l?Number((a/l*100).toFixed(1)):null;return{n:e.length,accuracy:r(n,t),precisionWhenAnswered:r(n,o),coverage:r(o,t),abstainOnOther:r(i,d),errors:c}}function E(e,s,t){let o=0,n=0,d=0;const i=[];e.forEach((r,a)=>{if(!r.mood)return;o++;const l=s[a];l.score<t||(n++,l.label===r.mood?d++:i.push({text:r.text,gold:r.mood,pred:l.label,score:l.score}))});const c=(r,a)=>a?Number((r/a*100).toFixed(1)):null;return{n:o,accuracy:c(d,o),precisionWhenAnswered:c(d,n),coverage:c(n,o),errors:i}}const L=document.getElementById("eval"),p=e=>e==null?"—":`${e}%`;function j(e){return e!=null&&e.length?`<ul class="small" style="padding-left:18px">${e.slice(0,12).map(s=>`<li>“${h(s.text)}” — expected <b>${h(g(s.gold).en||s.gold)}</b>, got <b>${h(g(s.pred).en||s.pred)}</b>${s.score!==void 0?` (${s.score})`:""}</li>`).join("")}</ul>`:'<p class="small muted">No errors.</p>'}function $(e,s){const t=s||e,o=(e==null?void 0:e.translation)||{},n=e==null?void 0:e.flores;L.innerHTML=`
+import{T as v,M as y,h as l,L as k,t as g,s as b,c as T,p as w,a as A,b as f,d as x}from"./ui-BK4wAuFa.js";function O(e,s){let t=0,o=0,n=0,i=0,r=0;const c=[];e.forEach((a,h)=>{const u=s[h].topic;if(a.topic==="other"){i++,u==="other"?r++:c.push({text:a.text,gold:a.topic,pred:u,score:s[h].score});return}t++,u!=="other"&&(o++,u===a.topic?n++:c.push({text:a.text,gold:a.topic,pred:u,score:s[h].score}))});const d=(a,h)=>h?Number((a/h*100).toFixed(1)):null;return{n:e.length,accuracy:d(n,t),precisionWhenAnswered:d(n,o),coverage:d(o,t),abstainOnOther:d(r,i),errors:c}}function E(e,s,t){let o=0,n=0,i=0;const r=[];e.forEach((d,a)=>{if(!d.mood)return;o++;const h=s[a];h.score<t||(n++,h.label===d.mood?i++:r.push({text:d.text,gold:d.mood,pred:h.label,score:h.score}))});const c=(d,a)=>a?Number((d/a*100).toFixed(1)):null;return{n:o,accuracy:c(i,o),precisionWhenAnswered:c(i,n),coverage:c(n,o),errors:r}}const L=document.getElementById("eval"),p=e=>e==null?"—":`${e}%`;function j(e){return e!=null&&e.length?`<ul class="small" style="padding-left:18px">${e.slice(0,12).map(s=>`<li>“${l(s.text)}” — expected <b>${l(g(s.gold).en||s.gold)}</b>, got <b>${l(g(s.pred).en||s.pred)}</b>${s.score!==void 0?` (${s.score})`:""}</li>`).join("")}</ul>`:'<p class="small muted">No errors.</p>'}function $(e,s){const t=s||e,o=(e==null?void 0:e.translation)||{},n=e==null?void 0:e.flores;L.innerHTML=`
   <h1>Accuracy check <span class="en">Jaribio la usahihi</span></h1>
   <div class="notice">
     <strong>What is measured</strong>
@@ -9,7 +9,7 @@ import{T as v,M as y,h,L as k,t as g,s as b,c as T,p as w,a as x,b as f,d as A}f
 
   ${t?`
   <div class="card">
-    <h2>Topic sorting <span class="en">${h(t===s?"run in this browser":`automatic run · ${new Date(e.generated).toLocaleString()}`)}</span></h2>
+    <h2>Topic sorting <span class="en">${l(t===s?"run in this browser":`automatic run · ${new Date(e.generated).toLocaleString()}`)}</span></h2>
     <dl class="kv">
       <dt>Items</dt><dd>${t.topics.n}</dd>
       <dt>Accuracy</dt><dd><b>${p(t.topics.accuracy)}</b></dd>
@@ -37,14 +37,14 @@ import{T as v,M as y,h,L as k,t as g,s as b,c as T,p as w,a as x,b as f,d as A}f
     <p class="small muted">chrF: 0–100, higher is better (character overlap with a reference translation).</p>
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.9rem">
       <thead><tr><th align="left">Language</th><th align="right">chrF synthetic</th><th align="right">Topic after translation</th><th align="right">chrF FLORES-200</th></tr></thead>
-      <tbody>${Object.entries(o).map(([d,i])=>{var c,r,a;return`
-        <tr style="border-top:1px solid var(--line)"><td>${h(((c=k[d])==null?void 0:c.en)||d)}<div class="small muted">${h(i.model)}</div></td>
-        <td align="right">${i.chrF}</td><td align="right">${i.topicAfterTranslation.correct}/${i.topicAfterTranslation.total}</td>
-        <td align="right">${((a=(r=n==null?void 0:n.results)==null?void 0:r[d])==null?void 0:a.chrF)??"—"}</td></tr>`}).join("")}
+      <tbody>${Object.entries(o).map(([i,r])=>{var c,d,a;return`
+        <tr style="border-top:1px solid var(--line)"><td>${l(((c=k[i])==null?void 0:c.en)||i)}<div class="small muted">${l(r.model)}</div></td>
+        ${r.error?`<td colspan="3" class="small muted">failed: ${l(r.error)}</td>`:`<td align="right">${r.chrF}</td><td align="right">${r.topicAfterTranslation.correct}/${r.topicAfterTranslation.total}</td>
+        <td align="right">${((a=(d=n==null?void 0:n.results)==null?void 0:d[i])==null?void 0:a.chrF)??"—"}</td>`}</tr>`}).join("")}
       </tbody></table></div>
-    ${n!=null&&n.error?`<p class="small muted">FLORES-200 was not run: ${h(n.error)}</p>`:n?`<p class="small muted">FLORES-200 ${h(n.split)}, first ${n.sentences} sentences per language (CC BY-SA 4.0).</p>`:""}
+    ${n!=null&&n.error?`<p class="small muted">FLORES-200 was not run: ${l(n.error)}</p>`:n?`<p class="small muted">FLORES-200 ${l(n.split)}, first ${n.sentences} sentences per language (CC BY-SA 4.0).</p>`:""}
     <details class="quotes"><summary>Example translations</summary>
-      ${Object.entries(o).map(([d,i])=>i.samples.slice(0,3).map(c=>`<blockquote class="q"><div class="orig">${h(c.src)}</div><div class="trans">model: ${h(c.hyp)}</div><div class="trans">reference: ${h(c.ref)}</div></blockquote>`).join("")).join("")}
+      ${Object.entries(o).map(([i,r])=>(r.samples||[]).slice(0,3).map(c=>`<blockquote class="q"><div class="orig">${l(c.src)}</div><div class="trans">model: ${l(c.hyp)}</div><div class="trans">reference: ${l(c.ref)}</div></blockquote>`).join("")).join("")}
     </details>
   </div>`:""}
 
@@ -60,4 +60,4 @@ import{T as v,M as y,h,L as k,t as g,s as b,c as T,p as w,a as x,b as f,d as A}f
       <li>No small, browser-ready translation model covers Swahili or Chagga, so Noor reads Swahili templates, not machine translation.</li>
       <li>Handwriting recognition is not scored here; low-confidence words are always shown to the helper for correction.</li>
     </ul>
-  </div>`,document.getElementById("run").addEventListener("click",F)}let m=null;async function F(){try{const s=await(await fetch("data/eval-set.json")).json();b("Running topic check");const t=s.topics.map(d=>d.text),o=await T(t,w);b("Running sentiment check");const n=await x(t,w);f(),$(m,{topics:O(s.topics,o),mood:E(s.topics,n,y)})}catch(e){f(),A(`Error: ${e.message}`,6e3)}}async function N(){try{const e=await fetch("data/eval-results.json",{cache:"no-store"});m=e.ok?await e.json():null}catch{m=null}$(m,null)}N();
+  </div>`,document.getElementById("run").addEventListener("click",F)}let m=null;async function F(){try{const s=await(await fetch("data/eval-set.json")).json();b("Running topic check");const t=s.topics.map(i=>i.text),o=await T(t,w);b("Running sentiment check");const n=await A(t,w);f(),$(m,{topics:O(s.topics,o),mood:E(s.topics,n,y)})}catch(e){f(),x(`Error: ${e.message}`,6e3)}}async function N(){try{const e=await fetch("data/eval-results.json",{cache:"no-store"});m=e.ok?await e.json():null}catch{m=null}$(m,null)}N();

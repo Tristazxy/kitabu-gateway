@@ -62,12 +62,12 @@ function render(results, local) {
       <thead><tr><th align="left">Language</th><th align="right">chrF synthetic</th><th align="right">Topic after translation</th><th align="right">chrF FLORES-200</th></tr></thead>
       <tbody>${Object.entries(tr).map(([l, x]) => `
         <tr style="border-top:1px solid var(--line)"><td>${h(LANGS[l]?.en || l)}<div class="small muted">${h(x.model)}</div></td>
-        <td align="right">${x.chrF}</td><td align="right">${x.topicAfterTranslation.correct}/${x.topicAfterTranslation.total}</td>
-        <td align="right">${fl?.results?.[l]?.chrF ?? '—'}</td></tr>`).join('')}
+        ${x.error ? `<td colspan="3" class="small muted">failed: ${h(x.error)}</td>` : `<td align="right">${x.chrF}</td><td align="right">${x.topicAfterTranslation.correct}/${x.topicAfterTranslation.total}</td>
+        <td align="right">${fl?.results?.[l]?.chrF ?? '—'}</td>`}</tr>`).join('')}
       </tbody></table></div>
     ${fl?.error ? `<p class="small muted">FLORES-200 was not run: ${h(fl.error)}</p>` : fl ? `<p class="small muted">FLORES-200 ${h(fl.split)}, first ${fl.sentences} sentences per language (CC BY-SA 4.0).</p>` : ''}
     <details class="quotes"><summary>Example translations</summary>
-      ${Object.entries(tr).map(([l, x]) => x.samples.slice(0, 3).map(s => `<blockquote class="q"><div class="orig">${h(s.src)}</div><div class="trans">model: ${h(s.hyp)}</div><div class="trans">reference: ${h(s.ref)}</div></blockquote>`).join('')).join('')}
+      ${Object.entries(tr).map(([l, x]) => (x.samples || []).slice(0, 3).map(s => `<blockquote class="q"><div class="orig">${h(s.src)}</div><div class="trans">model: ${h(s.hyp)}</div><div class="trans">reference: ${h(s.ref)}</div></blockquote>`).join('')).join('')}
     </details>
   </div>` : ''}
 

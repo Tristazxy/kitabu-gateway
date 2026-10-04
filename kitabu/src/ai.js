@@ -167,8 +167,9 @@ export async function audioToPCM(blob) {
 export async function transcribe(blob, lang, onProgress) {
   const asr = await getPipe('automatic-speech-recognition', SHARED_MODELS.voice.id, onProgress, SHARED_MODELS.voice.en);
   const pcm = await audioToPCM(blob);
-  const language = LANGS[lang]?.whisper || 'english';
-  const opts = { language, chunk_length_s: 30, stride_length_s: 5 };
+  // A known language is passed to Whisper; for "other language" Whisper detects it itself.
+  const language = LANGS[lang]?.whisper || (LANGS[lang]?.fallback ? undefined : 'english');
+  const opts = { chunk_length_s: 30, stride_length_s: 5, ...(language ? { language } : {}) };
   const orig = await asr(pcm, { ...opts, task: 'transcribe' });
   let english = orig.text.trim();
   if (lang !== 'en' && lang !== 'sw') {

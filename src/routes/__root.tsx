@@ -78,9 +78,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Karibu" },
+      { title: "WeKaribu" },
       { name: "description", content: "Offline, Swahili-first guestbook and feedback assistant for a small coffee-farm tour host." },
-      { property: "og:title", content: "Karibu" },
+      { property: "og:title", content: "WeKaribu" },
       { property: "og:description", content: "Offline, Swahili-first guestbook and feedback assistant for a small coffee-farm tour host." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

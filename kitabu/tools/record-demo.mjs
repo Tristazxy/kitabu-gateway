@@ -206,7 +206,7 @@ async function walkthrough() {
   try {
     await part('guide', async () => {
       await page.goto(BASE, { waitUntil: 'networkidle' });
-      chapter('Karibu', 'A small AI guestbook for Noor, who runs coffee tours on her family farm in the Tanzanian highlands. Guests write in their own language; Noor hears it in Swahili.');
+      chapter('WeKaribu', 'A small AI guestbook for Noor, who runs coffee tours on her family farm in the Tanzanian highlands. Guests write in their own language; Noor hears it in Swahili.');
       await pause(5000);
       await snap('guide-1');
       chapter('A three-step guide', 'Opens by itself the first time. The whole app is one home screen; everything else is one tap away.');
@@ -388,7 +388,7 @@ async function walkthrough() {
     });
 
     await part('end', async () => {
-      chapter('Karibu', 'Try it: karibu-noor.lovable.app\nCode: github.com/Tristazxy/kitabu-gateway');
+      chapter('WeKaribu', 'Try it: wekaribu.lovable.app\nCode: github.com/Tristazxy/kitabu-gateway');
       await pause(5000);
     });
   } finally {

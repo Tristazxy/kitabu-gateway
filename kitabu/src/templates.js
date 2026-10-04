@@ -20,14 +20,14 @@ export function dayEn(date) {
 // ---------- Weekly SMS to Noor's basic phone (Swahili) ----------
 export function weeklySms(bookings) {
   if (!bookings.length) {
-    return 'Karibu: Hakuna wageni waliopangwa wiki ijayo.';
+    return 'WeKaribu: Hakuna wageni waliopangwa wiki ijayo.';
   }
   const total = bookings.reduce((n, b) => n + (Number(b.guests) || 1), 0);
   const lines = bookings
     .slice()
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .map(b => `${daySw(b.date)}: wageni ${b.guests} (${langName(b.language, 'sw')})${b.guide ? `, mwongozaji ${b.guide}` : ''}`);
-  return `Karibu: Wiki ijayo wageni ${total}.\n${lines.join('\n')}\nJibu NDIYO kukubali au HAPANA kukataa.`;
+  return `WeKaribu: Wiki ijayo wageni ${total}.\n${lines.join('\n')}\nJibu NDIYO kukubali au HAPANA kukataa.`;
 }
 
 // A new-product idea is only raised with enough evidence: >= 3 guests AND >= 40% of guests.
@@ -37,7 +37,7 @@ export function strongProduct(s) {
 
 // One booking sent by a tour company straight to Noor's basic phone.
 export function bookingSms(b) {
-  return `Karibu: Wageni wapya. ${daySw(b.date)}: wageni ${b.guests} (${langName(b.language, 'sw')})${b.guide ? `, mwongozaji ${b.guide}` : ''}.\nJibu NDIYO kukubali au HAPANA kukataa.`;
+  return `WeKaribu: Wageni wapya. ${daySw(b.date)}: wageni ${b.guests} (${langName(b.language, 'sw')})${b.guide ? `, mwongozaji ${b.guide}` : ''}.\nJibu NDIYO kukubali au HAPANA kukataa.`;
 }
 
 // ---------- Swahili summary for Noor ----------
@@ -48,7 +48,7 @@ export function bookingSms(b) {
 const nGuests = n => `${n} ${n === 1 ? 'guest' : 'guests'}`;
 const nEntries = n => `${n} ${n === 1 ? 'entry' : 'entries'}`;
 
-export function summaryText(s) {
+export function summaryText(s, host = 'Noor') {
   const sw = [];
   const en = [];
   sw.push(`Kipindi hiki: wageni ${s.guests}, maoni ${s.entries}.`);
@@ -99,7 +99,7 @@ export function summaryText(s) {
   }
   if (s.swahiliEntries > 0) {
     sw.push(`Maoni ${s.swahiliEntries} yameandikwa kwa Kiswahili — yasome mwenyewe.`);
-    en.push(`${nEntries(s.swahiliEntries)} in Swahili — Noor reads ${s.swahiliEntries === 1 ? 'it' : 'them'} directly.`);
+    en.push(`${nEntries(s.swahiliEntries)} in Swahili — ${host} reads ${s.swahiliEntries === 1 ? 'it' : 'them'} directly.`);
   }
   return { sw, en };
 }
@@ -107,36 +107,36 @@ export function summaryText(s) {
 // ---------- Thank-you messages (guest language, with a parallel Swahili version for Noor) ----------
 const THANKS = {
   sw: {
-    liked: (n, x) => `Mpendwa ${n}, asante kwa kutembelea shamba letu la kahawa! Tunafurahi kwamba ulipenda ${x}. Karibu tena wakati wowote, na tafadhali waambie marafiki zako kuhusu sisi. — Noor`,
-    plain: n => `Mpendwa ${n}, asante kwa kutembelea shamba letu la kahawa! Tunatumaini ulifurahia ziara yako. Karibu tena wakati wowote, na tafadhali waambie marafiki zako kuhusu sisi. — Noor`,
+    liked: (n, x, host) => `Mpendwa ${n}, asante kwa kutembelea shamba letu la kahawa! Tunafurahi kwamba ulipenda ${x}. Karibu tena wakati wowote, na tafadhali waambie marafiki zako kuhusu sisi. — ${host}`,
+    plain: (n, host) => `Mpendwa ${n}, asante kwa kutembelea shamba letu la kahawa! Tunatumaini ulifurahia ziara yako. Karibu tena wakati wowote, na tafadhali waambie marafiki zako kuhusu sisi. — ${host}`,
   },
   en: {
-    liked: (n, x) => `Dear ${n}, thank you for visiting our coffee farm! We are glad you enjoyed ${x}. You are always welcome back, and please tell your friends about us. — Noor`,
-    plain: n => `Dear ${n}, thank you for visiting our coffee farm! We hope you enjoyed your visit. You are always welcome back, and please tell your friends about us. — Noor`,
+    liked: (n, x, host) => `Dear ${n}, thank you for visiting our coffee farm! We are glad you enjoyed ${x}. You are always welcome back, and please tell your friends about us. — ${host}`,
+    plain: (n, host) => `Dear ${n}, thank you for visiting our coffee farm! We hope you enjoyed your visit. You are always welcome back, and please tell your friends about us. — ${host}`,
   },
   it: {
-    liked: (n, x) => `Ciao ${n}, grazie per aver visitato la nostra fattoria del caffè! Ci fa piacere sapere che hai apprezzato: ${x}. Torna a trovarci quando vuoi e, se ti fa piacere, parla di noi ai tuoi amici. — Noor`,
-    plain: n => `Ciao ${n}, grazie per aver visitato la nostra fattoria del caffè! Speriamo che la visita ti sia piaciuta. Torna a trovarci quando vuoi e, se ti fa piacere, parla di noi ai tuoi amici. — Noor`,
+    liked: (n, x, host) => `Ciao ${n}, grazie per aver visitato la nostra fattoria del caffè! Ci fa piacere sapere che hai apprezzato: ${x}. Torna a trovarci quando vuoi e, se ti fa piacere, parla di noi ai tuoi amici. — ${host}`,
+    plain: (n, host) => `Ciao ${n}, grazie per aver visitato la nostra fattoria del caffè! Speriamo che la visita ti sia piaciuta. Torna a trovarci quando vuoi e, se ti fa piacere, parla di noi ai tuoi amici. — ${host}`,
   },
   fr: {
-    liked: (n, x) => `Bonjour ${n}, merci d’avoir visité notre ferme de café ! Nous sommes heureux que vous ayez apprécié : ${x}. Notre porte vous est toujours ouverte — n’hésitez pas à parler de nous à vos amis. — Noor`,
-    plain: n => `Bonjour ${n}, merci d’avoir visité notre ferme de café ! Nous espérons que la visite vous a plu. Notre porte vous est toujours ouverte — n’hésitez pas à parler de nous à vos amis. — Noor`,
+    liked: (n, x, host) => `Bonjour ${n}, merci d’avoir visité notre ferme de café ! Nous sommes heureux que vous ayez apprécié : ${x}. Notre porte vous est toujours ouverte — n’hésitez pas à parler de nous à vos amis. — ${host}`,
+    plain: (n, host) => `Bonjour ${n}, merci d’avoir visité notre ferme de café ! Nous espérons que la visite vous a plu. Notre porte vous est toujours ouverte — n’hésitez pas à parler de nous à vos amis. — ${host}`,
   },
   de: {
-    liked: (n, x) => `Hallo ${n}, vielen Dank für Ihren Besuch auf unserer Kaffeefarm! Es freut uns, dass Ihnen Folgendes gefallen hat: ${x}. Sie sind jederzeit wieder willkommen – erzählen Sie gern Ihren Freunden von uns. — Noor`,
-    plain: n => `Hallo ${n}, vielen Dank für Ihren Besuch auf unserer Kaffeefarm! Wir hoffen, der Besuch hat Ihnen gefallen. Sie sind jederzeit wieder willkommen – erzählen Sie gern Ihren Freunden von uns. — Noor`,
+    liked: (n, x, host) => `Hallo ${n}, vielen Dank für Ihren Besuch auf unserer Kaffeefarm! Es freut uns, dass Ihnen Folgendes gefallen hat: ${x}. Sie sind jederzeit wieder willkommen – erzählen Sie gern Ihren Freunden von uns. — ${host}`,
+    plain: (n, host) => `Hallo ${n}, vielen Dank für Ihren Besuch auf unserer Kaffeefarm! Wir hoffen, der Besuch hat Ihnen gefallen. Sie sind jederzeit wieder willkommen – erzählen Sie gern Ihren Freunden von uns. — ${host}`,
   },
   zh: {
-    liked: (n, x) => `${n}您好！感谢您来参观我们的咖啡农场。很高兴您喜欢：${x}。欢迎您随时再来，也欢迎把我们介绍给您的朋友。—— Noor`,
-    plain: n => `${n}您好！感谢您来参观我们的咖啡农场。希望您这次参观愉快。欢迎您随时再来，也欢迎把我们介绍给您的朋友。—— Noor`,
+    liked: (n, x, host) => `${n}您好！感谢您来参观我们的咖啡农场。很高兴您喜欢：${x}。欢迎您随时再来，也欢迎把我们介绍给您的朋友。—— ${host}`,
+    plain: (n, host) => `${n}您好！感谢您来参观我们的咖啡农场。希望您这次参观愉快。欢迎您随时再来，也欢迎把我们介绍给您的朋友。—— ${host}`,
   },
   es: {
-    liked: (n, x) => `Hola ${n}, ¡gracias por visitar nuestra finca de café! Nos alegra saber que disfrutaste: ${x}. Vuelve cuando quieras y, si te apetece, háblales de nosotros a tus amigos. — Noor`,
-    plain: n => `Hola ${n}, ¡gracias por visitar nuestra finca de café! Esperamos que hayas disfrutado la visita. Vuelve cuando quieras y, si te apetece, háblales de nosotros a tus amigos. — Noor`,
+    liked: (n, x, host) => `Hola ${n}, ¡gracias por visitar nuestra finca de café! Nos alegra saber que disfrutaste: ${x}. Vuelve cuando quieras y, si te apetece, háblales de nosotros a tus amigos. — ${host}`,
+    plain: (n, host) => `Hola ${n}, ¡gracias por visitar nuestra finca de café! Esperamos que hayas disfrutado la visita. Vuelve cuando quieras y, si te apetece, háblales de nosotros a tus amigos. — ${host}`,
   },
   pl: {
-    liked: (n, x) => `Dzień dobry ${n}, dziękujemy za odwiedzenie naszej farmy kawy! Cieszymy się, że spodobało się Państwu: ${x}. Zapraszamy ponownie – i prosimy polecić nas znajomym. — Noor`,
-    plain: n => `Dzień dobry ${n}, dziękujemy za odwiedzenie naszej farmy kawy! Mamy nadzieję, że wizyta się podobała. Zapraszamy ponownie – i prosimy polecić nas znajomym. — Noor`,
+    liked: (n, x, host) => `Dzień dobry ${n}, dziękujemy za odwiedzenie naszej farmy kawy! Cieszymy się, że spodobało się Państwu: ${x}. Zapraszamy ponownie – i prosimy polecić nas znajomym. — ${host}`,
+    plain: (n, host) => `Dzień dobry ${n}, dziękujemy za odwiedzenie naszej farmy kawy! Mamy nadzieję, że wizyta się podobała. Zapraszamy ponownie – i prosimy polecić nas znajomym. — ${host}`,
   },
 };
 
@@ -144,12 +144,12 @@ const THANKS = {
  * Build a thank-you message. Returns {lang, text, sw, usedFallback}.
  * `sw` is the exact Swahili equivalent so Noor knows what she is approving.
  */
-export function thankYou(guest, likedTopicId) {
+export function thankYou(guest, likedTopicId, host = 'Noor') {
   const lang = THANKS[guest.language] ? guest.language : 'en';
   const usedFallback = lang !== guest.language;
   const name = (guest.name || '').trim() || (lang === 'zh' ? '' : 'friend');
   const t = likedTopicId ? TOPICS.find(x => x.id === likedTopicId) : null;
-  const make = (L) => (t ? THANKS[L].liked(name, t.msg[L] || t.msg.en) : THANKS[L].plain(name));
+  const make = (L) => (t ? THANKS[L].liked(name, t.msg[L] || t.msg.en, host) : THANKS[L].plain(name, host));
   return { lang, text: make(lang), sw: make('sw'), usedFallback };
 }
 
@@ -164,7 +164,7 @@ export const SUBJECTS = {
 };
 
 // ---------- Anonymized report for the guide / tourism centre ----------
-export function guideReport(s, periodLabel) {
+export function guideReport(s, periodLabel, host = 'Noor') {
   const lines = [];
   lines.push(`Ripoti ya maoni — ${periodLabel}`);
   lines.push(`Feedback report — ${periodLabel}`);
@@ -185,6 +185,6 @@ export function guideReport(s, periodLabel) {
   }
   lines.push('');
   lines.push('Hakuna majina wala namba za wageni. / No guest names or contact details included.');
-  lines.push('Imeidhinishwa na Noor kabla ya kutumwa. / Approved by Noor before sharing.');
+  lines.push(`Imeidhinishwa na ${host} kabla ya kutumwa. / Approved by ${host} before sharing.`);
   return lines.join('\n');
 }

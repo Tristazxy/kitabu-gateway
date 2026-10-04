@@ -404,6 +404,38 @@
     "ref": "The walk to the waterfall was beautiful.",
     "topic": "walk"
    }
+  ],
+  "xx": [
+   {
+    "src": "O café estava delicioso e a família foi muito acolhedora.",
+    "ref": "The coffee was delicious and the family was very welcoming.",
+    "topic": "host",
+    "note": "Portuguese"
+   },
+   {
+    "src": "Kahve harikaydı ama yol çok çamurluydu.",
+    "ref": "The coffee was great but the road was very muddy.",
+    "topic": null,
+    "note": "Turkish"
+   },
+   {
+    "src": "أردنا شراء حبوب القهوة لنأخذها إلى المنزل.",
+    "ref": "We wanted to buy coffee beans to take home.",
+    "topic": "buy",
+    "note": "Arabic"
+   },
+   {
+    "src": "दोपहर का खाना बहुत स्वादिष्ट था।",
+    "ref": "The lunch was very tasty.",
+    "topic": "food",
+    "note": "Hindi"
+   },
+   {
+    "src": "Jalan menuju kebun sulit ditemukan.",
+    "ref": "The road to the farm was hard to find.",
+    "topic": "access",
+    "note": "Indonesian"
+   }
   ]
  }
 }

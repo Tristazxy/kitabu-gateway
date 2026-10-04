@@ -1,6 +1,6 @@
-# Karibu — a Small AI guestbook for a coffee-farm host
+# WeKaribu — a Small AI guestbook for a coffee-farm host
 
-**Live app: https://karibu-noor.lovable.app** (open it on a phone). *Karibu* is Swahili for "welcome" (and "come close"); the app is a *kitabu cha wageni*, a guestbook. This is our entry to the Hack-Nation × World Bank
+**Live app: https://wekaribu.lovable.app** (open it on a phone). *WeKaribu* — "we welcome" — from *karibu*, Swahili for "welcome" (and "come close"); the app is a *kitabu cha wageni*, a guestbook. This is our entry to the Hack-Nation × World Bank
 **Small AI for Development** hackathon, tourism track (Annex C).
 
 > **Because of this tool, Noor will hear — in Swahili, within days of each visit — what her foreign
@@ -37,6 +37,18 @@ Two links at the bottom: **For tour companies** — a booking form that turns in
 Where it sits in Noor's day: on Monday her basic phone tells her who is coming; during the week guests
 write in the book while she works; at the weekend her daughter (or a paid young helper) spends ten
 minutes photographing pages; Noor listens to the summary and approves the thank-yous.
+
+### Any host, any country, any guest language
+
+Built around Noor, usable by any small host. What changes per host is data, not code:
+
+| | Today | How to add more |
+|---|---|---|
+| **Host's name** | A setting (More → Host). It flows into the visitor screen (8 languages), thank-you notes, the report and the printable page. | — |
+| **Guest languages** | Dedicated packs for Italian, French, German, Chinese, Spanish, Polish, Dutch, Russian, Japanese, Korean; English and Swahili need no pack. **"Other language"** uses one multilingual fallback pack (100+ languages → English, lower quality, so every sentence is marked for a human check). Voice: Whisper detects the language. | A new dedicated pack is one line in `src/langs.js` (any Opus-MT `xx-en` model). |
+| **Host's language** (interface, summary, SMS, thank-you templates) | Swahili and English, following the phone's language, one tap to switch. | Every sentence a host reads is a human-written pair in the code (`L('Kiswahili', 'English')`) and the templates in `src/templates.js`; a third host language is a translation pass over those strings — by a person, never by a model, which is the point. |
+| **Country** | Nothing country-specific: no currency, addresses or regulation in the app. The SMS prefix and the printable page are plain text. | — |
+| **Accounts** | **No login, by design.** The phone is the account: data never leaves it, there is no server to breach, no sign-up wall for a host with patchy internet. | Multi-device sharing, when needed, will be an export/import file or QR code — still no account. |
 
 ## Why AI here — and what is deliberately *not* AI
 

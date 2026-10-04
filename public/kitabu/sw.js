@@ -3,10 +3,11 @@
 // Libraries from cdn.jsdelivr.net: cache first (they are version-pinned).
 // AI model files from Hugging Face are cached by the AI library itself.
 
-const SHELL = 'kitabu-shell-v2';
+const SHELL = 'kitabu-shell-v3';
 const LIBS = 'kitabu-libs-v1';
 const PRECACHE = [
   './index.html', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png',
+  './fonts/inter-latin-wght-normal.woff2', './fonts/inter-latin-ext-wght-normal.woff2', './fonts/inter-cyrillic-wght-normal.woff2',
   './data/demo.json', './data/hosts.json', './data/phrasebook-sw.json', './print/guestbook.html', './print/sales-log.html', './print/print.css',
 ];
 
@@ -32,6 +33,7 @@ self.addEventListener('fetch', event => {
   const url = new URL(req.url);
   if (url.origin === self.location.origin) {
     if (url.pathname.endsWith('/data/bookings.json')) return; // live booking feed: never serve a stale copy
+    if (url.pathname.endsWith('.mp4')) return; // background clips stream straight from the network
     event.respondWith(networkFirst(req));
   } else if (url.hostname === 'cdn.jsdelivr.net') {
     event.respondWith(cacheFirst(req));
@@ -42,7 +44,7 @@ async function networkFirst(req) {
   const cache = await caches.open(SHELL);
   try {
     const res = await fetch(req);
-    if (res && res.ok) cache.put(req, res.clone());
+    if (res && res.status === 200) cache.put(req, res.clone()).catch(() => null);
     return res;
   } catch (err) {
     const hit = await cache.match(req, { ignoreSearch: true });

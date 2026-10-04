@@ -17,13 +17,18 @@
 }
 
 * { box-sizing: border-box; }
+/* Inter (SIL Open Font License), self-hosted so it works offline: public/fonts/ */
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 100 900; font-display: swap; src: url(/fonts/inter-latin-wght-normal.woff2) format('woff2-variations'); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 100 900; font-display: swap; src: url(/fonts/inter-latin-ext-wght-normal.woff2) format('woff2-variations'); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 100 900; font-display: swap; src: url(/fonts/inter-cyrillic-wght-normal.woff2) format('woff2-variations'); unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116; }
+
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
   background: var(--bg);
   position: relative;
   color: var(--ink);
-  font: 1.0625rem/1.45 system-ui, -apple-system, "Segoe UI", "Noto Sans", Ubuntu, sans-serif;
+  font: 1.0625rem/1.45 "Inter", system-ui, -apple-system, "Segoe UI", "Noto Sans", Ubuntu, sans-serif;
   padding-bottom: calc(24px + env(safe-area-inset-bottom));
 }
 
@@ -48,8 +53,8 @@ a { color: var(--primary); }
   box-shadow: 0 2px 12px rgba(27, 42, 34, .22);
 }
 .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.brand img { border-radius: 8px; background: #fff; }
-.brand-name { font-weight: 700; font-size: 1.05rem; }
+.brand img { display: none; }
+.brand-name { font-weight: 800; font-size: 1.25rem; letter-spacing: -0.02em; }
 .topbar-actions { display: flex; align-items: center; gap: 6px; }
 .icon-btn {
   min-width: 44px; height: 44px; border-radius: 10px; border: 1px solid rgba(255,255,255,.35);
@@ -88,7 +93,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
 .btn.danger { background: var(--surface); color: var(--cherry); border-color: var(--cherry); }
 .btn.small { min-height: 44px; padding: 6px 12px; font-size: .9rem; }
 .btn.block { width: 100%; }
-.btn[disabled] { opacity: .5; cursor: not-allowed; }
+.btn[disabled], .btn.disabled, .btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; pointer-events: none; }
 .btn.secondary[aria-pressed="true"] { background: var(--primary); color: #fff; }
 label.btn { position: relative; }
 .btn.big { min-height: 72px; flex-direction: column; gap: 2px; font-size: 1.02rem; }
@@ -366,18 +371,20 @@ label.field.search { margin-top: 4px; }
 .nature .bg-layer.out { transform: translateY(-100%); }
 .nature .bg-layer.reset { transition: none; }
 .nature .bg-photo, .nature .bg-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.nature .bg-layer.on .bg-photo { animation: kenburns 40s ease-in-out infinite alternate; transform-origin: 50% 60%; }
+/* still frames drift forward slowly (never back) only when there is no video to play */
+.nature .bg-layer.on:not(.has-video) .bg-photo { animation: drift-in 16s linear forwards; transform-origin: 50% 60%; }
 .nature .bg-video { opacity: 0; transition: opacity 1.2s ease; }
 .nature .video-ready .bg-video { opacity: 1; }
-.nature.still .bg-photo, .nature.still svg * { animation: none !important; }
+.nature.still .bg-photo { animation-play-state: paused !important; }
+.nature.still svg * { animation-play-state: paused !important; }
 .nature.still .bg-layer { transition: none; }
-.nature.real::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10, 30, 20, .30), rgba(10, 30, 20, .08) 35%, rgba(10, 30, 20, .34)); pointer-events: none; }
-@keyframes kenburns { from { transform: scale(1); } to { transform: scale(1.1) translate(-1.5%, -1%); } }
+.nature.real::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10, 30, 20, .14), rgba(10, 30, 20, .02) 30%, rgba(10, 30, 20, .16)); pointer-events: none; }
+@keyframes drift-in { from { transform: scale(1); } to { transform: scale(1.08) translate(-1%, -1%); } }
 .nature.real ~ main .card, .nature.real ~ main .home-btn, .nature.real ~ main .say { background: rgba(255, 255, 255, .93); }
 .nature.real ~ main > h1, .nature.real ~ main > h2 { background: rgba(255, 255, 255, .86); }
 .nature.real ~ main > p, .nature.real ~ main > .hint, .nature.real ~ main .home-links { background: rgba(255, 255, 255, .82); }
 .credit { font-size: .72rem; color: #fff; opacity: .75; text-align: right; padding: 0 4px 6px; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
-@media (prefers-reduced-motion: reduce) { .nature .bg-photo { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .nature .bg-photo { animation: none !important; } .nature .bg-layer { transition: none; } }
 
 .home-btn.locked { border: 2px solid #F2B662; box-shadow: 0 0 0 4px rgba(242, 182, 98, .25), var(--shadow); }
 .spot-map { width: 100%; height: auto; display: block; border-radius: 12px; border: 1px solid var(--line); }

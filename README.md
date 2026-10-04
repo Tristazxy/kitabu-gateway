@@ -52,6 +52,22 @@ Built around Noor, usable by any small host. What changes per host is data, not 
 | **Accounts** | **No login, by design.** The phone is the account: data never leaves it, there is no server to breach, no sign-up wall for a host with patchy internet. | Multi-device sharing, when needed, will be an export/import file or QR code — still no account. |
 
 
+### No internet? Everything still moves by SMS
+
+Every WeKaribu SMS ends with one short code line (`WK|BOOK|2026-10-07|2|it|Vivian & Frank|noor`), so a message can be pasted into the app on the other phone and understood, offline:
+
+| Side | Sends by SMS | Receives by pasting |
+|---|---|---|
+| Host | her available days; the weekly report (counts only) | the company's booking confirmation → straight into *Reservations* |
+| Tour company | booking confirmation to the host (Swahili) and to the tourist (their language) | a tourist's request, a host's days, a host's report |
+| Visitor | the booking request, when the phone has no internet | — |
+
+Cloud uploads made offline are queued on the phone and sent by themselves when internet returns. The app shell, data, fonts and phrasebook are cached by the service worker after the first visit; the AI models are downloaded once and kept on the phone.
+
+### Logo and type
+
+The wordmark is set in [Inter](https://rsms.me/inter/) (SIL Open Font License), self-hosted in `kitabu/public/fonts/` so it works offline; the app icon is a white Inter "W" on the WeKaribu green.
+
 ### Background videos (Pexels, free licence)
 
 Eight short real-nature clips play in turn behind the app; when one ends the next scrolls up from below, like a feed. Video plays only online and outside data-saver mode (the still frames take turns otherwise), and the **⏸ Video** button in the top bar freezes the background. All from [Pexels](https://www.pexels.com) under the Pexels licence: mountains and riders — RD King (12492499); bamboo grove — Anton Lukin (12311788); bamboo canopy — Vanessa Garcia (6318875); coffee cherries — Matthias Groeneveld (7116757); stream — Thierry Rossier (11902892); flower field — Michael Burrows (14482561); dunes — Dubang chang (14483416); snowy forest — iPhone Snaps (19806018).

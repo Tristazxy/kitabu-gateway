@@ -1,7 +1,7 @@
 {
   "name": "WeKaribu",
   "short_name": "WeKaribu",
-  "description": "Offline guestbook and feedback assistant for a small coffee-farm tour operator. Swahili first.",
+  "description": "WeKaribu: guests write in their language, the host hears it in hers. Works offline, no sign-up.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

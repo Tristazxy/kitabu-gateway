@@ -145,7 +145,7 @@ export function hostHTML({ host, days, selected, summaryLine, form, lang, knownG
   </div>`;
 }
 
-export function tripHTML({ host, booking, lang, phrasebook, saved, audioReady }) {
+export function tripHTML({ host, booking, lang, phrasebook, saved, audioReady, online = true, requestHref = '' }) {
   const map = `<svg viewBox="0 0 320 170" class="spot-map" role="img" aria-label="map">
     <rect width="320" height="170" rx="12" fill="#E4EFE2"/>
     <path d="M0 120 C 60 90 120 150 200 110 S 290 80 320 100" fill="none" stroke="#8CC6DC" stroke-width="10" stroke-linecap="round"/>
@@ -161,8 +161,11 @@ export function tripHTML({ host, booking, lang, phrasebook, saved, audioReady })
   return `
   <div class="card" style="text-align:center;padding:22px 18px">
     <div class="role-icon tile-caramel" style="margin:0 auto 10px" aria-hidden="true">${ICON_PIN}</div>
-    <h1>${L('Ombi limetumwa', 'Request sent')}</h1>
-    <p class="lead" style="margin:0">${L(`${h(host.company)} itathibitisha kwa barua pepe au WhatsApp. Mwenyeji anapata SMS.`, `${h(host.company)} confirms by email or WhatsApp. The host gets an SMS.`)}</p>
+    <h1>${online ? L('Ombi limetumwa', 'Request sent') : L('Ombi limehifadhiwa', 'Request saved')}</h1>
+    <p class="lead" style="margin:0">${online
+      ? L(`${h(host.company)} itathibitisha kwa barua pepe au WhatsApp. Mwenyeji anapata SMS.`, `${h(host.company)} confirms by email or WhatsApp. The host gets an SMS.`)
+      : L('Hakuna mtandao sasa. Tuma ombi lako kwa SMS: linafika bila intaneti.', 'No internet right now. Send your request by SMS: it arrives without internet.')}</p>
+    ${requestHref ? `<a class="btn ${online ? 'secondary' : ''} block" style="margin-top:12px" href="${requestHref}">${online ? L('Tuma pia kwa SMS', 'Also send by SMS') : L('Tuma ombi kwa SMS', 'Send the request by SMS')}</a>` : ''}
   </div>
   <div class="card">
     <h2>${L('Safari yako', 'Your trip')} <span class="chip">${L('Imehifadhiwa kwenye simu', 'Saved on your phone')}</span></h2>

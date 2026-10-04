@@ -54,9 +54,10 @@ export const NATURE_SVG = `
   ${leaf(180, 0, 14)}${leaf(520, 5, 18)}${leaf(820, 9, 16)}${leaf(330, 12, 20)}
 </svg>`;
 
-// Real-nature backgrounds: eight short Pexels clips (free licence) that play in turn behind the app.
-// When one clip ends the next one scrolls up from below, like a feed; offline (or with data-saver /
-// reduced motion) the still frames take turns instead. The "Video" button in the top bar freezes it.
+// Real-nature backgrounds: eight short Pexels clips (free licence) that play in turn behind the app,
+// each once and forwards. Just before a clip ends the next one scrolls up from below while the first
+// is still moving, so the picture never freezes; offline (or with data-saver / reduced motion) the
+// still frames take turns instead. The "Video" button in the top bar freezes it.
 // Files live in public/kitabu/bg/ (served, not rebuilt): <scene>.mp4 / <scene>-wide.mp4 and .jpg posters.
 export const SCENES = {
   mountains: { id: 12492499, by: 'RD King' },
@@ -96,12 +97,20 @@ function canPlayVideo() {
 function addVideo(el, scene) {
   const v = document.createElement('video');
   v.className = 'bg-video';
-  v.muted = true; v.loop = false; v.playsInline = true; v.autoplay = false; v.preload = 'metadata';
+  v.muted = true; v.loop = false; v.playsInline = true; v.autoplay = false; v.preload = 'auto';
   v.setAttribute('muted', ''); v.setAttribute('playsinline', '');
   v.src = sceneFile(scene, 'mp4');
+  el.classList.add('has-video');
   v.addEventListener('canplay', () => el.classList.add('video-ready'), { once: true });
-  v.addEventListener('error', () => { v.remove(); el.classList.remove('video-ready'); }, { once: true });
-  v.addEventListener('ended', () => { if (el.classList.contains('on')) next(); });
+  v.addEventListener('error', () => { v.remove(); el.classList.remove('video-ready', 'has-video'); }, { once: true });
+  // each clip plays exactly once, forwards; the next one scrolls in during its last second,
+  // or as soon as it is ready if the clip ended first
+  v.addEventListener('timeupdate', () => {
+    if (!el.classList.contains('on') || !isFinite(v.duration) || v.duration - v.currentTime > (SLIDE_MS + 300) / 1000) return;
+    const nv = layerFor(PLAYLIST[nextIndex()]).querySelector('video');
+    if (!nv || nv.readyState >= 4) next();
+  });
+  v.addEventListener('ended', () => { if (el.classList.contains('on')) advance(); });
   el.appendChild(v);
   return v;
 }
@@ -120,13 +129,22 @@ function layerFor(scene) {
   return el;
 }
 
+const nextIndex = () => (index + 1) % PLAYLIST.length;
+
+// Start a clip only once the browser expects to play it through without stalling.
+function startVideo(el, v) {
+  const go = () => { if (el.classList.contains('on') && motion && !document.hidden) v.play().catch(() => {}); };
+  if (v.readyState >= 4) go();
+  else v.addEventListener('canplaythrough', go, { once: true });
+}
+
 // Keep the show going even when the video never starts (low-power mode, offline, slow network).
 function arm(el) {
   clearTimeout(timer);
   if (!motion) return;
   const v = el.querySelector('video');
   const playing = v && !v.paused && isFinite(v.duration) && v.duration > 0;
-  const seconds = playing ? v.duration - v.currentTime + 3 : PHOTO_SECONDS;
+  const seconds = playing ? v.duration - v.currentTime + 5 : PHOTO_SECONDS;
   timer = setTimeout(next, seconds * 1000);
 }
 
@@ -139,37 +157,55 @@ function show(i) {
   const scene = PLAYLIST[i];
   const el = layerFor(scene);
   const prev = index >= 0 ? layers[PLAYLIST[index]] : null;
+  const first = index < 0;
   index = i;
+  if (first) el.classList.add('reset'); // the opening scene is simply there, nothing slides yet
   void el.offsetWidth; // the start position is applied before it moves
   el.classList.add('on');
+  if (first) requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove('reset')));
   if (prev && prev !== el) {
     // the old scene scrolls out at the top while the new one comes up from below
     prev.classList.remove('on');
     prev.classList.add('out');
     const pv = prev.querySelector('video');
-    if (pv) { pv.pause(); try { pv.currentTime = 0; } catch (e) { /* not seekable yet */ } }
     setTimeout(() => {
       prev.classList.add('reset');
       prev.classList.remove('out');
+      // the outgoing clip keeps moving while it leaves; it is stopped and rewound only now, out of sight
+      if (pv) { pv.pause(); try { pv.currentTime = 0; } catch (e) { /* not seekable yet */ } }
       requestAnimationFrame(() => requestAnimationFrame(() => prev.classList.remove('reset')));
     }, SLIDE_MS + 100);
   }
   const v = el.querySelector('video');
   if (v && motion) {
     v.addEventListener('playing', () => { if (el.classList.contains('on')) arm(el); }, { once: true });
-    v.play().catch(() => {});
+    startVideo(el, v);
   }
   arm(el);
-  // fetch the next clip while this one plays, so the switch is seamless
-  const nv = layerFor(PLAYLIST[(i + 1) % PLAYLIST.length]).querySelector('video');
-  if (nv && nv.preload !== 'auto') { nv.preload = 'auto'; nv.load(); }
+  layerFor(PLAYLIST[nextIndex()]); // the next clip downloads while this one plays
   updateCredit();
   root.dispatchEvent(new CustomEvent('scenechange', { detail: { scene } }));
 }
 
+// The current clip has ended: move on as soon as the next one is ready to play through
+// (holding the last frame for at most a few seconds), so the scroll never lands on a stalled clip.
+function advance() {
+  if (!root || !motion || document.hidden) return;
+  const nv = layerFor(PLAYLIST[nextIndex()]).querySelector('video');
+  if (nv && nv.readyState < 4) {
+    clearTimeout(timer);
+    let done = false;
+    const go = () => { if (done) return; done = true; nv.removeEventListener('canplaythrough', go); next(); };
+    nv.addEventListener('canplaythrough', go, { once: true });
+    timer = setTimeout(go, 4000);
+    return;
+  }
+  next();
+}
+
 function next() {
   if (!root || !motion || document.hidden) return;
-  show((index + 1) % PLAYLIST.length);
+  show(nextIndex());
 }
 
 export function setMotion(on) {
@@ -184,8 +220,8 @@ export function setMotion(on) {
     if (v) v.pause();
   } else if (el) {
     const v = layerFor(currentScene()).querySelector('video');
-    if (v) v.play().catch(() => {});
-    arm(el);
+    if (v && v.ended) advance();
+    else { if (v) startVideo(el, v); arm(el); }
   }
 }
 export const toggleMotion = () => setMotion(!motion);
@@ -198,7 +234,10 @@ export function mountBackground(el) {
     const cur = layers[currentScene()];
     const v = cur && cur.querySelector('video');
     if (document.hidden) { clearTimeout(timer); if (v) v.pause(); }
-    else if (motion && cur) { if (v) v.play().catch(() => {}); arm(cur); }
+    else if (motion && cur) {
+      if (v && v.ended) advance();
+      else { if (v) startVideo(cur, v); arm(cur); }
+    }
   });
   const probe = new Image();
   probe.onload = () => { el.classList.add('real'); show(0); };

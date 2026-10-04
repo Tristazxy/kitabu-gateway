@@ -44,7 +44,8 @@
       "lng": 37.395,
       "meet": "Materuni village office, then 20 minutes on foot with the guide",
       "directions": "From Moshi, 30 minutes by car to Materuni (Uru). The farm road is steep; the tour company’s car or a boda-boda from the village office. No signs: the guide walks you up.",
-      "phone": "+255 700 000 001 (guide Juma, fictional)"
+      "phone": "+255 700 000 001 (guide Juma, fictional)",
+      "companyPhone": "+255 700 000 002 (office, fictional)"
     },
     {
       "id": "asha",
@@ -82,7 +83,8 @@
       "lng": 37.52,
       "meet": "Marangu Gate car park",
       "directions": "From Moshi, 45 minutes by car to Marangu. The spice garden is 5 minutes from the gate; the guide meets you in the car park.",
-      "phone": "+255 700 000 002 (guide Neema, fictional)"
+      "phone": "+255 700 000 002 (guide Neema, fictional)",
+      "companyPhone": "+255 700 000 002 (office, fictional)"
     },
     {
       "id": "kibo",
@@ -124,7 +126,8 @@
       "lng": 37.33,
       "meet": "Mweka village centre, by the church",
       "directions": "From Moshi, 40 minutes by car to Mweka. Walk 15 minutes to the beehives at the forest edge with the guide.",
-      "phone": "+255 700 000 001 (guide Juma, fictional)"
+      "phone": "+255 700 000 001 (guide Juma, fictional)",
+      "companyPhone": "+255 700 000 002 (office, fictional)"
     }
   ]
 }

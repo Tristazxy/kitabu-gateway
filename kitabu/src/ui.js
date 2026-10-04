@@ -70,12 +70,14 @@ export function speak(text, code = 'sw') {
     toast(L('Simu hii haiwezi kusoma kwa sauti.', 'This phone cannot read aloud.'));
     return;
   }
+  const TAGS = { sw: 'sw-KE', en: 'en-US', it: 'it-IT', fr: 'fr-FR', de: 'de-DE', es: 'es-ES', pl: 'pl-PL', zh: 'zh-CN', nl: 'nl-NL', ru: 'ru-RU', ja: 'ja-JP', ko: 'ko-KR', pt: 'pt-PT' };
   const voices = speechSynthesis.getVoices();
-  const voice = voices.find(v => v.lang.toLowerCase().startsWith(code));
+  const voice = voices.find(v => v.lang.toLowerCase().startsWith(code)) || voices.find(v => v.lang.toLowerCase().replace('_', '-').startsWith(code));
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = voice ? voice.lang : code === 'sw' ? 'sw-KE' : 'en-US';
+  u.lang = voice ? voice.lang : (TAGS[code] || code);
   if (voice) u.voice = voice;
   else if (code === 'sw') toast(L('Simu hii haina sauti ya Kiswahili; matamshi yanaweza kuwa mabaya.', 'No Swahili voice on this phone; pronunciation may be off.'), 5000);
+  else if (code !== 'en') toast(L('Simu hii haina sauti ya lugha hii bado.', 'This phone has no voice for this language yet.'), 4000);
   u.rate = 0.9;
   speechSynthesis.cancel();
   speechSynthesis.speak(u);

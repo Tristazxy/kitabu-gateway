@@ -37,7 +37,48 @@ export function strongProduct(s) {
 
 // One booking sent by a tour company straight to Noor's basic phone.
 export function bookingSms(b) {
-  return `WeKaribu: Wageni wapya. ${daySw(b.date)}: wageni ${b.guests} (${langName(b.language, 'sw')})${b.guide ? `, mwongozaji ${b.guide}` : ''}.\nJibu NDIYO kukubali au HAPANA kukataa.`;
+  return `WeKaribu: Wageni wapya. ${daySw(b.date)}: wageni ${b.guests} (${langName(b.language, 'sw')})${b.guide ? `, mwongozaji ${b.guide}` : ''}.\nJibu NDIYO kukubali au HAPANA kukataa.\n${wkCode(['BOOK', isoDay(b.date), b.guests, b.language, b.leadName || '', b.hostId || 'noor'])}`;
+}
+
+// ---------- SMS that works with no internet on any side ----------
+// Every WeKaribu SMS ends with one machine-readable line, so the receiving phone can paste the
+// message into the app and it is understood: WK|BOOK|date|guests|lang|name|host (company -> host),
+// WK|REQ|... (tourist -> company), WK|DAYS|host|d1,d2 (host -> company), WK|REPORT|host|period|guests|entries.
+const isoDay = d => String(d || '').slice(0, 10);
+export const wkCode = parts => 'WK|' + parts.map(p => String(p ?? '').replace(/[|\n]/g, '/')).join('|');
+export function parseWkCode(text) {
+  const lines = String(text || '').match(/WK\|[^\n]+/g);
+  if (!lines) return null;
+  const parts = lines[lines.length - 1].trim().split('|').map(x => x.trim());
+  const kind = parts[1];
+  const isDay = d => /^\d{4}-\d{2}-\d{2}$/.test(d);
+  if (kind === 'BOOK' || kind === 'REQ') {
+    const [, , date, guests, language, leadName, hostId, referredBy] = parts;
+    if (!isDay(date)) return null;
+    return { kind, date, guests: Math.max(1, Number(guests) || 1), language: language || 'en', leadName: leadName || 'Guest', hostId: hostId || 'noor', referredBy: referredBy || '' };
+  }
+  if (kind === 'DAYS') {
+    const [, , hostId, days] = parts;
+    return { kind, hostId: hostId || 'noor', days: (days || '').split(',').map(x => x.trim()).filter(isDay) };
+  }
+  if (kind === 'REPORT') {
+    const [, , hostId, period, guests, entries] = parts;
+    return { kind, hostId: hostId || 'noor', period: period || '', guests: Number(guests) || 0, entries: Number(entries) || 0, report: String(text).split(/\n?WK\|/)[0].trim() };
+  }
+  return null;
+}
+// Tourist -> tour company, when the website cannot reach the company (no internet on the phone).
+export function requestSms(b, hostRec) {
+  const who = `${b.leadName}, ${b.guests} ${b.guests === 1 ? 'guest' : 'guests'}`;
+  return `WeKaribu booking request: ${who}, ${dayEn(b.date)}, at ${hostRec.name}${hostRec.town ? ` (${hostRec.town})` : ''}. Language: ${langName(b.language, 'en')}.${b.referredBy ? ` Recommended by ${b.referredBy}.` : ''}\n${wkCode(['REQ', isoDay(b.date), b.guests, b.language, b.leadName, hostRec.id, b.referredBy || ''])}`;
+}
+// Host -> tour company: the days the host can take guests.
+export function availabilitySms(hostName, hostId, days) {
+  return `WeKaribu: ${hostName} anaweza kupokea wageni / can take guests: ${days.map(d => dayEn(isoDay(d) + 'T12:00:00')).join(', ')}.\n${wkCode(['DAYS', hostId, days.map(isoDay).join(',')])}`;
+}
+// Host -> tour company: the weekly report, when the cloud is out of reach.
+export function reportSms(report, hostId, period, s) {
+  return `${report}\n${wkCode(['REPORT', hostId, period, s.guests, s.entries])}`;
 }
 
 // Confirmation to the tourist, in their language when we have it (human-written; English otherwise).

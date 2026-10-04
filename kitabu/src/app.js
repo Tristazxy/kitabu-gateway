@@ -14,6 +14,7 @@ import { summaryClipIds, playClips, prefetchVoice, loadVoiceManifest, sayLabel }
 import { guideHTML, GUIDE_STEPS } from './guide.js';
 import { roleChooserHTML, visitorHTML, companyHTML, pickVisitorLang, visitorStrings } from './roles.js';
 import { findHTML, hostHTML, bookedHTML, hostDays, hostSummaryLine } from './visit.js';
+import { NATURE_SVG } from './nature.js';
 
 const view = document.getElementById('view');
 
@@ -297,9 +298,7 @@ function screenWeek() {
     .filter(b => daysFromToday(b.date) >= 0)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
   const next7 = upcoming.filter(b => daysFromToday(b.date) <= 7);
-  const later = upcoming.filter(b => daysFromToday(b.date) > 7);
   const plan = currentPlan();
-  const sms = weeklySms(next7);
 
   const bookingLi = b => `
     <li>
@@ -358,36 +357,7 @@ function screenWeek() {
     <button class="btn small secondary block" style="margin-top:10px" data-action="go" data-screen="langs">${L('Lugha zote kwenye simu', 'All languages on this phone')}</button>
   </div>
 
-  <div class="card">
-    <h2>${L(`SMS kwa simu ya ${host()}`, `SMS to ${host()}’s basic phone`)}</h2>
-    <div class="sms" id="sms-text">${h(sms)}</div>
-    <div class="row between" style="margin-top:8px">
-      <span class="small muted">${L('Mfano', 'Preview')} · ${sms.length} ${L('herufi', 'characters')}</span>
-      <button class="btn small secondary" data-action="copy" data-copy-from="sms-text">${L('Nakili', 'Copy')}</button>
-    </div>
-  </div>
-
-  ${later.length ? `
-  <div class="card">
-    <h2>${L('Baadaye', 'Later')}</h2>
-    <ul class="list">${later.map(bookingLi).join('')}</ul>
-  </div>` : ''}
-
-  <details class="card">
-    <summary style="cursor:pointer;font-weight:650;min-height:32px">${L('Ongeza mgeni kwa mkono', 'Add a booking by hand')}</summary>
-    <div class="stack" style="margin-top:12px">
-      <label class="field">${L('Tarehe', 'Date')}<input type="date" id="bk-date" value="${isoDate(addDays(new Date(), 3))}"></label>
-      <div class="grid2">
-        <label class="field">${L('Wageni', 'Guests')}<input type="number" id="bk-guests" min="1" value="2"></label>
-        <label class="field">${L('Lugha', 'Language')}<select id="bk-lang">${langOptions('en')}</select></label>
-      </div>
-      <label class="field">${L('Jina la mgeni mkuu', 'Lead guest name')}<input type="text" id="bk-name" autocomplete="off"></label>
-      <label class="field">${L('Mwongozaji', 'Guide')}<input type="text" id="bk-guide" autocomplete="off"></label>
-      <label class="check"><input type="checkbox" id="bk-consent" data-change="bk-consent-toggle"> <span>${L(`Mgeni amekubali ${host()} awasiliane naye`, `Guest agreed that ${host()} may contact them`)}</span></label>
-      <label class="field hidden" id="bk-email-wrap">${L('Barua pepe', 'Email')}<input type="email" id="bk-email" autocomplete="off"></label>
-      <button class="btn" data-action="add-booking">${L('Hifadhi', 'Save')}</button>
-    </div>
-  </details>`;
+  `;
 }
 
 // ---------------------------------------------------------------- screen: add feedback
@@ -775,7 +745,6 @@ function screenMore() {
     <h2>${L('Kuhusu', 'About')}</h2>
     <p class="small">${L('Imejengwa kwa Hack-Nation × World Bank Small AI for Development (utalii).', 'Built for the Hack-Nation × World Bank Small AI for Development hackathon (tourism).')}</p>
     <div class="stack">
-      <a class="btn secondary" href="eval.html">${L('Jaribio la usahihi', 'Accuracy check')}</a>
       <a class="btn secondary" href="https://github.com/Tristazxy/kitabu-gateway#readme" target="_blank" rel="noopener">${L('Msimbo, vyanzo vya data na mipaka', 'Code, data sources and limits')}</a>
     </div>
   </div>`;
@@ -1007,12 +976,18 @@ const SCREENS = {
   visitor: () => visitorHTML(state.visitor.lang, state.visitor.saved, state.visitor.draft),
 };
 
+let lastScreen = null;
 function render() {
   const sc = state.screen;
   document.body.classList.toggle('mode-visitor', sc === 'visitor' || sc === 'choose');
   document.body.classList.toggle('mode-choose', sc === 'choose');
   document.body.classList.toggle('home', sc === 'home');
+  const changed = sc !== lastScreen;
+  lastScreen = sc;
   view.innerHTML = SCREENS[sc]();
+  // a new screen: its cards rise in one after another
+  view.classList.remove('enter');
+  if (changed) { void view.offsetWidth; view.classList.add('enter'); }
   document.getElementById('net').textContent = state.online ? L('Mtandaoni', 'Online') : L('Nje ya mtandao', 'Offline');
   const lb = document.getElementById('lang-btn');
   if (lb) lb.textContent = getLang() === 'sw' ? 'English' : 'Kiswahili';
@@ -1624,6 +1599,7 @@ async function pickUiLang() {
 }
 
 async function start() {
+  document.getElementById('nature').innerHTML = NATURE_SVG;
   setLang(await pickUiLang());
   await loadAll();
   const kiosk = await db.getSetting('kiosk', false);

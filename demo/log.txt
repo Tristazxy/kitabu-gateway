@@ -1,0 +1,15 @@
+ok   find (15 s)
+ok   book (12 s)
+ok   company (18 s)
+ok   host-week (12 s)
+ok   visitor-write (21 s)
+ok   photo (26 s)
+ok   voice (29 s)
+ok   weekend (18 s)
+ok   details (15 s)
+ok   thanks (12 s)
+ok   report (12 s)
+ok   languages (12 s)
+
+uploaded demo-assets/note-de.png via "Photo of box A"
+uploaded demo-assets/voice-fr.wav via "Upload an audio file"

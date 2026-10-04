@@ -1,0 +1,87 @@
+{
+  "chapters": [
+    {
+      "t": 5.442,
+      "title": "Find a place",
+      "body": "Visitors search a village or a name. Small hosts with no website appear with counts-only feedback and the days they can take guests, which they publish a week ahead."
+    },
+    {
+      "t": 14.58,
+      "title": "Book a visit",
+      "body": "Saturday, two guests, English. “Who told you about this place?” links the booking to a past guest. The request goes to the tour company; no payment here."
+    },
+    {
+      "t": 31.182,
+      "title": "Confirmed: an SMS for a basic phone",
+      "body": "The tour company sees the request, confirms it, and sends the host a plain SMS from its own phone. No internet needed on the host’s side."
+    },
+    {
+      "t": 44.819,
+      "title": "Next week, on the helper’s phone",
+      "body": "The booking is in next week’s list with the language pack already on the phone. Rare languages are downloaded before a visit and deleted afterwards."
+    },
+    {
+      "t": 57.245,
+      "title": "Vivian writes on Noor’s phone",
+      "body": "The host hands over the phone. The screen is in the guest’s language: what they liked, what could be better, what they would buy, and a consent tick."
+    },
+    {
+      "t": 79.818,
+      "title": "A photo of the guestbook",
+      "body": "Lukas wrote in German in box A. A text reader on the phone reads the photo; words it is unsure of are shown in yellow for a helper to fix."
+    },
+    {
+      "t": 105.493,
+      "title": "A voice note",
+      "body": "Sophie left a voice message in French. Whisper, on the phone, writes it down and translates it to English."
+    },
+    {
+      "t": 132.79,
+      "title": "The week, in Swahili",
+      "body": "The helper taps Analyse. Translation, topics and mood run on the phone. The summary is human-written Swahili with the AI’s counts filled in; “Sikiliza” reads it aloud with recorded clips."
+    },
+    {
+      "t": 150.531,
+      "title": "Check what the AI was unsure about",
+      "body": "Each topic keeps the guests’ own words. Sentences the model is unsure about are marked “Check”, with a one-tap correction."
+    },
+    {
+      "t": 165.537,
+      "title": "A thank-you for Vivian",
+      "body": "A human-written note in the guest’s language, with its meaning underneath. Sent only with consent, and only when the host taps send."
+    },
+    {
+      "t": 177.358,
+      "title": "A report for the tour company",
+      "body": "Counts only: how many guests, what they liked, what to improve, what they wanted to buy. No names, no quotes. Shared only if the host agrees."
+    },
+    {
+      "t": 189.248,
+      "title": "Our take on localising AI",
+      "body": "Models stay language-agnostic (English pivot); every word a person reads is human-written in their language. Swahili and English are built in; guest packs come and go; Chagga is not pretended."
+    }
+  ],
+  "busy": [
+    [
+      85.71,
+      87.205
+    ],
+    [
+      92.969,
+      96.9
+    ],
+    [
+      111.193,
+      120.489
+    ],
+    [
+      126.346,
+      126.35
+    ],
+    [
+      135.331,
+      135.334
+    ]
+  ],
+  "end": 200.863
+}

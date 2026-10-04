@@ -1,0 +1,173 @@
+[
+ {
+  "index": 0,
+  "kind": "scene",
+  "title": null,
+  "scene": "kitchen",
+  "file": "demo-out/narration/00-981c5a60.m4a",
+  "seconds": 14.6,
+  "source": "elevenlabs:Brian (ElevenLabs stock voice, warm narrator)"
+ },
+ {
+  "index": 1,
+  "kind": "scene",
+  "title": null,
+  "scene": "phone",
+  "file": "demo-out/narration/01-576ecc0d.m4a",
+  "seconds": 5.1,
+  "source": "elevenlabs:Brian (ElevenLabs stock voice, warm narrator)"
+ },
+ {
+  "index": 2,
+  "kind": "app",
+  "title": "Find a place",
+  "scene": null,
+  "file": "demo-out/narration/02-140babbb.m4a",
+  "seconds": 11.8,
+  "source": "elevenlabs:Brian (ElevenLabs stock voice, warm narrator)"
+ },
+ {
+  "index": 3,
+  "kind": "app",
+  "title": "Book a visit",
+  "scene": null,
+  "file": "demo-out/narration/03-90df4505.m4a",
+  "seconds": 8.9,
+  "source": "elevenlabs:Brian (ElevenLabs stock voice, warm narrator)"
+ },
+ {
+  "index": 4,
+  "kind": "scene",
+  "title": null,
+  "scene": "office",
+  "file": "demo-out/narration/04-65bf3697.m4a",
+  "seconds": 6.7,
+  "source": "elevenlabs:Brian (ElevenLabs stock voice, warm narrator)"
+ },
+ {
+  "index": 5,
+  "kind": "app",
+  "title": "Confirmed: an SMS for a basic phone",
+  "scene": null,
+  "file": "demo-out/narration/05-f47f143a.m4a",
+  "seconds": 5.0,
+  "source": "elevenlabs:Brian (ElevenLabs stock voice, warm narrator)"
+ },
+ {
+  "index": 6,
+  "kind": "scene",
+  "title": null,
+  "scene": "farm_sms",
+  "file": "demo-out/narration/06-7933f040.m4a",
+  "seconds": 10.6,
+  "source": "elevenlabs:Brian (ElevenLabs stock voice, warm narrator)"
+ },
+ {
+  "index": 7,
+  "kind": "app",
+  "title": "Next week, on the helper\u2019s phone",
+  "scene": null,
+  "file": "demo-out/narration/07-bbfe6352.m4a",
+  "seconds": 12.2,
+  "source": "elevenlabs:Brian (ElevenLabs stock voice, warm narrator)"
+ },
+ {
+  "index": 8,
+  "kind": "scene",
+  "title": null,
+  "scene": "visit",
+  "file": "demo-out/narration/08-7782f243.m4a",
+  "seconds": 10.5,
+  "source": "elevenlabs:Brian (ElevenLabs stock voice, warm narrator)"
+ },
+ {
+  "index": 9,
+  "kind": "app",
+  "title": "Vivian writes on Noor\u2019s phone",
+  "scene": null,
+  "file": "demo-out/narration/09-a65deb0b.m4a",
+  "seconds": 7.7,
+  "source": "elevenlabs:Brian (ElevenLabs stock voice, warm narrator)"
+ },
+ {
+  "index": 10,
+  "kind": "app",
+  "title": "A photo of the guestbook",
+  "scene": null,
+  "file": "demo-out/narration/10-b8eaf621.m4a",
+  "seconds": 6.2,
+  "source": "elevenlabs:Brian (ElevenLabs stock voice, warm narrator)"
+ },
+ {
+  "index": 11,
+  "kind": "app",
+  "title": "A voice note",
+  "scene": null,
+  "file": "demo-out/narration/11-c97e5af0.m4a",
+  "seconds": 6.6,
+  "source": "elevenlabs:Brian (ElevenLabs stock voice, warm narrator)"
+ },
+ {
+  "index": 12,
+  "kind": "scene",
+  "title": null,
+  "scene": "weekend",
+  "file": "demo-out/narration/12-1218febb.m4a",
+  "seconds": 5.8,
+  "source": "elevenlabs:Brian (ElevenLabs stock voice, warm narrator)"
+ },
+ {
+  "index": 13,
+  "kind": "app",
+  "title": "The week, in Swahili",
+  "scene": null,
+  "file": "demo-out/narration/13-699b9e64.m4a",
+  "seconds": 13.1,
+  "source": "espeak-ng"
+ },
+ {
+  "index": 14,
+  "kind": "app",
+  "title": "Check what the AI was unsure about",
+  "scene": null,
+  "file": "demo-out/narration/14-8d518f5a.m4a",
+  "seconds": 9.5,
+  "source": "elevenlabs:Brian (ElevenLabs stock voice, warm narrator)"
+ },
+ {
+  "index": 15,
+  "kind": "app",
+  "title": "A thank-you for Vivian",
+  "scene": null,
+  "file": "demo-out/narration/15-2e7451c5.m4a",
+  "seconds": 7.1,
+  "source": "elevenlabs:Brian (ElevenLabs stock voice, warm narrator)"
+ },
+ {
+  "index": 16,
+  "kind": "app",
+  "title": "A report for the tour company",
+  "scene": null,
+  "file": "demo-out/narration/16-5962ccb9.m4a",
+  "seconds": 8.8,
+  "source": "elevenlabs:Brian (ElevenLabs stock voice, warm narrator)"
+ },
+ {
+  "index": 17,
+  "kind": "app",
+  "title": "Our take on localising AI",
+  "scene": null,
+  "file": "demo-out/narration/17-5e1d7c5c.m4a",
+  "seconds": 18.9,
+  "source": "elevenlabs:Brian (ElevenLabs stock voice, warm narrator)"
+ },
+ {
+  "index": 18,
+  "kind": "scene",
+  "title": null,
+  "scene": "outro",
+  "file": "demo-out/narration/18-564b3d98.m4a",
+  "seconds": 7.4,
+  "source": "elevenlabs:Brian (ElevenLabs stock voice, warm narrator)"
+ }
+]

@@ -1,0 +1,21 @@
+0:00.0  Intro: Korla wakes up
+0:08.0  Scene: kitchen
+0:22.4  Scene: phone
+0:28.5  Find a place
+0:41.6  Book a visit
+0:58.1  Scene: office
+1:06.1  Confirmed: an SMS for a basic phone
+1:19.7  Scene: farm_sms
+1:30.9  Next week, on the helper’s phone
+1:43.8  Scene: visit
+1:55.6  Vivian writes on Noor’s phone
+2:18.1  A photo of the guestbook
+2:39.8  A voice note
+2:59.2  Scene: weekend
+3:08.2  The week, in Swahili
+3:25.7  Check what the AI was unsure about
+3:40.7  A thank-you for Vivian
+3:52.4  A report for the tour company
+4:04.3  Our take on localising AI
+4:22.4  Scene: outro
+4:30.8  end

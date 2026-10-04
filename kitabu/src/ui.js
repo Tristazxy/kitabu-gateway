@@ -1,16 +1,19 @@
-// Small UI helpers: escaping, bilingual labels, toast, busy/progress panel, speech, dates.
+// Small UI helpers: escaping, one-language labels, toast, busy/progress panel, speech, dates.
 
 export function h(v) {
   return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-// Swahili first, English underneath (hidden when the EN toggle is off).
-export function L(sw, en) {
-  return `<span>${sw}</span><span class="en">${en}</span>`;
+// ---------- interface language: one at a time (Swahili or English) ----------
+let lang = 'sw';
+export const getLang = () => lang;
+export function setLang(code) {
+  lang = code === 'sw' ? 'sw' : 'en';
+  document.documentElement.lang = lang;
 }
-export function Li(sw, en) {
-  return `${sw} <span class="en inline">· ${en}</span>`;
-}
+// Every label is written twice in the code; only the current language is shown.
+export const L = (sw, en) => (lang === 'sw' ? sw : en);
+export const Li = L;
 
 let toastTimer = null;
 export function toast(msg, ms = 3200) {
@@ -48,24 +51,24 @@ export function progress(p) {
   el.querySelector('.progress > span').style.width = `${Math.round(f * 100)}%`;
   el.querySelector('.progress-label').textContent = p.total
     ? `${(p.loaded / 1e6).toFixed(0)} / ${(p.total / 1e6).toFixed(0)} MB`
-    : p.done ? 'Tayari · ready' : `${Math.round(f * 100)}%`;
+    : p.done ? L('Tayari', 'Ready') : `${Math.round(f * 100)}%`;
 }
 export function hideBusy() {
   if (busyEl) busyEl.classList.add('hidden');
 }
 
-// ---------- speech (reads the Swahili summary aloud if the phone has a Swahili voice) ----------
-export function speak(text) {
+// ---------- speech: the phone's own voice (used when there is no recorded clip) ----------
+export function speak(text, code = 'sw') {
   if (!('speechSynthesis' in window)) {
-    toast('Simu hii haiwezi kusoma kwa sauti. · This phone cannot read aloud.');
+    toast(L('Simu hii haiwezi kusoma kwa sauti.', 'This phone cannot read aloud.'));
     return;
   }
   const voices = speechSynthesis.getVoices();
-  const voice = voices.find(v => /^sw/i.test(v.lang));
+  const voice = voices.find(v => v.lang.toLowerCase().startsWith(code));
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = voice ? voice.lang : 'sw-KE';
+  u.lang = voice ? voice.lang : code === 'sw' ? 'sw-KE' : 'en-US';
   if (voice) u.voice = voice;
-  else toast('Hakuna sauti ya Kiswahili kwenye simu hii; matamshi yanaweza kuwa mabaya. · No Swahili voice installed.', 5000);
+  else if (code === 'sw') toast(L('Simu hii haina sauti ya Kiswahili; matamshi yanaweza kuwa mabaya.', 'No Swahili voice on this phone; pronunciation may be off.'), 5000);
   u.rate = 0.9;
   speechSynthesis.cancel();
   speechSynthesis.speak(u);
@@ -102,8 +105,8 @@ export function parseLocalDate(s) {
 export async function copyText(text) {
   try {
     await navigator.clipboard.writeText(text);
-    toast('Imenakiliwa · Copied');
+    toast(L('Imenakiliwa', 'Copied'));
   } catch {
-    toast('Imeshindwa kunakili · Could not copy');
+    toast(L('Imeshindwa kunakili', 'Could not copy'));
   }
 }

@@ -45,11 +45,14 @@ export function bookingSms(b) {
  * @param {Object} s  stats from summarize()
  * returns {sw: string[], en: string[]} paragraphs
  */
+const nGuests = n => `${n} ${n === 1 ? 'guest' : 'guests'}`;
+const nEntries = n => `${n} ${n === 1 ? 'entry' : 'entries'}`;
+
 export function summaryText(s) {
   const sw = [];
   const en = [];
   sw.push(`Kipindi hiki: wageni ${s.guests}, maoni ${s.entries}.`);
-  en.push(`This period: ${s.guests} guests, ${s.entries} feedback entries.`);
+  en.push(`This period: ${nGuests(s.guests)}, ${nEntries(s.entries)}.`);
 
   if (s.guests === 0) {
     sw.push('Bado hakuna maoni. Ongeza maoni ya wageni kwanza.');
@@ -60,19 +63,19 @@ export function summaryText(s) {
   const fewData = s.guests < 5;
   if (fewData) {
     sw.push(`Tahadhari: maoni bado ni machache (wageni ${s.guests}). Ni mapema kufanya uamuzi mkubwa.`);
-    en.push(`Caution: still little feedback (${s.guests} guests). Too early for big decisions.`);
+    en.push(`Caution: still little feedback (${nGuests(s.guests)}). Too early for big decisions.`);
   }
 
   const topLiked = s.liked.filter(x => x.id !== 'other').slice(0, 3);
   if (topLiked.length) {
     sw.push('Walichopenda zaidi: ' + topLiked.map(x => `${topicById(x.id).sw.split(' (')[0].toLowerCase()} (wageni ${x.guests})`).join('; ') + '.');
-    en.push('What they liked most: ' + topLiked.map(x => `${topicById(x.id).en.toLowerCase()} (${x.guests} guests)`).join('; ') + '.');
+    en.push('What they liked most: ' + topLiked.map(x => `${topicById(x.id).en.toLowerCase()} (${nGuests(x.guests)})`).join('; ') + '.');
   }
 
   const topImprove = s.improve.filter(x => x.id !== 'other').slice(0, 3);
   if (topImprove.length) {
     sw.push('Wanachotaka kiboreshwe: ' + topImprove.map(x => `${topicById(x.id).sw.split(' (')[0].toLowerCase()} (wageni ${x.guests})`).join('; ') + '.');
-    en.push('What they want improved: ' + topImprove.map(x => `${topicById(x.id).en.toLowerCase()} (${x.guests} guests)`).join('; ') + '.');
+    en.push('What they want improved: ' + topImprove.map(x => `${topicById(x.id).en.toLowerCase()} (${nGuests(x.guests)})`).join('; ') + '.');
   } else {
     sw.push('Hakuna malalamiko yaliyotajwa.');
     en.push('No complaints were mentioned.');
@@ -80,7 +83,7 @@ export function summaryText(s) {
 
   if (s.products.length) {
     sw.push('Bidhaa ambazo wageni walitaka kununua: ' + s.products.map(p => `${PRODUCTS.find(x => x.id === p.id).sw} (wageni ${p.guests})`).join('; ') + '.');
-    en.push('Products guests wanted to buy: ' + s.products.map(p => `${PRODUCTS.find(x => x.id === p.id).en} (${p.guests} guests)`).join('; ') + '.');
+    en.push('Products guests wanted to buy: ' + s.products.map(p => `${PRODUCTS.find(x => x.id === p.id).en} (${nGuests(p.guests)})`).join('; ') + '.');
   }
 
   const strong = strongProduct(s);
@@ -92,11 +95,11 @@ export function summaryText(s) {
 
   if (s.unsure > 0) {
     sw.push(`Sentensi ${s.unsure} hazikueleweka vizuri. Tafadhali ziangalie pamoja na msaidizi wako au mwongozaji.`);
-    en.push(`${s.unsure} sentences were not understood well. Please check them with your helper or the guide.`);
+    en.push(`${s.unsure} ${s.unsure === 1 ? 'sentence was' : 'sentences were'} not understood well. Please check ${s.unsure === 1 ? 'it' : 'them'} with your helper or the guide.`);
   }
   if (s.swahiliEntries > 0) {
     sw.push(`Maoni ${s.swahiliEntries} yameandikwa kwa Kiswahili — yasome mwenyewe.`);
-    en.push(`${s.swahiliEntries} entries are in Swahili — Noor reads them directly.`);
+    en.push(`${nEntries(s.swahiliEntries)} in Swahili — Noor reads ${s.swahiliEntries === 1 ? 'it' : 'them'} directly.`);
   }
   return { sw, en };
 }

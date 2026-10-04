@@ -1,10 +1,9 @@
-// Three ways into the same phone app:
-//   host (Noor)  — the full app
-//   visitor      — Noor hands her phone to a guest, who writes feedback in their own language (kiosk)
-//   company      — a tour company or guide sends a booking to Noor as a Swahili SMS
+// Two screens for other people holding the phone:
+//   visitor  — Noor hands her phone to a guest, who writes feedback in their own language
+//   company  — a tour company or guide sends a booking to Noor as a Swahili SMS
 // Everything stays on the device; there is no server.
 
-import { h, L, Li } from './ui.js';
+import { h, L } from './ui.js';
 import { LANGS } from './langs.js';
 
 export const VISITOR_LANGS = ['en', 'it', 'fr', 'de', 'zh', 'es', 'pl', 'sw'];
@@ -93,28 +92,7 @@ export function pickVisitorLang() {
   return 'en';
 }
 
-const ICON = {
-  host: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10M10 20v-6h4v6"/></svg>',
-  visitor: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7.5" r="3.5"/><path d="M5 21c.9-4 3.6-6 7-6s6.1 2 7 6"/></svg>',
-  company: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></svg>',
-};
-
-export function roleChooserHTML() {
-  const card = (role, sw, en, dsw, den) => `
-    <button class="role-card" data-action="choose-role" data-role="${role}">
-      <span class="role-icon" aria-hidden="true">${ICON[role]}</span>
-      <span class="role-text"><strong>${sw}</strong><span class="en">${en}</span>
-        <span class="small">${dsw}</span><span class="en">${den}</span></span>
-    </button>`;
-  return `
-  <h1>${L('Karibu! Wewe ni nani?', 'Welcome! Who are you?')}</h1>
-  <div class="stack" style="margin-top:12px">
-    ${card('host', 'Mwenyeji wa shamba (Noor)', 'Farm host', 'Ongeza maoni, sikiliza muhtasari, washukuru wageni.', 'Add feedback, hear the summary, thank guests.')}
-    ${card('visitor', 'Mgeni', 'Visitor', 'Andika maoni yako kwa lugha yako, kwenye simu ya Noor.', 'Leave feedback in your own language, on Noor’s phone.')}
-    ${card('company', 'Kampuni ya utalii au mwongozaji', 'Tour company or guide', 'Tuma ratiba ya wageni kwa Noor kwa ujumbe mfupi.', 'Send guest bookings to Noor by SMS.')}
-  </div>
-  <p class="small muted" style="margin-top:14px">${Li('Unaweza kubadilisha baadaye kwenye ⋯ (Zaidi).', 'You can switch later under ⋯ (More).')}</p>`;
-}
+const ICON_VISITOR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7.5" r="3.5"/><path d="M5 21c.9-4 3.6-6 7-6s6.1 2 7 6"/></svg>';
 
 export function visitorHTML(lang, saved, draft = {}) {
   const t = V[lang] || V.en;
@@ -123,13 +101,12 @@ export function visitorHTML(lang, saved, draft = {}) {
   if (saved) {
     return `
     <div class="card" lang="${lang}" style="text-align:center;padding:28px 18px">
-      <div class="role-icon" style="margin:0 auto 12px" aria-hidden="true">${ICON.visitor}</div>
+      <div class="role-icon" style="margin:0 auto 12px" aria-hidden="true">${ICON_VISITOR}</div>
       <h1>${h(t.done)}</h1>
       <p class="lead" style="font-size:1.1rem">${h(t.handBack)}</p>
-      <p class="small muted" lang="sw">Mgeni amemaliza — Noor, chukua simu. <span class="en inline">· The guest is done — Noor, take the phone.</span></p>
       <button class="btn block" style="margin-top:12px" data-action="visitor-next">${h(t.next)}</button>
     </div>
-    <button class="btn small secondary" data-action="visitor-exit">${Li('Kwa Noor tu: rudi', 'Host only: back')}</button>`;
+    <button class="btn small secondary" data-action="visitor-exit">${L('Kwa Noor tu: rudi', 'Host only: back')}</button>`;
   }
   return `
   <div class="row" style="margin-bottom:10px" aria-label="${h(t.lang)}">${chips}</div>
@@ -153,15 +130,14 @@ export function visitorHTML(lang, saved, draft = {}) {
       <p class="small muted" style="margin:0">${h(t.privacy)}</p>
     </div>
   </div>
-  <button class="btn small secondary" data-action="visitor-exit">${Li('Kwa Noor tu: rudi', 'Host only: back')}</button>`;
+  <button class="btn small secondary" data-action="visitor-exit">${L('Kwa Noor tu: rudi', 'Host only: back')}</button>`;
 }
 
 export function companyHTML({ langOptionsHTML, today, sms, report }) {
   return `
-  <h1>${L('Kwa kampuni ya utalii', 'For tour companies and guides')}</h1>
-  <p class="small muted">${Li('Tuma ratiba ya wageni kwa Noor. Atapokea ujumbe mfupi kwa Kiswahili kwenye simu yake ya kawaida — hahitaji intaneti.', 'Send guest bookings to Noor. She receives a short Swahili SMS on her basic phone — no internet needed.')}</p>
+  <h1>${L('Kwa kampuni ya utalii', 'For tour companies')}</h1>
+  <p class="small muted">${L('Tuma ratiba ya wageni kwa Noor. Anapokea SMS fupi kwa Kiswahili kwenye simu yake ya kawaida.', 'Send a booking to Noor. She gets a short Swahili SMS on her basic phone, no internet needed.')}</p>
   <div class="card">
-    <h2>${L('Ratiba mpya', 'New booking')}</h2>
     <div class="stack">
       <label class="field">${L('Namba ya simu ya Noor', 'Noor’s phone number')}<input type="tel" id="c-phone" placeholder="+255 …" autocomplete="off"></label>
       <div class="grid2">
@@ -176,17 +152,16 @@ export function companyHTML({ langOptionsHTML, today, sms, report }) {
     </div>
   </div>
   <div class="card">
-    <h2>${L('Ujumbe ambao Noor atapokea', 'The SMS Noor will receive')}</h2>
+    <h2>${L('SMS ambayo Noor atapokea', 'The SMS Noor will get')}</h2>
     <div class="sms" id="c-sms">${h(sms)}</div>
     <div class="stack" style="margin-top:10px">
       <button class="btn" data-action="company-sms">${L('Tuma SMS kwa Noor', 'Send SMS to Noor')}</button>
-      <button class="btn secondary" data-action="company-save">${L('Hifadhi kwenye simu hii (onyesho)', 'Save on this device (demo)')}</button>
+      <button class="btn secondary" data-action="company-save">${L('Hifadhi kwenye simu hii (onyesho)', 'Save on this phone (demo)')}</button>
     </div>
   </div>
   <div class="card">
-    <h2>${L('Utapokea nini kutoka kwa Noor?', 'What do you receive from Noor?')}</h2>
-    <p class="small">${Li('Ripoti ya jumla tu: idadi ya wageni, walichopenda, wanachotaka kiboreshwe, bidhaa walizotaka. Hakuna majina, namba wala maneno ya wageni. Noor anaamua kama aitume.', 'Only a summary report: number of guests, what they liked, what they want improved, products they asked for. No names, contacts or quotes. Noor decides whether to send it.')}</p>
+    <h2>${L('Unachopokea kutoka kwa Noor', 'What you get back from Noor')}</h2>
+    <p class="small">${L('Jumla tu: wageni wangapi, walichopenda, kinachohitaji kuboreshwa, bidhaa walizotaka. Hakuna majina wala maneno ya wageni.', 'Totals only: how many guests, what they liked, what to improve, products they asked for. No names or quotes.')}</p>
     ${report ? `<div class="sms">${h(report)}</div>` : ''}
-  </div>
-  <button class="btn small secondary" data-action="switch-role">${Li('Badilisha jukumu', 'Switch role')}</button>`;
+  </div>`;
 }

@@ -34,3 +34,6 @@ dist-ssr
 # Kitabu static app
 kitabu/.cache
 kitabu/dist
+kitabu/demo-out
+kitabu/demo-assets
+kitabu/demo-profile

@@ -1,24 +1,25 @@
 // Kitabu cha Wageni — main app: state, screens, actions.
-// Every screen is Swahili first with English underneath (toggle with "EN").
+// One home screen; every other screen is one tap away and has a back button.
+// The interface shows one language at a time (Swahili or English, following the phone; toggle at the top).
 
 import { db, uid } from './db.js';
 import { LANGS, SHARED_MODELS, PACK_MB, packLangs, planPacks, langName, KEEP_TOP_N } from './langs.js';
 import { TOPICS, OTHER, topicById, PRODUCTS } from './topics.js';
-import { weeklySms, summaryText, thankYou, guideReport, daySw, dayEn, SUBJECTS, bookingSms } from './templates.js';
+import { weeklySms, summaryText, thankYou, guideReport, daySw, dayEn, SUBJECTS, bookingSms, strongProduct } from './templates.js';
 import { summarize, inPeriod, guestTopLiked, needsCheck } from './summary.js';
 import * as ai from './ai.js';
 import { analyze } from './pipeline.js';
-import { h, L, Li, toast, showBusy, progress, hideBusy, speak, isoDate, dayStamp, addDays, daysFromToday, copyText } from './ui.js';
+import { h, L, getLang, setLang, toast, showBusy, progress, hideBusy, speak, isoDate, dayStamp, addDays, daysFromToday, copyText } from './ui.js';
 import { summaryClipIds, playClips, prefetchVoice, loadVoiceManifest } from './voice.js';
 import { guideHTML, GUIDE_STEPS } from './guide.js';
-import { roleChooserHTML, visitorHTML, companyHTML, pickVisitorLang, V } from './roles.js';
+import { visitorHTML, companyHTML, pickVisitorLang, V } from './roles.js';
 
 const view = document.getElementById('view');
 
 const freshAdd = () => ({ step: 1, guestId: null, inputs: [], results: [] });
 
 const state = {
-  tab: 'week',
+  screen: 'home',      // home | add | summary | guests | week | langs | more | visitor | company
   guests: [],
   entries: [],
   bookings: [],
@@ -33,7 +34,6 @@ const state = {
   shareOk: false,
   openGuest: null,
   guide: { open: false, step: 0 },
-  role: null,          // null (choose) | 'host' | 'visitor' | 'company'
   visitor: { lang: 'en', saved: false, draft: {} },
 };
 
@@ -42,9 +42,6 @@ async function loadAll() {
   const [g, e, b, m] = await Promise.all(['guests', 'entries', 'bookings', 'messages'].map(s => db.all(s)));
   Object.assign(state, { guests: g, entries: e, bookings: b, messages: m });
   state.lastSync = await db.getSetting('lastSync');
-  state.role = await db.getSetting('role', null);
-  const showEn = await db.getSetting('showEn', true);
-  document.body.classList.toggle('hide-en', !showEn);
   document.documentElement.classList.toggle('big-text', await db.getSetting('bigText', false));
 }
 
@@ -71,50 +68,55 @@ function currentSummary() {
 }
 
 // ---------------------------------------------------------------- small render helpers
-const langPill = code => `<span class="chip plain lang-pill" title="${h(langName(code, 'en'))}">${h(langName(code, 'sw'))}</span>`;
+const day = date => (getLang() === 'sw' ? daySw(date) : dayEn(date));
+const tName = id => topicById(id)[getLang()].split(' (')[0];
+const langPill = code => `<span class="chip plain lang-pill" title="${h(LANGS[code]?.native || code)}">${h(langName(code, getLang()))}</span>`;
 
 function moodChip(m) {
-  if (m === 'pos') return `<span class="chip">${Li('Nzuri', 'positive')}</span>`;
-  if (m === 'neg') return `<span class="chip neg">${Li('Ya kuboresha', 'to improve')}</span>`;
-  return `<span class="chip warn">${Li('Haijulikani', 'unsure')}</span>`;
+  if (m === 'pos') return `<span class="chip">${L('Nzuri', 'Positive')}</span>`;
+  if (m === 'neg') return `<span class="chip neg">${L('Ya kuboresha', 'To improve')}</span>`;
+  return `<span class="chip warn">${L('Haijulikani', 'Unsure')}</span>`;
 }
 
 function consentChip(g) {
   return g.consent
-    ? `<span class="chip">${Li('Ameruhusu mawasiliano', 'consented to contact')}</span>`
-    : `<span class="chip plain">${Li('Hakuna ruhusa', 'no consent')}</span>`;
+    ? `<span class="chip">${L('Ameruhusu mawasiliano', 'May be contacted')}</span>`
+    : `<span class="chip plain">${L('Hakuna ruhusa', 'No consent')}</span>`;
 }
 
 function packChip(code) {
-  if (!LANGS[code]?.mt) return `<span class="chip plain">${Li('Haihitaji pakiti', 'no pack needed')}</span>`;
+  if (!LANGS[code]?.mt) return '';
   return state.installed.includes(code)
-    ? `<span class="chip">${Li('Lugha iko tayari', 'pack ready')}</span>`
-    : `<span class="chip warn">${Li('Pakua lugha', 'pack needed')}</span>`;
+    ? `<span class="chip">${L('Lugha iko tayari', 'Pack ready')}</span>`
+    : `<span class="chip warn">${L('Pakua lugha', 'Pack needed')}</span>`;
 }
 
 const FLAG_TEXT = {
-  'topic-unsure': ['Mada haijulikani', 'topic unclear'],
-  'conflict': ['Inapingana na kisanduku alichoandika', 'contradicts the box it was written in'],
-  'low-confidence': ['Hisia hazijulikani', 'mood unclear'],
-  'no-model': ['Hakuna modeli ya hisia', 'no sentiment model'],
+  'topic-unsure': ['Mada haijulikani', 'Topic unclear'],
+  'conflict': ['Inapingana na kisanduku alichoandika', 'Contradicts the box it was written in'],
+  'low-confidence': ['Hisia hazijulikani', 'Mood unclear'],
+  'no-model': ['Hakuna modeli ya hisia', 'No sentiment model'],
 };
+const flagText = f => FLAG_TEXT[f][getLang() === 'sw' ? 0 : 1];
 
 function langOptions(selected) {
+  const lang = getLang();
   return Object.entries(LANGS)
-    .map(([c, l]) => `<option value="${c}" ${c === selected ? 'selected' : ''}>${h(l.sw)} · ${h(l.en)} (${h(l.native)})</option>`)
+    .map(([c, l]) => `<option value="${c}" ${c === selected ? 'selected' : ''}>${h(l[lang])}${l.native !== l[lang] ? ` (${h(l.native)})` : ''}</option>`)
     .join('');
 }
 
 function topicOptions(selected) {
   return [...TOPICS, OTHER]
-    .map(t => `<option value="${t.id}" ${t.id === selected ? 'selected' : ''}>${h(t.sw)} · ${h(t.en)}</option>`)
+    .map(t => `<option value="${t.id}" ${t.id === selected ? 'selected' : ''}>${h(t[getLang()])}</option>`)
     .join('');
 }
+
+const backBtn = () => `<button class="btn small secondary" data-action="back" style="margin-bottom:12px">← ${L('Nyumbani', 'Home')}</button>`;
 
 // One analyzed sentence with its labels and the controls a person uses to correct it.
 function sentenceRow(entry, idx, { open = false } = {}) {
   const s = entry.sentences[idx];
-  const t = topicById(s.topic);
   const check = needsCheck(s);
   const flags = (s.flags || []).filter(f => FLAG_TEXT[f]);
   const showOrig = s.original && entry.lang !== 'en';
@@ -123,21 +125,21 @@ function sentenceRow(entry, idx, { open = false } = {}) {
     ${showOrig ? `<div class="orig" lang="${h(entry.lang)}">“${h(s.original)}”</div>` : ''}
     ${s.en ? `<div class="${showOrig ? 'small muted' : ''}">${showOrig ? 'EN: ' : ''}${h(s.en)}</div>` : ''}
     <div class="tags">
-      <span class="chip ${s.topic === 'other' ? 'warn' : ''}">${h(t.sw.split(' (')[0])}<span class="en inline"> · ${h(t.en)}</span></span>
+      <span class="chip ${s.topic === 'other' ? 'warn' : ''}">${h(tName(s.topic))}</span>
       ${moodChip(s.sentiment)}
-      ${check ? `<span class="chip warn">${Li('Angalia', 'check')}</span>` : s.confirmed ? `<span class="chip plain">${Li('Imethibitishwa', 'confirmed')}</span>` : ''}
+      ${check ? `<span class="chip warn">${L('Angalia', 'Check')}</span>` : s.confirmed ? `<span class="chip plain">${L('Imethibitishwa', 'Confirmed')}</span>` : ''}
     </div>
-    ${check && flags.length ? `<div class="small muted" style="margin-top:4px">${flags.map(f => `${FLAG_TEXT[f][0]} <span class="en inline">(${FLAG_TEXT[f][1]})</span>`).join('; ')}</div>` : ''}
+    ${check && flags.length ? `<div class="small muted" style="margin-top:4px">${flags.map(flagText).join('; ')}</div>` : ''}
     <details ${open || check ? 'open' : ''} style="margin-top:6px">
-      <summary class="small" style="cursor:pointer;color:var(--primary);font-weight:600;min-height:32px">${Li('Rekebisha', 'correct')}</summary>
+      <summary class="small" style="cursor:pointer;color:var(--primary);font-weight:600;min-height:32px">${L('Rekebisha', 'Correct')}</summary>
       <div class="stack" style="margin-top:6px">
         <label class="field small">${L('Mada', 'Topic')}
           <select data-change="fix-topic" data-entry="${entry.id}" data-idx="${idx}">${topicOptions(s.topic)}</select>
         </label>
         <div class="row">
-          <button class="btn small secondary" data-action="fix-mood" data-entry="${entry.id}" data-idx="${idx}" data-mood="pos" aria-pressed="${s.sentiment === 'pos'}">${Li('Nzuri', 'positive')}</button>
-          <button class="btn small secondary" data-action="fix-mood" data-entry="${entry.id}" data-idx="${idx}" data-mood="neg" aria-pressed="${s.sentiment === 'neg'}">${Li('Ya kuboresha', 'to improve')}</button>
-          <button class="btn small" data-action="confirm-sent" data-entry="${entry.id}" data-idx="${idx}">${Li('Sawa', 'OK')}</button>
+          <button class="btn small secondary" data-action="fix-mood" data-entry="${entry.id}" data-idx="${idx}" data-mood="pos" aria-pressed="${s.sentiment === 'pos'}">${L('Nzuri', 'Positive')}</button>
+          <button class="btn small secondary" data-action="fix-mood" data-entry="${entry.id}" data-idx="${idx}" data-mood="neg" aria-pressed="${s.sentiment === 'neg'}">${L('Ya kuboresha', 'To improve')}</button>
+          <button class="btn small" data-action="confirm-sent" data-entry="${entry.id}" data-idx="${idx}">${L('Sawa', 'OK')}</button>
         </div>
       </div>
     </details>
@@ -150,30 +152,30 @@ function swahiliEntryBlock(entry) {
   return `
   <div class="sent">
     <div lang="sw">“${h(entry.original)}”</div>
-    <div class="small muted">${Li('Kiswahili — Noor anasoma mwenyewe. Weka mada kwa mkono (hiari).', 'Swahili — Noor reads it herself. Tag a topic by hand (optional).')}</div>
+    <div class="small muted">${L('Kiswahili: Noor anasoma mwenyewe. Weka mada kwa mkono (hiari).', 'Swahili: Noor reads it herself. Tag a topic by hand (optional).')}</div>
     <div class="row" style="margin-top:6px">
       <select data-change="sw-topic" data-entry="${entry.id}" aria-label="Topic">
-        <option value="">— ${h('Mada')} · topic —</option>${topicOptions(s?.topic)}
+        <option value="">— ${L('Mada', 'Topic')} —</option>${topicOptions(s?.topic)}
       </select>
     </div>
     <div class="row" style="margin-top:6px">
-      <button class="btn small secondary" data-action="sw-mood" data-entry="${entry.id}" data-mood="pos" aria-pressed="${s?.sentiment === 'pos'}">${Li('Nzuri', 'positive')}</button>
-      <button class="btn small secondary" data-action="sw-mood" data-entry="${entry.id}" data-mood="neg" aria-pressed="${s?.sentiment === 'neg'}">${Li('Ya kuboresha', 'to improve')}</button>
+      <button class="btn small secondary" data-action="sw-mood" data-entry="${entry.id}" data-mood="pos" aria-pressed="${s?.sentiment === 'pos'}">${L('Nzuri', 'Positive')}</button>
+      <button class="btn small secondary" data-action="sw-mood" data-entry="${entry.id}" data-mood="neg" aria-pressed="${s?.sentiment === 'neg'}">${L('Ya kuboresha', 'To improve')}</button>
     </div>
   </div>`;
 }
 
 function entryCard(entry) {
   const g = guestById(entry.guestId);
-  const boxLabel = entry.box === 'liked' ? Li('Walipenda', 'liked box') : entry.box === 'improve' ? Li('Kuboresha', 'could-be-better box') : Li('Maoni', 'feedback');
-  const srcLabel = entry.source === 'photo' ? Li('Picha', 'photo') : entry.source === 'voice' ? Li('Sauti', 'voice') : Li('Imeandikwa', 'typed');
+  const boxLabel = entry.box === 'liked' ? L('Walipenda', 'Liked') : entry.box === 'improve' ? L('Kuboresha', 'Could be better') : L('Maoni', 'Feedback');
+  const srcLabel = entry.source === 'photo' ? L('Picha', 'Photo') : entry.source === 'voice' ? L('Sauti', 'Voice') : L('Imeandikwa', 'Typed');
   let body;
   if (entry.status === 'pending') {
-    body = `<p class="muted">${Li('Bado haijachanganuliwa.', 'Not analysed yet.')}</p><p lang="${h(entry.lang)}">“${h(entry.original)}”</p>`;
+    body = `<p class="muted">${L('Bado haijachanganuliwa.', 'Not analysed yet.')}</p><p lang="${h(entry.lang)}">“${h(entry.original)}”</p>`;
   } else if (entry.status === 'swahili') {
     body = swahiliEntryBlock(entry);
   } else if (!entry.sentences?.length) {
-    body = `<p lang="${h(entry.lang)}">“${h(entry.original)}”</p><p class="small muted">${Li('Hakuna sentensi za kuchanganua.', 'No sentences to analyse.')}</p>`;
+    body = `<p lang="${h(entry.lang)}">“${h(entry.original)}”</p><p class="small muted">${L('Hakuna sentensi za kuchanganua.', 'No sentences to analyse.')}</p>`;
   } else {
     body = entry.sentences.map((_, i) => sentenceRow(entry, i)).join('');
   }
@@ -183,9 +185,87 @@ function entryCard(entry) {
       <div><strong>${h(g?.name || 'Mgeni')}</strong> ${langPill(entry.lang)}</div>
       <div class="small muted">${srcLabel} · ${boxLabel}</div>
     </div>
-    ${entry.lowWords?.length ? `<div class="notice warn small">${Li('Maneno ambayo picha haikusomeka vizuri yalirekebishwa na msaidizi.', 'Words the photo reader was unsure of were checked by the helper.')}</div>` : ''}
     ${body}
-    ${entry.synthetic ? `<div class="small muted" style="margin-top:6px">${Li('Mfano (data bandia)', 'Example (synthetic data)')}</div>` : ''}
+    ${entry.synthetic ? `<div class="small muted" style="margin-top:6px">${L('Mfano (data bandia)', 'Example (synthetic data)')}</div>` : ''}
+  </div>`;
+}
+
+const ICON_CAMERA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+const ICON_MIC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+const ICON_LISTEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4h4l5 4V6L8 10z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>';
+const ICON_MAIL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>';
+const ICON_HAND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="16" rx="2"/><path d="M11 15h2M4 22l3-4M20 22l-3-4"/></svg>';
+const ICON_PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>';
+const ICON_CAL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
+
+// ---------------------------------------------------------------- screen: home
+function shortSummary(s) {
+  const names = list => list.filter(x => x.id !== 'other').slice(0, 3).map(x => tName(x.id).toLowerCase()).join(', ');
+  const liked = names(s.liked);
+  const improve = names(s.improve);
+  const parts = [L(`Wageni ${s.guests}.`, `${s.guests} ${s.guests === 1 ? 'guest' : 'guests'}.`)];
+  if (liked) parts.push(L(`Walipenda: ${liked}.`, `Loved: ${liked}.`));
+  parts.push(improve ? L(`Kuboresha: ${improve}.`, `To improve: ${improve}.`) : L('Hakuna malalamiko.', 'No complaints.'));
+  const strong = strongProduct(s);
+  if (strong) parts.push(L(`Wengi wanataka kununua: ${PRODUCTS.find(p => p.id === strong.id).sw}.`, `Many want to buy: ${PRODUCTS.find(p => p.id === strong.id).en}.`));
+  return parts.join(' ');
+}
+
+function screenHome() {
+  const pending = state.entries.filter(e => e.status === 'pending');
+  const { s } = currentSummary();
+  const toThank = state.guests.filter(g => g.consent && !state.messages.some(m => m.guestId === g.id && m.status === 'sent')).length;
+  const next7 = state.bookings.filter(b => { const d = daysFromToday(b.date); return d >= 0 && d <= 7; });
+  const plan = currentPlan();
+  const unsure = state.entries.reduce((n, e) => n + (e.sentences || []).filter(needsCheck).length, 0);
+
+  const pendingBox = pending.length ? `
+    <div class="notice warn" style="margin:10px 0 0">
+      <strong>${L(`Maoni ${pending.length} bado hayajachanganuliwa`, `${pending.length} new ${pending.length === 1 ? 'entry' : 'entries'} to analyse`)}</strong>
+      <button class="btn block" style="margin-top:8px" data-action="analyze-pending">${L('Changanua sasa', 'Analyse now')}</button>
+    </div>` : '';
+
+  const summaryCard = s.entries ? `
+    <div class="card">
+      <div class="card-title"><h2>${L('Wageni walisema', 'What guests said')}</h2><span class="small muted">${PERIODS[state.period]()}</span></div>
+      <p class="big-summary" style="margin:0">${h(shortSummary(s))}</p>
+      ${unsure ? `<p class="small" style="margin:8px 0 0;color:var(--warn-ink)">${L(`Sentensi ${unsure} zinahitaji kuangaliwa.`, `${unsure} ${unsure === 1 ? 'sentence needs' : 'sentences need'} a check.`)}</p>` : ''}
+      ${pendingBox}
+      <div class="grid2" style="margin-top:12px">
+        <button class="btn secondary" data-action="speak">${ICON_LISTEN}${L('Sikiliza', 'Listen')}</button>
+        <button class="btn secondary" data-action="go" data-screen="summary">${L('Maelezo zaidi', 'Details')} →</button>
+      </div>
+    </div>` : `
+    <div class="card">
+      <h2>${L('Wageni walisema', 'What guests said')}</h2>
+      <p class="muted" style="margin:0">${L('Bado hakuna maoni.', 'No feedback yet.')}</p>
+      ${pendingBox}
+      ${pending.length ? '' : `<button class="btn secondary block" style="margin-top:12px" data-action="guide-try">${L('Jaribu mfano mmoja', 'Try one example')}</button>`}
+    </div>`;
+
+  const bigBtn = (attrs, icon, title, sub) => `
+    <button class="home-btn" ${attrs}>
+      <span class="role-icon" aria-hidden="true">${icon}</span>
+      <span class="role-text"><strong>${title}</strong><span class="small muted">${sub}</span></span>
+    </button>`;
+
+  const weekSub = next7.length
+    ? L(`Wageni ${next7.reduce((n, b) => n + (Number(b.guests) || 1), 0)} siku 7 zijazo`, `${next7.reduce((n, b) => n + (Number(b.guests) || 1), 0)} guests in the next 7 days`)
+      + (plan.download.length ? ` · ${L('pakua', 'download')} ${plan.download.map(c => langName(c, getLang())).join(', ')}` : '')
+    : L('Pokea ratiba kutoka kwa kampuni ya utalii', 'Get the schedule from the tour company');
+
+  return `
+  ${summaryCard}
+  <div class="stack">
+    ${bigBtn('data-action="go" data-screen="add"', ICON_CAMERA, L('Ongeza maoni ya mgeni', 'Add guest feedback'), L('Picha ya kitabu, sauti au kuandika', 'Photo of the guestbook, voice or typing'))}
+    ${bigBtn('data-action="hand-to-guest"', ICON_HAND, L('Mpe mgeni simu aandike', 'Let a guest write'), L('Kwa lugha yake, kwenye simu hii', 'In their own language, on this phone'))}
+    ${bigBtn('data-action="go" data-screen="guests"', ICON_MAIL, L('Washukuru wageni', 'Thank guests'), toThank ? L(`Wageni ${toThank} wanasubiri`, `${toThank} waiting`) : L('Ujumbe kwa lugha ya mgeni', 'A message in the guest’s language'))}
+    ${bigBtn('data-action="go" data-screen="week"', ICON_CAL, L('Wiki ijayo', 'Next week'), weekSub)}
+  </div>
+  <div class="row home-links">
+    <button class="link-btn" data-action="guide-open">${L('Jinsi ya kutumia', 'How to use')}</button>
+    <button class="link-btn" data-action="go" data-screen="company">${L('Kwa kampuni ya utalii', 'For tour companies')}</button>
+    <button class="link-btn" data-action="go" data-screen="more">${L('Zaidi', 'More')}</button>
   </div>`;
 }
 
@@ -202,34 +282,23 @@ function screenWeek() {
   const bookingLi = b => `
     <li>
       <div class="row between">
-        <strong>${h(daySw(b.date))} <span class="en inline">· ${h(dayEn(b.date))}</span></strong>
+        <strong>${h(day(b.date))}</strong>
         <span class="badge-num" title="guests">${h(b.guests)}</span>
       </div>
       <div class="row small" style="margin-top:6px">
         ${langPill(b.language)} ${packChip(b.language)}
-        ${b.guide ? `<span class="muted">${Li('Mwongozaji', 'guide')}: ${h(b.guide)}</span>` : ''}
+        ${b.guide ? `<span class="muted">${L('Mwongozaji', 'Guide')}: ${h(b.guide)}</span>` : ''}
       </div>
       <div class="small muted" style="margin-top:4px">${h(b.leadName || '')}${b.company ? ` · ${h(b.company)}` : ''}</div>
     </li>`;
 
   return `
-  <div class="card">
-    <h2>${L('Unataka kufanya nini?', 'What do you want to do?')}</h2>
-    <div class="grid2">
-      <button class="btn big secondary" data-action="go" data-tab="add">${ICON_CAMERA}<span class="btn-col">${L('Ongeza maoni', 'Add feedback')}</span></button>
-      <button class="btn big secondary" data-action="go" data-tab="summary">${ICON_LISTEN}<span class="btn-col">${L('Sikiliza muhtasari', 'Hear the summary')}</span></button>
-      <button class="btn big secondary" data-action="go" data-tab="guests">${ICON_MAIL}<span class="btn-col">${L('Washukuru wageni', 'Thank guests')}</span></button>
-      <button class="btn big" data-action="hand-to-guest">${ICON_HAND}<span class="btn-col">${L('Mpe mgeni simu', 'Hand the phone to a guest')}</span></button>
-    </div>
-  </div>
-
+  ${backBtn()}
   <h1>${L('Wiki ijayo', 'Next week')}</h1>
 
   <div class="card">
-    <div class="card-title"><h2>${L('Ratiba kutoka kwa mwongozaji', 'Schedule from the tour company')}</h2></div>
-    <p class="small muted">${Li('Msaidizi (k.m. binti yako wikendi) akiunganisha mtandao, ratiba mpya inapakuliwa na lugha zinazohitajika zinaandaliwa.', 'When the helper connects (e.g. the daughter at the weekend), the new schedule downloads and the needed languages are prepared.')}</p>
-    <button class="btn block" data-action="sync" ${state.online ? '' : 'disabled'}>${L('Pokea ratiba mpya', 'Receive new schedule')}</button>
-    <p class="small muted" style="margin-top:8px">${state.lastSync ? `${Li('Mara ya mwisho', 'last synced')}: ${h(new Date(state.lastSync).toLocaleString())}` : Li('Bado haijapokelewa', 'not synced yet')}${state.online ? '' : ` · ${Li('Nje ya mtandao', 'offline')}`}</p>
+    <button class="btn block" data-action="sync" ${state.online ? '' : 'disabled'}>${L('Pokea ratiba mpya', 'Get the new schedule')}</button>
+    <p class="small muted" style="margin:8px 0 0">${state.lastSync ? `${L('Mara ya mwisho', 'Last updated')}: ${h(new Date(state.lastSync).toLocaleString())}` : L('Bado haijapokelewa. Inahitaji mtandao mara moja.', 'Not received yet. Needs internet once.')}${state.online ? '' : ` · ${L('Nje ya mtandao', 'Offline')}`}</p>
   </div>
 
   ${next7.length ? `
@@ -240,29 +309,27 @@ function screenWeek() {
   <div class="notice">${L('Hakuna wageni waliopangwa siku 7 zijazo.', 'No guests booked for the next 7 days.')}</div>`}
 
   <div class="card">
-    <h2>${L('Ujumbe kwa simu ya Noor', 'SMS to Noor’s basic phone')}</h2>
-    <p class="small muted">${Li('Huu ndio ujumbe ambao simu ya kawaida ya Noor ingepokea (mfano; toleo halisi litatuma kwa SMS).', 'This is the text Noor’s feature phone would receive (simulated; the real version sends it as an SMS).')}</p>
-    <div class="sms" id="sms-text">${h(sms)}</div>
-    <div class="row between" style="margin-top:8px">
-      <span class="small muted">${sms.length} ${Li('herufi', 'characters')}</span>
-      <button class="btn small secondary" data-action="copy" data-copy-from="sms-text">${Li('Nakili', 'Copy')}</button>
-    </div>
+    <h2>${L('Lugha za kuandaa', 'Languages to prepare')}</h2>
+    ${plan.download.length ? `
+      <div class="row">${plan.download.map(c => langPill(c)).join('')}</div>
+      <p class="small muted">${L(`MB ${plan.downloadMB}. Tumia Wi-Fi.`, `${plan.downloadMB} MB. Use Wi-Fi.`)}</p>
+      <button class="btn block" data-action="download-suggested" ${state.online ? '' : 'disabled'}>${L('Pakua sasa', 'Download now')}</button>
+    ` : `<p style="margin:0">${L('Lugha zote zinazohitajika ziko tayari.', 'All needed languages are ready.')}</p>`}
+    ${plan.removable.length ? `
+      <hr>
+      <p>${L('Lugha nadra zinazoweza kufutwa', 'Rare languages you can delete')}: ${plan.removable.map(c => langPill(c)).join(' ')}</p>
+      <button class="btn block danger" data-action="delete-removable">${L(`Futa (MB ${plan.freeMB})`, `Delete (frees ${plan.freeMB} MB)`)}</button>
+    ` : ''}
+    <button class="btn small secondary block" style="margin-top:10px" data-action="go" data-screen="langs">${L('Lugha zote kwenye simu', 'All languages on this phone')}</button>
   </div>
 
   <div class="card">
-    <h2>${L('Lugha za kuandaa', 'Languages to prepare')}</h2>
-    ${plan.download.length ? `
-      <p>${Li('Pakua kabla wageni hawajafika', 'Download before the guests arrive')}:</p>
-      <div class="row">${plan.download.map(c => langPill(c)).join('')}</div>
-      <p class="small muted">${Li(`Takriban MB ${plan.downloadMB}. Tumia Wi-Fi au kifurushi cha data.`, `About ${plan.downloadMB} MB. Use Wi-Fi or a data bundle.`)}</p>
-      <button class="btn block" data-action="download-suggested" ${state.online ? '' : 'disabled'}>${L('Pakua sasa', 'Download now')}</button>
-    ` : `<p>${Li('Lugha zote zinazohitajika ziko tayari.', 'All needed languages are ready.')}</p>`}
-    ${plan.removable.length ? `
-      <hr>
-      <p>${Li('Lugha nadra zinazoweza kufutwa ili kuokoa nafasi', 'Rare languages that can be deleted to save space')}:</p>
-      <div class="row">${plan.removable.map(c => langPill(c)).join('')}</div>
-      <button class="btn block danger" data-action="delete-removable" style="margin-top:8px">${L(`Futa (MB ${plan.freeMB})`, `Delete (${plan.freeMB} MB)`)}</button>
-    ` : ''}
+    <h2>${L('SMS kwa simu ya Noor', 'SMS to Noor’s basic phone')}</h2>
+    <div class="sms" id="sms-text">${h(sms)}</div>
+    <div class="row between" style="margin-top:8px">
+      <span class="small muted">${L('Mfano', 'Preview')} · ${sms.length} ${L('herufi', 'characters')}</span>
+      <button class="btn small secondary" data-action="copy" data-copy-from="sms-text">${L('Nakili', 'Copy')}</button>
+    </div>
   </div>
 
   ${later.length ? `
@@ -272,11 +339,11 @@ function screenWeek() {
   </div>` : ''}
 
   <details class="card">
-    <summary style="cursor:pointer;font-weight:650;min-height:32px">${Li('Kwa mwongozaji: ongeza mgeni', 'For the guide: add a booking')}</summary>
+    <summary style="cursor:pointer;font-weight:650;min-height:32px">${L('Ongeza mgeni kwa mkono', 'Add a booking by hand')}</summary>
     <div class="stack" style="margin-top:12px">
       <label class="field">${L('Tarehe', 'Date')}<input type="date" id="bk-date" value="${isoDate(addDays(new Date(), 3))}"></label>
       <div class="grid2">
-        <label class="field">${L('Idadi ya wageni', 'Number of guests')}<input type="number" id="bk-guests" min="1" value="2"></label>
+        <label class="field">${L('Wageni', 'Guests')}<input type="number" id="bk-guests" min="1" value="2"></label>
         <label class="field">${L('Lugha', 'Language')}<select id="bk-lang">${langOptions('en')}</select></label>
       </div>
       <label class="field">${L('Jina la mgeni mkuu', 'Lead guest name')}<input type="text" id="bk-name" autocomplete="off"></label>
@@ -292,8 +359,8 @@ function screenWeek() {
 function screenAdd() {
   const a = state.add;
   const steps = `<div class="steps" aria-hidden="true">${[1, 2, 3].map(n => `<span class="${a.step >= n ? 'on' : ''}"></span>`).join('')}</div>`;
-  if (a.step === 1) return steps + addStep1();
-  if (a.step === 2) return steps + addStep2();
+  if (a.step === 1) return backBtn() + steps + addStep1();
+  if (a.step === 2) return backBtn() + steps + addStep2();
   return steps + addStep3();
 }
 
@@ -306,56 +373,46 @@ function addStep1() {
 
   return `
   <h1>${L('Mgeni ni nani?', 'Who is the guest?')}</h1>
-  <p class="hint small muted">${Li('Chagua mgeni, kisha ongeza picha, sauti au maandishi yake.', 'Pick the guest, then add their photo, voice or text.')}</p>
 
   ${recentBookings.length ? `
   <div class="card">
     <h2>${L('Kutoka kwenye ratiba', 'From the schedule')}</h2>
     <ul class="list">${recentBookings.map(b => `
       <li class="row between">
-        <div><strong>${h(b.leadName || 'Mgeni')}</strong> ${langPill(b.language)}<div class="small muted">${h(daySw(b.date))} · ${Li('wageni', 'guests')} ${h(b.guests)}</div></div>
-        <button class="btn small" data-action="pick-booking" data-id="${b.id}">${Li('Chagua', 'Pick')}</button>
-      </li>`).join('')}
-    </ul>
-  </div>` : ''}
-
-  ${guests.length ? `
-  <div class="card">
-    <h2>${L('Wageni waliopo', 'Existing guests')}</h2>
-    <ul class="list">${guests.map(g => `
-      <li class="row between">
-        <div><strong>${h(g.name)}</strong> ${langPill(g.language)}<div class="small muted">${h(daySw(g.visitDate))}</div></div>
-        <button class="btn small secondary" data-action="pick-guest" data-id="${g.id}">${Li('Chagua', 'Pick')}</button>
+        <div><strong>${h(b.leadName || 'Mgeni')}</strong> ${langPill(b.language)}<div class="small muted">${h(day(b.date))} · ${L('wageni', 'guests')} ${h(b.guests)}</div></div>
+        <button class="btn small" data-action="pick-booking" data-id="${b.id}">${L('Chagua', 'Pick')}</button>
       </li>`).join('')}
     </ul>
   </div>` : ''}
 
   <div class="card">
     <h2>${L('Mgeni mpya', 'New guest')}</h2>
-    <p class="small muted">${Li('Andika kutoka kwenye ukurasa wa kitabu cha wageni.', 'Copy from the guestbook page.')}</p>
     <div class="stack">
       <label class="field">${L('Jina', 'Name')}<input type="text" id="ng-name" autocomplete="off"></label>
       <label class="field">${L('Lugha ya mgeni', 'Guest’s language')}<select id="ng-lang">${langOptions('en')}</select></label>
       <label class="field">${L('Tarehe ya ziara', 'Visit date')}<input type="date" id="ng-date" value="${isoDate(new Date())}"></label>
-      <label class="field">${L('Nani alikupendekezea? (hiari)', 'Who recommended us? (optional)')}<input type="text" id="ng-ref" autocomplete="off"></label>
       <label class="check"><input type="checkbox" id="ng-consent" data-change="consent-toggle">
-        <span>${L('Mgeni aliweka alama: “Noor anaweza kuhifadhi mawasiliano yangu na kuniandikia”', 'Guest ticked: “Noor may keep my contact details and write to me”')}</span></label>
+        <span>${L('Mgeni aliweka alama: Noor anaweza kuhifadhi mawasiliano yangu', 'Guest ticked: Noor may keep my contact details')}</span></label>
       <div id="contact-fields" class="stack hidden">
         <label class="field">${L('Barua pepe', 'Email')}<input type="email" id="ng-email" autocomplete="off"></label>
         <label class="field">${L('Simu / WhatsApp', 'Phone / WhatsApp')}<input type="tel" id="ng-phone" autocomplete="off"></label>
       </div>
-      <p class="small muted">${Li('Bila alama hiyo, mawasiliano hayahifadhiwi.', 'Without that tick, no contact details are stored.')}</p>
+      <label class="field">${L('Nani alikupendekezea? (hiari)', 'Who recommended us? (optional)')}<input type="text" id="ng-ref" autocomplete="off"></label>
       <button class="btn" data-action="save-new-guest">${L('Endelea', 'Continue')}</button>
     </div>
-  </div>`;
-}
+  </div>
 
-const ICON_CAMERA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
-const ICON_MIC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
-const ICON_LISTEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4h4l5 4V6L8 10z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>';
-const ICON_MAIL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>';
-const ICON_HAND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="16" rx="2"/><path d="M11 15h2M4 22l3-4M20 22l-3-4"/></svg>';
-const ICON_PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>';
+  ${guests.length ? `
+  <div class="card">
+    <h2>${L('Wageni waliopo', 'Existing guests')}</h2>
+    <ul class="list">${guests.map(g => `
+      <li class="row between">
+        <div><strong>${h(g.name)}</strong> ${langPill(g.language)}<div class="small muted">${h(day(g.visitDate))}</div></div>
+        <button class="btn small secondary" data-action="pick-guest" data-id="${g.id}">${L('Chagua', 'Pick')}</button>
+      </li>`).join('')}
+    </ul>
+  </div>` : ''}`;
+}
 
 function addStep2() {
   const g = currentGuest();
@@ -367,33 +424,33 @@ function addStep2() {
   const inputCard = i => {
     const boxSel = `
       <select data-change="box" data-id="${i.id}" aria-label="Box">
-        <option value="liked" ${i.box === 'liked' ? 'selected' : ''}>Walipenda · liked</option>
-        <option value="improve" ${i.box === 'improve' ? 'selected' : ''}>Kuboresha · could be better</option>
-        <option value="unknown" ${i.box === 'unknown' ? 'selected' : ''}>Haijulikani · not sure</option>
+        <option value="liked" ${i.box === 'liked' ? 'selected' : ''}>${L('Walipenda (A)', 'Liked (box A)')}</option>
+        <option value="improve" ${i.box === 'improve' ? 'selected' : ''}>${L('Kuboresha (B)', 'Could be better (box B)')}</option>
+        <option value="unknown" ${i.box === 'unknown' ? 'selected' : ''}>${L('Haijulikani', 'Not sure')}</option>
       </select>`;
     const hint = i.langHint ? `
-      <div class="notice warn small">${Li(`Inaonekana ni ${langName(i.langHint, 'sw')}, si ${langName(g.language, 'sw')}.`, `This looks like ${langName(i.langHint, 'en')}, not ${langName(g.language, 'en')}.`)}
-        <div class="row" style="margin-top:6px"><button class="btn small secondary" data-action="use-hint" data-lang="${i.langHint}">${Li(`Badilisha lugha ya mgeni kuwa ${langName(i.langHint, 'sw')}`, `Switch guest language to ${langName(i.langHint, 'en')}`)}</button></div>
+      <div class="notice warn small">${L(`Inaonekana ni ${langName(i.langHint, 'sw')}, si ${langName(g.language, 'sw')}.`, `This looks like ${langName(i.langHint, 'en')}, not ${langName(g.language, 'en')}.`)}
+        <div class="row" style="margin-top:6px"><button class="btn small secondary" data-action="use-hint" data-lang="${i.langHint}">${L(`Badilisha kuwa ${langName(i.langHint, 'sw')}`, `Switch to ${langName(i.langHint, 'en')}`)}</button></div>
       </div>` : '';
     let media = '';
     if (i.imageURL) media = `<img class="preview-img" src="${i.imageURL}" alt="Photo of the guestbook box">`;
     if (i.audioURL) media = `<audio controls src="${i.audioURL}" style="width:100%"></audio>`;
     let body = '';
-    if (i.status === 'working') body = `<p class="muted">${Li('Inasoma…', 'Reading…')}</p>`;
-    else if (i.status === 'error') body = `<div class="notice neg small">${Li('Imeshindwa', 'Failed')}: ${h(i.error)}</div>`;
+    if (i.status === 'working') body = `<p class="muted">${L('Inasoma…', 'Reading…')}</p>`;
+    else if (i.status === 'error') body = `<div class="notice neg small">${L('Imeshindwa', 'Failed')}: ${h(i.error)}</div>`;
     else {
       body = `
-        ${i.lowWords?.length ? `<div class="notice warn small"><strong>${Li('Angalia maneno haya', 'Check these words')}</strong>${i.lowWords.slice(0, 20).map(w => `<mark class="low">${h(w)}</mark>`).join(' ')}</div>` : ''}
+        ${i.lowWords?.length ? `<div class="notice warn small"><strong>${L('Angalia maneno haya', 'Check these words')}</strong>${i.lowWords.slice(0, 20).map(w => `<mark class="low">${h(w)}</mark>`).join(' ')}</div>` : ''}
         <label class="field small">${i.source === 'voice' ? L('Alichosema mgeni', 'What the guest said') : L('Maandishi (rekebisha makosa)', 'Text (fix any mistakes)')}
           <textarea data-input="input-text" data-id="${i.id}" lang="${h(g.language)}">${h(i.text)}</textarea></label>
         ${i.source === 'voice' && g.language !== 'en' && g.language !== 'sw' ? `
-        <label class="field small">${L('Tafsiri ya Kiingereza (kutoka kwa modeli ya sauti)', 'English translation (from the voice model)')}
+        <label class="field small">${L('Kwa Kiingereza (kutoka kwa modeli ya sauti)', 'In English (from the voice model)')}
           <textarea data-input="input-english" data-id="${i.id}" style="min-height:80px">${h(i.english)}</textarea></label>` : ''}`;
     }
     const srcLabel = i.source === 'photo' ? L('Picha', 'Photo') : i.source === 'voice' ? L('Sauti', 'Voice') : L('Kuandika', 'Typed');
     return `
     <div class="card flat">
-      <div class="card-title"><h3>${srcLabel}</h3><button class="btn small danger" data-action="remove-input" data-id="${i.id}">${Li('Ondoa', 'Remove')}</button></div>
+      <div class="card-title"><h3>${srcLabel}</h3><button class="btn small danger" data-action="remove-input" data-id="${i.id}">${L('Ondoa', 'Remove')}</button></div>
       <div class="stack">
         ${media}
         <label class="field small">${L('Kisanduku', 'Which box')}${boxSel}</label>
@@ -406,32 +463,29 @@ function addStep2() {
   return `
   <div class="card">
     <div class="row between">
-      <div><strong>${h(g.name)}</strong> ${langPill(g.language)}<div class="small muted">${h(daySw(g.visitDate))}</div></div>
-      <button class="btn small secondary" data-action="change-guest">${Li('Badilisha', 'Change')}</button>
+      <div><strong>${h(g.name)}</strong> ${langPill(g.language)}<div class="small muted">${h(day(g.visitDate))}</div></div>
+      <button class="btn small secondary" data-action="change-guest">${L('Badilisha', 'Change')}</button>
     </div>
-    <div class="row" style="margin-top:8px">${consentChip(g)}</div>
   </div>
 
-  ${needPack ? `<div class="notice warn">${Li(`Lugha ya ${langName(g.language, 'sw')} haijapakuliwa. Kusoma picha kunawezekana; kuchanganua kutahitaji mtandao mara moja (MB ${PACK_MB}).`, `The ${langName(g.language, 'en')} pack is not downloaded. Reading photos works; analysing will need internet once (${PACK_MB} MB).`)}</div>` : ''}
+  ${needPack ? `<div class="notice warn">${L(`Lugha ya ${langName(g.language, 'sw')} haijapakuliwa. Kuchanganua kutahitaji mtandao mara moja (MB ${PACK_MB}).`, `The ${langName(g.language, 'en')} pack is not on this phone yet. Analysing needs internet once (${PACK_MB} MB).`)}</div>` : ''}
 
-  <h2 class="section-head">${L('Ongeza maoni', 'Add feedback')}</h2>
   <div class="grid2">
     <label class="btn big">${ICON_CAMERA}<span class="btn-col">${L('Picha A: Walipenda', 'Photo of box A: liked')}</span>
       <input type="file" accept="image/*" capture="environment" data-file="photo-liked" class="hidden"></label>
     <label class="btn big">${ICON_CAMERA}<span class="btn-col">${L('Picha B: Kuboresha', 'Photo of box B: could be better')}</span>
       <input type="file" accept="image/*" capture="environment" data-file="photo-improve" class="hidden"></label>
     <button class="btn big ${state.recording ? 'danger' : 'secondary'}" data-action="record">
-      ${state.recording ? '<span class="rec-dot"></span>' : ICON_MIC}<span class="btn-col">${state.recording ? L('Simamisha', 'Stop recording') : L('Rekodi sauti', 'Record voice')}</span></button>
+      ${state.recording ? '<span class="rec-dot"></span>' : ICON_MIC}<span class="btn-col">${state.recording ? L('Simamisha', 'Stop') : L('Rekodi sauti', 'Record voice')}</span></button>
     <button class="btn big secondary" data-action="add-typed">${ICON_PEN}<span class="btn-col">${L('Andika', 'Type')}</span></button>
   </div>
   <label class="small" style="display:block;margin:10px 2px 0;color:var(--primary);font-weight:600;cursor:pointer">
-    ${Li('Au pakia faili la sauti', 'Or upload an audio file')}
+    ${L('Au pakia faili la sauti', 'Or upload an audio file')}
     <input type="file" accept="audio/*" data-file="audio" class="hidden"></label>
 
   <div class="stack" style="margin-top:14px">${state.add.inputs.map(inputCard).join('')}</div>
 
-  <button class="btn block" style="margin-top:8px" data-action="run-analysis" ${ready && !working ? '' : 'disabled'}>${L('Changanua', 'Analyse')}</button>
-  <p class="small muted" style="margin-top:8px">${Li('Kila kitu kinabaki kwenye simu hii.', 'Everything stays on this phone.')}</p>`;
+  <button class="btn block" style="margin-top:8px" data-action="run-analysis" ${ready && !working ? '' : 'disabled'}>${L('Changanua', 'Analyse')}</button>`;
 }
 
 function addStep3() {
@@ -440,68 +494,64 @@ function addStep3() {
   const unsure = entries.reduce((n, e) => n + (e.sentences || []).filter(needsCheck).length, 0);
   return `
   <h1>${L('Matokeo', 'Results')}</h1>
-  ${unsure ? `<div class="notice warn"><strong>${Li(`Sentensi ${unsure} zinahitaji kuangaliwa`, `${unsure} sentences need a check`)}</strong>${Li('AI haikuwa na uhakika. Rekebisha au bonyeza “Sawa”.', 'The AI was not sure. Correct them or press “OK”.')}</div>`
-    : `<div class="notice">${Li('Imehifadhiwa. Unaweza kurekebisha chochote hapa chini.', 'Saved. You can correct anything below.')}</div>`}
+  ${unsure ? `<div class="notice warn"><strong>${L(`Sentensi ${unsure} zinahitaji kuangaliwa`, `${unsure} ${unsure === 1 ? 'sentence needs' : 'sentences need'} a check`)}</strong>${L('AI haikuwa na uhakika. Rekebisha au bonyeza “Sawa”.', 'The AI was not sure. Correct it or press “OK”.')}</div>`
+    : `<div class="notice">${L('Imehifadhiwa. Unaweza kurekebisha chochote hapa chini.', 'Saved. You can correct anything below.')}</div>`}
   ${entries.map(entryCard).join('')}
   <div class="stack">
-    <button class="btn" data-action="more-feedback">${L(`Ongeza maoni mengine ya ${h(g?.name || 'mgeni')}`, 'Add more for this guest')}</button>
-    <button class="btn secondary" data-action="finish-add">${L('Maliza na uone muhtasari', 'Finish and see the summary')}</button>
+    <button class="btn" data-action="finish-add">${L('Maliza', 'Done')}</button>
+    <button class="btn secondary" data-action="more-feedback">${L(`Ongeza maoni mengine ya ${h(g?.name || 'mgeni')}`, `Add more for ${h(g?.name || 'this guest')}`)}</button>
   </div>`;
 }
 
-// ---------------------------------------------------------------- screen: summary
-const PERIODS = { week: ['Wiki hii', 'This week'], month: ['Mwezi huu', 'This month'], all: ['Zote', 'All time'] };
+// ---------------------------------------------------------------- screen: summary (details)
+const PERIODS = { week: () => L('Wiki hii', 'This week'), month: () => L('Mwezi huu', 'This month'), all: () => L('Zote', 'All time') };
 
 function screenSummary() {
   const pending = state.entries.filter(e => e.status === 'pending');
   const { s, entries, text } = currentSummary();
-  const periodChips = Object.entries(PERIODS).map(([k, [sw, en]]) =>
-    `<button class="chip" data-action="period" data-period="${k}" aria-pressed="${state.period === k}">${sw}<span class="en inline"> · ${en}</span></button>`).join('');
+  const periodChips = Object.entries(PERIODS).map(([k, label]) =>
+    `<button class="chip" data-action="period" data-period="${k}" aria-pressed="${state.period === k}">${label()}</button>`).join('');
 
   const topicList = (items, neg) => items.filter(x => x.id !== 'other').map(x => {
-    const t = topicById(x.id);
     const pct = s.guests ? Math.round((x.guests / s.guests) * 100) : 0;
     const quotes = x.quotes.slice(0, 5).map(q => `
       <blockquote class="q">${q.original && q.lang !== 'en' ? `<div class="orig" lang="${h(q.lang)}">“${h(q.original)}”</div><div class="trans">EN: ${h(q.en)}</div>` : `<div class="orig">“${h(q.en)}”</div>`}
-      ${q.flagged ? `<span class="chip warn" style="margin-top:4px">${Li('Angalia', 'check')}</span>` : ''}</blockquote>`).join('');
+      ${q.flagged ? `<span class="chip warn" style="margin-top:4px">${L('Angalia', 'Check')}</span>` : ''}</blockquote>`).join('');
     return `
       <div class="topic-row" style="display:block">
-        <div class="row between"><div><strong>${h(t.sw)}</strong><span class="en">${h(t.en)}</span></div><span class="badge-num ${neg ? 'neg' : ''}">${x.guests}</span></div>
+        <div class="row between"><strong>${h(tName(x.id))}</strong><span class="badge-num ${neg ? 'neg' : ''}">${x.guests}</span></div>
         <div class="bar ${neg ? 'neg' : ''}"><span style="width:${pct}%"></span></div>
-        <details class="quotes"><summary>${Li('Maneno ya wageni', 'What guests said')} (${x.quotes.length})</summary>${quotes}</details>
+        <details class="quotes"><summary>${L('Maneno ya wageni', 'What guests said')} (${x.quotes.length})</summary>${quotes}</details>
       </div>`;
   }).join('');
 
   const flagged = [];
   for (const e of entries) (e.sentences || []).forEach((sen, i) => { if (needsCheck(sen)) flagged.push([e, i]); });
 
-  const report = guideReport(s, `${PERIODS[state.period][0]} / ${PERIODS[state.period][1]}`);
+  const report = guideReport(s, `${PERIODS[state.period]()}`);
+  const lang = getLang();
 
   return `
+  ${backBtn()}
   <h1>${L('Muhtasari', 'Summary')}</h1>
-  <p class="hint small muted">${Li('Hapa unasikia na kusoma walichosema wageni. Bonyeza “Sikiliza”.', 'Here you hear and read what guests said. Tap “Listen”.')}</p>
   <div class="row" style="margin-bottom:12px">${periodChips}</div>
 
   ${pending.length ? `
   <div class="notice warn">
-    <strong>${Li(`Maoni ${pending.length} bado hayajachanganuliwa`, `${pending.length} entries not analysed yet`)}</strong>
+    <strong>${L(`Maoni ${pending.length} bado hayajachanganuliwa`, `${pending.length} ${pending.length === 1 ? 'entry' : 'entries'} not analysed yet`)}</strong>
     <button class="btn block" style="margin-top:8px" data-action="analyze-pending">${L('Changanua sasa', 'Analyse now')}</button>
   </div>` : ''}
 
   ${s.entries === 0 ? (pending.length ? '' : `
   <div class="card">
-    <p>${Li('Bado hakuna maoni kwa kipindi hiki.', 'No feedback for this period yet.')}</p>
-    <div class="stack">
-      <button class="btn" data-action="go" data-tab="add">${L('Ongeza maoni', 'Add feedback')}</button>
-      <button class="btn secondary" data-action="load-demo">${L('Pakia mfano (data bandia)', 'Load example (synthetic data)')}</button>
-    </div>
+    <p>${L('Bado hakuna maoni kwa kipindi hiki.', 'No feedback for this period yet.')}</p>
+    <button class="btn" data-action="go" data-screen="add">${L('Ongeza maoni', 'Add feedback')}</button>
   </div>`) : `
   <div class="card">
     <div class="card-title"><h2>${L('Kwa Noor', 'For Noor')}</h2>
-      <button class="btn small secondary" data-action="speak" aria-label="Read aloud">${Li('Sikiliza', 'Listen')}</button></div>
-    <div class="big-summary" lang="sw">${text.sw.map(p => `<p>${h(p)}</p>`).join('')}</div>
-    <div class="en small" style="margin-top:6px">${text.en.map(p => `<p>${h(p)}</p>`).join('')}</div>
-    <p class="small muted">${Li('Sentensi hizi zimeandikwa na watu mapema; AI imejaza tu idadi na majina ya mada. Uamuzi ni wa Noor.', 'These sentences are human-written templates; the AI only fills in counts and topic names. Noor decides.')}</p>
+      <button class="btn small secondary" data-action="speak">${L('Sikiliza', 'Listen')}</button></div>
+    <div class="big-summary" lang="${lang}">${text[lang].map(p => `<p>${h(p)}</p>`).join('')}</div>
+    <p class="small muted" style="margin:0">${L('Sentensi hizi zimeandikwa na watu; AI inajaza idadi na mada tu.', 'Human-written sentences; the AI only fills in counts and topics.')}</p>
   </div>
 
   ${s.liked.filter(x => x.id !== 'other').length ? `<div class="card"><h2>${L('Walichopenda', 'What they liked')}</h2>${topicList(s.liked, false)}</div>` : ''}
@@ -510,23 +560,21 @@ function screenSummary() {
   ${s.products.length ? `
   <div class="card">
     <h2>${L('Bidhaa walizotaka kununua', 'Products they wanted to buy')}</h2>
-    ${s.products.map(p => { const P = PRODUCTS.find(x => x.id === p.id); return `<div class="topic-row"><div><strong>${h(P.sw)}</strong><span class="en">${h(P.en)}</span></div><span class="badge-num">${p.guests}</span></div>`; }).join('')}
-    <p class="small muted">${Li('Imepatikana kwa maneno maalum (si makisio).', 'Found by fixed keywords, not guessed.')}</p>
+    ${s.products.map(p => { const P = PRODUCTS.find(x => x.id === p.id); return `<div class="topic-row"><strong>${h(P[lang])}</strong><span class="badge-num">${p.guests}</span></div>`; }).join('')}
   </div>` : ''}
 
   ${flagged.length ? `
   <div class="card">
     <h2>${L('Zinahitaji kuangaliwa', 'Needs a human check')}</h2>
-    <p class="small muted">${Li('AI haikuwa na uhakika. Angalia pamoja na msaidizi au mwongozaji.', 'The AI was not sure. Check with the helper or the guide.')}</p>
-    ${flagged.map(([e, i]) => `<div class="small muted" style="margin-top:8px">${h(guestById(e.guestId)?.name || '')} · ${h(langName(e.lang, 'sw'))}</div>${sentenceRow(e, i, { open: true })}`).join('')}
+    ${flagged.map(([e, i]) => `<div class="small muted" style="margin-top:8px">${h(guestById(e.guestId)?.name || '')} · ${h(langName(e.lang, lang))}</div>${sentenceRow(e, i, { open: true })}`).join('')}
   </div>` : ''}
 
   <div class="card">
-    <h2>${L('Ripoti kwa mwongozaji / kituo cha utalii', 'Report for the guide / tourism centre')}</h2>
-    <p class="small muted">${Li('Hakuna majina, namba wala maneno ya wageni. Inatumwa tu Noor akikubali.', 'No names, contacts or quotes. Shared only if Noor agrees.')}</p>
+    <h2>${L('Ripoti kwa kampuni ya utalii', 'Report for the tour company')}</h2>
+    <p class="small muted">${L('Hakuna majina, namba wala maneno ya wageni.', 'No names, contacts or quotes.')}</p>
     <div class="sms" id="report-text">${h(report)}</div>
     <label class="check" style="margin-top:10px"><input type="checkbox" data-change="share-ok" ${state.shareOk ? 'checked' : ''}>
-      <span>${L('Nimesoma ripoti hii na nakubali ishirikiwe', 'I have read this report and agree to share it')}</span></label>
+      <span>${L('Nimeisoma na nakubali ishirikiwe', 'I have read it and agree to share it')}</span></label>
     <button class="btn block" id="share-btn" style="margin-top:10px" data-action="share" ${state.shareOk ? '' : 'disabled'}>${L('Shiriki', 'Share')}</button>
   </div>`}
   `;
@@ -536,13 +584,14 @@ function screenSummary() {
 function screenGuests() {
   const guests = state.guests.slice().sort((a, b) => new Date(b.visitDate) - new Date(a.visitDate));
   if (!guests.length) {
-    return `<h1>${L('Wageni', 'Guests')}</h1>
-      <div class="card"><p>${Li('Bado hakuna wageni.', 'No guests yet.')}</p>
-      <button class="btn" data-action="go" data-tab="add">${L('Ongeza maoni', 'Add feedback')}</button></div>`;
+    return `${backBtn()}<h1>${L('Wageni', 'Guests')}</h1>
+      <div class="card"><p>${L('Bado hakuna wageni.', 'No guests yet.')}</p>
+      <button class="btn" data-action="go" data-screen="add">${L('Ongeza maoni', 'Add feedback')}</button></div>`;
   }
   return `
-  <h1>${L('Wageni', 'Guests')}</h1>
-  <p class="small muted">${Li('Ujumbe wa shukrani umeandikwa na watu katika kila lugha. AI inachagua tu jambo alilopenda mgeni. Noor anaidhinisha kabla ya kutuma.', 'Thank-you messages are human-written in each language. The AI only picks what the guest liked. Noor approves before anything is sent.')}</p>
+  ${backBtn()}
+  <h1>${L('Washukuru wageni', 'Thank guests')}</h1>
+  <p class="small muted">${L('Ujumbe umeandikwa na watu kwa kila lugha. Unatuma wewe, na tu kama mgeni alikubali.', 'Messages are human-written in each language. You send them yourself, and only if the guest agreed.')}</p>
   <div class="card"><ul class="list">${guests.map(g => {
     const n = state.entries.filter(e => e.guestId === g.id).length;
     const sent = state.messages.some(m => m.guestId === g.id && m.status === 'sent');
@@ -550,15 +599,15 @@ function screenGuests() {
     return `
       <li>
         <div class="row between">
-          <div><strong>${h(g.name)}</strong> ${langPill(g.language)}${g.synthetic ? ` <span class="chip plain">${Li('mfano', 'example')}</span>` : ''}</div>
-          <span class="small muted">${h(daySw(g.visitDate))}</span>
+          <div><strong>${h(g.name)}</strong> ${langPill(g.language)}${g.synthetic ? ` <span class="chip plain">${L('mfano', 'example')}</span>` : ''}</div>
+          <span class="small muted">${h(day(g.visitDate))}</span>
         </div>
-        <div class="row small" style="margin-top:6px">${consentChip(g)} <span class="muted">${Li('maoni', 'entries')}: ${n}</span>
-          ${sent ? `<span class="chip">${Li('Shukrani imetumwa', 'thanks sent')}</span>` : ''}</div>
-        ${g.referredBy ? `<div class="small muted" style="margin-top:4px">${Li('Alipendekezwa na', 'recommended by')}: ${h(g.referredBy)}</div>` : ''}
+        <div class="row small" style="margin-top:6px">${consentChip(g)} <span class="muted">${L('maoni', 'entries')}: ${n}</span>
+          ${sent ? `<span class="chip">${L('Shukrani imetumwa', 'Thanked')}</span>` : ''}</div>
+        ${g.referredBy ? `<div class="small muted" style="margin-top:4px">${L('Alipendekezwa na', 'Recommended by')}: ${h(g.referredBy)}</div>` : ''}
         <div class="row" style="margin-top:8px">
-          <button class="btn small ${open ? '' : 'secondary'}" data-action="toggle-draft" data-id="${g.id}">${Li('Ujumbe wa shukrani', 'Thank-you message')}</button>
-          <button class="btn small danger" data-action="delete-guest" data-id="${g.id}">${Li('Futa', 'Delete')}</button>
+          <button class="btn small ${open ? '' : 'secondary'}" data-action="toggle-draft" data-id="${g.id}">${L('Ujumbe wa shukrani', 'Thank-you message')}</button>
+          <button class="btn small danger" data-action="delete-guest" data-id="${g.id}">${L('Futa', 'Delete')}</button>
         </div>
         ${open ? draftCard(g) : ''}
       </li>`;
@@ -572,42 +621,45 @@ function draftCard(g) {
   const subject = SUBJECTS[m.lang] || SUBJECTS.en;
   let send;
   if (!g.consent) {
-    send = `<div class="notice warn small">${Li('Mgeni hakutoa ruhusa ya kuwasiliana — usitume ujumbe.', 'The guest did not consent to contact — do not send.')}</div>`;
+    send = `<div class="notice warn small">${L('Mgeni hakutoa ruhusa ya kuwasiliana. Usitume.', 'The guest did not agree to be contacted. Do not send.')}</div>`;
   } else if (c.email) {
     send = `<a class="btn block" data-action="mark-sent" data-id="${g.id}" data-lang="${m.lang}" href="mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(m.text)}">${L('Idhinisha na tuma (barua pepe)', 'Approve and send (email)')}</a>`;
   } else if (c.phone) {
     send = `<a class="btn block" data-action="mark-sent" data-id="${g.id}" data-lang="${m.lang}" href="sms:${encodeURIComponent(c.phone)}?body=${encodeURIComponent(m.text)}">${L('Idhinisha na tuma (SMS)', 'Approve and send (SMS)')}</a>`;
   } else {
-    send = `<div class="notice small">${Li('Hakuna barua pepe wala namba ya simu.', 'No email or phone number.')}</div>`;
+    send = `<div class="notice small">${L('Hakuna barua pepe wala namba ya simu.', 'No email or phone number.')}</div>`;
   }
+  const lang = getLang();
   return `
   <div class="stack" style="margin-top:12px">
-    ${m.usedFallback ? `<div class="notice warn small">${Li(`Hakuna kiolezo cha ${langName(g.language, 'sw')} bado — tumetumia Kiingereza.`, `No ${langName(g.language, 'en')} template yet — using English.`)}</div>` : ''}
-    <div class="card flat" lang="${m.lang}"><div class="small muted">${Li(`Kwa ${langName(m.lang, 'sw')}`, `In ${langName(m.lang, 'en')}`)}</div><p id="draft-${g.id}" style="margin:6px 0 0">${h(m.text)}</p></div>
-    <div class="card flat" lang="sw"><div class="small muted">${Li('Maana yake kwa Kiswahili', 'What it says, in Swahili')}</div><p style="margin:6px 0 0">${h(m.sw)}</p></div>
-    <p class="small muted">${liked ? Li(`Mada aliyopenda: ${topicById(liked).sw}`, `Liked topic: ${topicById(liked).en}`) : Li('Hakuna mada iliyo wazi — ujumbe wa jumla.', 'No clear liked topic — general message.')}</p>
+    ${m.usedFallback ? `<div class="notice warn small">${L(`Hakuna kiolezo cha ${langName(g.language, 'sw')} bado; tumetumia Kiingereza.`, `No ${langName(g.language, 'en')} template yet; using English.`)}</div>` : ''}
+    <div class="card flat" lang="${m.lang}"><div class="small muted">${L(`Kwa ${langName(m.lang, 'sw')}`, `In ${langName(m.lang, 'en')}`)}</div><p id="draft-${g.id}" style="margin:6px 0 0">${h(m.text)}</p></div>
+    ${m.lang !== lang ? `<div class="card flat" lang="${lang}"><div class="small muted">${L('Maana yake', 'What it says')}</div><p style="margin:6px 0 0">${h(lang === 'sw' ? m.sw : thankYou({ ...g, language: 'en' }, liked).text)}</p></div>` : ''}
+    <p class="small muted" style="margin:0">${liked ? L(`Mada aliyopenda: ${tName(liked)}`, `Liked topic: ${tName(liked)}`) : L('Hakuna mada iliyo wazi; ujumbe wa jumla.', 'No clear liked topic; general message.')}</p>
     ${send}
-    <button class="btn small secondary" data-action="copy" data-copy-from="draft-${g.id}">${Li('Nakili', 'Copy')}</button>
+    <button class="btn small secondary" data-action="copy" data-copy-from="draft-${g.id}">${L('Nakili', 'Copy')}</button>
   </div>`;
 }
 
 // ---------------------------------------------------------------- screen: languages
 function screenLangs() {
   const plan = currentPlan();
+  const lang = getLang();
   const packRow = code => {
     const l = LANGS[code];
     const inst = state.installed.includes(code);
     const tags = [];
-    if (plan.keep.includes(code)) tags.push(`<span class="chip">${Li('Inakaa daima', 'kept')}</span>`);
-    if (plan.needed.includes(code)) tags.push(`<span class="chip warn">${Li('Wiki ijayo', 'needed next week')}</span>`);
-    if (inst && plan.removable.includes(code)) tags.push(`<span class="chip plain">${Li('Nadra', 'rare')}</span>`);
+    if (inst) tags.push(`<span class="chip">${L('Imepakuliwa', 'On phone')}</span>`);
+    if (plan.keep.includes(code)) tags.push(`<span class="chip">${L('Inakaa daima', 'Kept')}</span>`);
+    if (plan.needed.includes(code)) tags.push(`<span class="chip warn">${L('Wiki ijayo', 'Needed next week')}</span>`);
+    if (inst && plan.removable.includes(code)) tags.push(`<span class="chip plain">${L('Nadra', 'Rare')}</span>`);
     return `
       <div class="pack">
-        <div><strong>${h(l.sw)}</strong> <span class="muted small">${h(l.native)}</span><span class="en">${h(l.en)} · ${inst ? 'downloaded' : 'not downloaded'} · ~${PACK_MB} MB</span>
-          <div class="row" style="margin-top:4px">${inst ? `<span class="chip">${Li('Imepakuliwa', 'on phone')}</span>` : ''}${tags.join('')}</div></div>
+        <div><strong>${h(l[lang])}</strong> <span class="muted small">${h(l.native)} · ${PACK_MB} MB</span>
+          <div class="row" style="margin-top:4px">${tags.join('')}</div></div>
         ${inst
-          ? `<button class="btn small danger" data-action="delete-pack" data-lang="${code}">${Li('Futa', 'Delete')}</button>`
-          : `<button class="btn small" data-action="download-pack" data-lang="${code}" ${state.online ? '' : 'disabled'}>${Li('Pakua', 'Get')}</button>`}
+          ? `<button class="btn small danger" data-action="delete-pack" data-lang="${code}">${L('Futa', 'Delete')}</button>`
+          : `<button class="btn small" data-action="download-pack" data-lang="${code}" ${state.online ? '' : 'disabled'}>${L('Pakua', 'Get')}</button>`}
       </div>`;
   };
   const sharedRow = key => {
@@ -615,42 +667,31 @@ function screenLangs() {
     const inst = state.shared[key];
     return `
       <div class="pack">
-        <div><strong>${h(m.sw)}</strong><span class="en">${h(m.en)} · ${h(m.id)} · ~${m.mb} MB</span></div>
-        ${inst ? `<span class="chip">${Li('Tayari', 'ready')}</span>` : `<button class="btn small" data-action="download-shared" data-key="${key}" ${state.online ? '' : 'disabled'}>${Li('Pakua', 'Get')}</button>`}
+        <div><strong>${h(m[lang])}</strong> <span class="muted small">${m.mb} MB</span></div>
+        ${inst ? `<span class="chip">${L('Tayari', 'Ready')}</span>` : `<button class="btn small" data-action="download-shared" data-key="${key}" ${state.online ? '' : 'disabled'}>${L('Pakua', 'Get')}</button>`}
       </div>`;
   };
 
   return `
+  ${backBtn()}
   <h1>${L('Lugha', 'Languages')}</h1>
-  <div class="notice">
-    <strong>${Li(`Lugha ${KEEP_TOP_N + 2} muhimu`, `${KEEP_TOP_N + 2} essential languages`)}</strong>
-    ${Li('Kiswahili na Kiingereza daima, pamoja na lugha 3 za wageni wengi. Lugha nyingine zinapakuliwa kabla mgeni hajafika na zinaweza kufutwa baadaye.', 'Swahili and English always, plus the 3 most common guest languages. Others are downloaded before a guest arrives and can be deleted afterwards.')}
-  </div>
+  <p class="small muted">${L(`Kiswahili na Kiingereza daima, pamoja na lugha ${KEEP_TOP_N} za wageni wengi. Lugha nyingine zinapakuliwa kabla mgeni hajafika na zinaweza kufutwa baadaye.`, `Swahili and English always, plus the ${KEEP_TOP_N} most common guest languages. Others are downloaded before a visit and can be deleted afterwards.`)}</p>
   <p class="small muted" id="storage-line"></p>
 
   <div class="card">
-    <h2>${L('Lugha kuu', 'Core languages')}</h2>
-    <div class="pack"><div><strong>Kiswahili</strong><span class="en">Swahili · Noor’s language: all screens, summaries and messages are human-written templates, no download</span></div><span class="chip">${Li('Ndani', 'built in')}</span></div>
-    <div class="pack"><div><strong>Kiingereza</strong><span class="en">English · the pivot language the classifier works in, no download</span></div><span class="chip">${Li('Ndani', 'built in')}</span></div>
-  </div>
-
-  <div class="card">
     <h2>${L('Modeli za pamoja', 'Shared models')}</h2>
-    <p class="small muted">${Li('Zinapakuliwa mara moja, zinafanya kazi kwa lugha zote, bila mtandao.', 'Downloaded once, used for every language, work offline.')}</p>
+    <p class="small muted">${L('Zinapakuliwa mara moja, zinafanya kazi kwa lugha zote, bila mtandao.', 'Downloaded once, used for every language, work offline.')}</p>
     ${Object.keys(SHARED_MODELS).map(sharedRow).join('')}
   </div>
 
   <div class="card">
-    <h2>${L('Lugha za wageni', 'Guest language packs')}</h2>
-    <p class="small muted">${plan.usedDefaults
-      ? Li('Bado hakuna historia ya kutosha: tunatumia nchi zinazoleta wageni wengi Tanzania (NBS 2024): Italia, Ufaransa, Ujerumani.', 'Not enough history yet: using Tanzania’s top non-African, non-English source markets (NBS 2024): Italy, France, Germany.')
-      : Li('Lugha zinazokaa zimechaguliwa kutoka historia ya wageni wa Noor.', 'Kept languages are chosen from Noor’s own guest history.')}</p>
+    <h2>${L('Lugha za wageni', 'Guest languages')}</h2>
+    ${plan.usedDefaults ? `<p class="small muted">${L('Bado hakuna historia: tunaanza na Kiitaliano, Kifaransa na Kijerumani (wageni wengi wa Tanzania, NBS 2024).', 'No history yet: starting with Italian, French and German (Tanzania’s largest such markets, NBS 2024).')}</p>` : ''}
     ${plan.recommend.length ? `
-      <div class="notice small" style="margin-top:4px">${Li(`Inapendekezwa kupakua ukiwa na Wi-Fi: ${plan.recommend.map(c => LANGS[c].sw).join(', ')} (MB ${plan.recommendMB}).`, `Recommended when on Wi-Fi: ${plan.recommend.map(c => LANGS[c].en).join(', ')} (${plan.recommendMB} MB).`)}
-        <button class="btn small block" style="margin-top:8px" data-action="download-recommended" ${state.online ? '' : 'disabled'}>${Li('Pakua zinazopendekezwa', 'Download recommended')}</button>
+      <div class="notice small" style="margin-top:4px">${L(`Pakua ukiwa na Wi-Fi: ${plan.recommend.map(c => LANGS[c].sw).join(', ')} (MB ${plan.recommendMB}).`, `Download on Wi-Fi: ${plan.recommend.map(c => LANGS[c].en).join(', ')} (${plan.recommendMB} MB).`)}
+        <button class="btn small block" style="margin-top:8px" data-action="download-recommended" ${state.online ? '' : 'disabled'}>${L('Pakua zinazopendekezwa', 'Download recommended')}</button>
       </div>` : ''}
     ${packLangs().map(packRow).join('')}
-    <p class="small muted" style="margin-top:12px">${Li(`Kila pakiti ni takriban MB ${PACK_MB} (modeli ya tafsiri iliyobanwa + data ya kusoma maandishi). Toleo la Android litatumia ML Kit (karibu MB 30 kwa lugha).`, `Each pack is about ${PACK_MB} MB (quantized translation model + text-reading data). An Android version would use ML Kit (about 30 MB per language).`)}</p>
   </div>`;
 }
 
@@ -658,29 +699,21 @@ function screenLangs() {
 function screenMore() {
   const demo = state.guests.some(g => g.synthetic);
   return `
+  ${backBtn()}
   <h1>${L('Zaidi', 'More')}</h1>
 
   <div class="card">
-    <h2>${L('Jinsi ya kutumia', 'How to use it')}</h2>
     <div class="stack">
-      <button class="btn block" data-action="guide-open">${L('Fungua mwongozo', 'Open the guide')}</button>
+      <button class="btn secondary block" data-action="guide-open">${L('Jinsi ya kutumia', 'How to use')}</button>
       <button class="btn secondary block" data-action="toggle-big">${document.documentElement.classList.contains('big-text') ? L('Herufi za kawaida', 'Normal text size') : L('Herufi kubwa', 'Large text')}</button>
-      <button class="btn secondary block" data-action="switch-role">${L('Badilisha jukumu (mwenyeji, mgeni, kampuni)', 'Switch role (host, visitor, company)')}</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>${L('Kurasa za kuchapisha', 'Printable pages')}</h2>
-    <div class="stack">
-      <a class="btn secondary" href="print/guestbook.html" target="_blank" rel="noopener">${L('Ukurasa wa kitabu cha wageni', 'Guestbook page')}</a>
-      <a class="btn secondary" href="print/sales-log.html" target="_blank" rel="noopener">${L('Daftari la mauzo', 'Sales log page')}</a>
-      <p class="small muted" style="margin:0">${Li('Kusoma daftari la mauzo kwa picha ni hatua inayofuata.', 'Reading the sales log from a photo is the next step.')}</p>
+      <button class="btn secondary block" data-action="go" data-screen="langs">${L('Lugha kwenye simu', 'Languages on this phone')}</button>
+      <a class="btn secondary block" href="print/guestbook.html" target="_blank" rel="noopener">${L('Chapisha ukurasa wa kitabu cha wageni', 'Print the guestbook page')}</a>
     </div>
   </div>
 
   <div class="card">
     <h2>${L('Data ya mfano', 'Example data')}</h2>
-    <p class="small muted">${Li('Wageni 6 wa kubuni na maoni kwa Kiitaliano, Kifaransa, Kichina, Kiingereza na Kiswahili. Ni data bandia, imeandikwa na timu.', '6 invented guests with feedback in Italian, French, Chinese, English and Swahili. Synthetic, written by the team.')}</p>
+    <p class="small muted">${L('Wageni 6 wa kubuni na maoni kwa lugha 5. Si watu halisi.', '6 invented guests with feedback in 5 languages. Not real people.')}</p>
     ${demo
       ? `<button class="btn danger" data-action="remove-demo">${L('Ondoa data ya mfano', 'Remove example data')}</button>`
       : `<button class="btn secondary" data-action="load-demo">${L('Pakia data ya mfano', 'Load example data')}</button>`}
@@ -689,20 +722,19 @@ function screenMore() {
   <div class="card">
     <h2>${L('Faragha', 'Privacy')}</h2>
     <ul class="small" style="padding-left:18px;margin:0">
-      <li>${Li('Data yote iko kwenye simu hii tu (hakuna seva).', 'All data stays on this phone (no server).')}</li>
-      <li>${Li('Mawasiliano ya mgeni yanahifadhiwa tu akiweka alama ya ruhusa.', 'Guest contact details are stored only with the consent tick.')}</li>
-      <li>${Li('Ripoti ya mwongozaji haina majina, namba wala maneno ya wageni.', 'The guide report has no names, contacts or quotes.')}</li>
-      <li>${Li('Simu ikipotea: weka nenosiri kwenye simu; data inaweza kufutwa hapa.', 'If the phone is lost: use a phone lock; data can be wiped here.')}</li>
+      <li>${L('Data yote iko kwenye simu hii tu.', 'All data stays on this phone.')}</li>
+      <li>${L('Mawasiliano ya mgeni yanahifadhiwa tu kwa ruhusa yake.', 'Guest contact details are kept only with their consent.')}</li>
+      <li>${L('Ripoti kwa kampuni haina majina wala maneno ya wageni.', 'The company report has no names or quotes.')}</li>
     </ul>
     <button class="btn danger block" style="margin-top:12px" data-action="wipe">${L('Futa data zote', 'Delete all data')}</button>
   </div>
 
   <div class="card">
     <h2>${L('Kuhusu', 'About')}</h2>
-    <p class="small">${Li('Imejengwa kwa Hack-Nation × World Bank Small AI for Development (utalii).', 'Built for the Hack-Nation × World Bank Small AI for Development hackathon (tourism track).')}</p>
+    <p class="small">${L('Imejengwa kwa Hack-Nation × World Bank Small AI for Development (utalii).', 'Built for the Hack-Nation × World Bank Small AI for Development hackathon (tourism).')}</p>
     <div class="stack">
       <a class="btn secondary" href="eval.html">${L('Jaribio la usahihi', 'Accuracy check')}</a>
-      <a class="btn secondary" href="https://github.com/Tristazxy/kitabu-gateway#readme" target="_blank" rel="noopener">${L('Vyanzo vya data na mipaka', 'Data sources and limits')}</a>
+      <a class="btn secondary" href="https://github.com/Tristazxy/kitabu-gateway#readme" target="_blank" rel="noopener">${L('Msimbo, vyanzo vya data na mipaka', 'Code, data sources and limits')}</a>
     </div>
   </div>`;
 }
@@ -719,11 +751,11 @@ function readCompanyForm() {
   };
 }
 
-function companyScreen() {
+function screenCompany() {
   const today = isoDate(addDays(new Date(), 3));
   const { s } = currentSummary();
-  const report = s.entries ? guideReport(s, 'Mfano · Example') : null;
-  return companyHTML({
+  const report = s.entries ? guideReport(s, L('Mfano', 'Example')) : null;
+  return backBtn() + companyHTML({
     langOptionsHTML: langOptions('en'), today,
     sms: bookingSms({ date: dayStamp(today), guests: 2, language: 'en', guide: '' }), report,
   });
@@ -818,30 +850,40 @@ async function tryExample() {
     await loadAll();
   }
   state.period = 'all';
-  state.tab = 'summary';
+  state.screen = 'home';
   render();
   await analyzePending();
 }
 
 // ---------------------------------------------------------------- render
-const SCREENS = { week: screenWeek, add: screenAdd, summary: screenSummary, guests: screenGuests, langs: screenLangs, more: screenMore };
+const SCREENS = {
+  home: screenHome, add: screenAdd, summary: screenSummary, guests: screenGuests, week: screenWeek,
+  langs: screenLangs, more: screenMore, company: screenCompany,
+  visitor: () => visitorHTML(state.visitor.lang, state.visitor.saved, state.visitor.draft),
+};
 
 function render() {
-  const mode = state.role || 'choose';
-  for (const m of ['choose', 'visitor', 'company']) document.body.classList.toggle(`mode-${m}`, mode === m);
-  document.body.classList.toggle('no-tabs', mode !== 'host');
-  if (mode === 'choose') view.innerHTML = roleChooserHTML();
-  else if (mode === 'visitor') view.innerHTML = visitorHTML(state.visitor.lang, state.visitor.saved, state.visitor.draft);
-  else if (mode === 'company') view.innerHTML = companyScreen();
-  else view.innerHTML = SCREENS[state.tab]();
-  document.querySelectorAll('.tabbar button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === state.tab ? 'page' : 'false'));
-  document.getElementById('net').innerHTML = state.online ? Li('Mtandaoni', 'online') : Li('Nje ya mtandao', 'offline');
-  if (state.tab === 'langs') {
+  const sc = state.screen;
+  document.body.classList.toggle('mode-visitor', sc === 'visitor');
+  document.body.classList.toggle('home', sc === 'home');
+  view.innerHTML = SCREENS[sc]();
+  document.getElementById('net').textContent = state.online ? L('Mtandaoni', 'Online') : L('Nje ya mtandao', 'Offline');
+  const lb = document.getElementById('lang-btn');
+  if (lb) lb.textContent = getLang() === 'sw' ? 'English' : 'Kiswahili';
+  if (state.guide.open) renderGuide();
+  if (sc === 'langs') {
     ai.storageEstimate().then(est => {
       const el = document.getElementById('storage-line');
-      if (el && est) el.innerHTML = Li(`Nafasi iliyotumika: MB ${est.usedMB} kati ya MB ${est.quotaMB}`, `Storage used: ${est.usedMB} MB of ${est.quotaMB} MB`);
+      if (el && est) el.textContent = L(`Nafasi iliyotumika: MB ${est.usedMB} kati ya MB ${est.quotaMB}`, `Storage used: ${est.usedMB} MB of ${est.quotaMB} MB`);
     });
   }
+}
+
+function go(screen) {
+  state.screen = screen;
+  if (screen !== 'add') state.add = freshAdd();
+  render();
+  window.scrollTo(0, 0);
 }
 
 // ---------------------------------------------------------------- model downloads (always confirmed: data costs money)
@@ -849,13 +891,13 @@ async function confirmDownload(needs) {
   if (!needs.length) return true;
   const mb = needs.reduce((a, [kind, key]) => a + (kind === 'pack' ? PACK_MB : SHARED_MODELS[key].mb), 0);
   if (!navigator.onLine) {
-    toast('Hakuna mtandao. Pakua lugha wikendi msaidizi akiwa na mtandao. · Offline: download packs when connected.', 6000);
+    toast(L('Hakuna mtandao. Pakua lugha msaidizi akiwa na mtandao.', 'Offline. Download packs when the helper has internet.'), 6000);
     return false;
   }
-  const names = needs.map(([kind, key]) => (kind === 'pack' ? LANGS[key].en : SHARED_MODELS[key].en)).join(', ');
-  if (!confirm(`Pakua mara moja: takriban MB ${mb} (${names}). Endelea?\n\nOne-time download of about ${mb} MB (${names}). Continue?`)) return false;
+  const names = needs.map(([kind, key]) => (kind === 'pack' ? langName(key, getLang()) : SHARED_MODELS[key][getLang()])).join(', ');
+  if (!confirm(L(`Pakua mara moja: takriban MB ${mb} (${names}). Endelea?`, `One-time download of about ${mb} MB (${names}). Continue?`))) return false;
   for (const [kind, key] of needs) {
-    showBusy(kind === 'pack' ? `Inapakua ${LANGS[key].sw} · ${LANGS[key].en} pack` : `Inapakua · ${SHARED_MODELS[key].en}`);
+    showBusy(L('Inapakua', 'Downloading') + ` · ${kind === 'pack' ? langName(key, getLang()) : SHARED_MODELS[key][getLang()]}`);
     if (kind === 'pack') await ai.downloadPack(key, progress);
     else await ai.downloadShared(key, progress);
   }
@@ -866,23 +908,23 @@ async function confirmDownload(needs) {
 
 async function downloadPacks(codes) {
   const needs = codes.filter(c => LANGS[c]?.mt && !state.installed.includes(c)).map(c => ['pack', c]);
-  if (await confirmDownload(needs)) { toast('Lugha ziko tayari · Packs ready'); render(); }
+  if (await confirmDownload(needs)) { toast(L('Lugha ziko tayari', 'Packs ready')); render(); }
 }
 
 async function deletePacks(codes) {
   if (!codes.length) return;
-  const names = codes.map(c => LANGS[c].sw).join(', ');
-  if (!confirm(`Futa ${names}? Zinaweza kupakuliwa tena baadaye.\n\nDelete ${codes.map(c => LANGS[c].en).join(', ')}? They can be downloaded again later.`)) return;
+  const names = codes.map(c => langName(c, getLang())).join(', ');
+  if (!confirm(L(`Futa ${names}? Zinaweza kupakuliwa tena baadaye.`, `Delete ${names}? They can be downloaded again later.`))) return;
   for (const c of codes) await ai.deleteModel(LANGS[c].mt);
   await refreshModels();
-  toast('Imefutwa · Deleted');
+  toast(L('Imefutwa', 'Deleted'));
   render();
 }
 
 // ---------------------------------------------------------------- actions
 async function syncBookings() {
-  if (!navigator.onLine) return toast('Hakuna mtandao · Offline');
-  showBusy('Inapokea ratiba · Receiving schedule');
+  if (!navigator.onLine) return toast(L('Hakuna mtandao', 'Offline'));
+  showBusy(L('Inapokea ratiba', 'Receiving the schedule'));
   const res = await fetch('data/bookings.json', { cache: 'no-store' });
   const feed = await res.json();
   const today = new Date();
@@ -898,15 +940,15 @@ async function syncBookings() {
   hideBusy();
   const plan = currentPlan();
   toast(plan.download.length
-    ? `Ratiba imepokelewa. Pakua: ${plan.download.map(c => LANGS[c].sw).join(', ')} · Schedule received.`
-    : 'Ratiba imepokelewa · Schedule received');
+    ? L(`Ratiba imepokelewa. Pakua: ${plan.download.map(c => LANGS[c].sw).join(', ')}`, `Schedule received. Download: ${plan.download.map(c => LANGS[c].en).join(', ')}`)
+    : L('Ratiba imepokelewa', 'Schedule received'));
   render();
 }
 
 async function addBooking() {
   const v = id => document.getElementById(id)?.value?.trim() || '';
   const date = v('bk-date');
-  if (!date) return toast('Weka tarehe · Add a date');
+  if (!date) return toast(L('Weka tarehe', 'Add a date'));
   const consent = document.getElementById('bk-consent').checked;
   const row = {
     id: uid('bk'), date: dayStamp(date), guests: Math.max(1, Number(v('bk-guests')) || 1), leadName: v('bk-name') || 'Mgeni',
@@ -914,7 +956,7 @@ async function addBooking() {
   };
   await db.put('bookings', row);
   state.bookings.push(row);
-  toast('Imehifadhiwa · Saved');
+  toast(L('Imehifadhiwa', 'Saved'));
   render();
 }
 
@@ -952,6 +994,7 @@ async function saveNewGuest() {
   state.add.guestId = g.id;
   state.add.step = 2;
   render();
+  window.scrollTo(0, 0);
 }
 
 async function addPhoto(file, box) {
@@ -960,10 +1003,10 @@ async function addPhoto(file, box) {
   state.add.inputs.push(item);
   render();
   try {
-    showBusy('Inasoma picha · Reading the photo');
+    showBusy(L('Inasoma picha', 'Reading the photo'));
     const r = await ai.ocr(file, g.language, progress);
     Object.assign(item, { text: r.text, lowWords: r.lowWords, confidence: r.confidence, status: 'ready' });
-    if (!r.text) { item.status = 'error'; item.error = 'Hakuna maandishi yaliyopatikana · No text found. Try a closer, brighter photo.'; }
+    if (!r.text) { item.status = 'error'; item.error = L('Hakuna maandishi yaliyopatikana. Jaribu picha ya karibu zaidi na yenye mwanga.', 'No text found. Try a closer, brighter photo.'); }
     const hint = await ai.guessLanguage(r.text);
     if (hint && hint !== g.language) item.langHint = hint;
   } catch (err) {
@@ -982,7 +1025,7 @@ async function addAudio(blob) {
   state.add.inputs.push(item);
   render();
   try {
-    showBusy('Inasikiliza · Listening');
+    showBusy(L('Inasikiliza', 'Listening'));
     const r = await ai.transcribe(blob, g.language, progress);
     Object.assign(item, { text: r.original, english: r.english, status: 'ready' });
     state.shared.voice = true;
@@ -999,7 +1042,7 @@ let recorder = null;
 async function toggleRecording() {
   if (recorder) { recorder.stop(); return; }
   if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
-    toast('Simu hii haiwezi kurekodi hapa. Pakia faili la sauti. · Recording not supported; upload an audio file.', 5000);
+    toast(L('Simu hii haiwezi kurekodi hapa. Pakia faili la sauti.', 'Recording is not supported here. Upload an audio file.'), 5000);
     return;
   }
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -1035,7 +1078,7 @@ async function runAnalysis() {
 
   const saved = [];
   for (const [n, i] of inputs.entries()) {
-    showBusy(`Inachanganua ${n + 1}/${inputs.length} · Analysing`);
+    showBusy(`${L('Inachanganua', 'Analysing')} ${n + 1}/${inputs.length}`);
     const english = i.source === 'voice' && g.language !== 'en' && g.language !== 'sw' ? i.english : undefined;
     const res = await analyze({ original: i.text.trim(), lang: g.language, box: i.box, english }, progress);
     const entry = {
@@ -1054,6 +1097,7 @@ async function runAnalysis() {
   state.add.step = 3;
   await refreshModels();
   render();
+  window.scrollTo(0, 0);
 }
 
 async function analyzePending() {
@@ -1067,14 +1111,14 @@ async function analyzePending() {
   for (const l of langs) if (LANGS[l]?.mt && !state.installed.includes(l)) needs.push(['pack', l]);
   if (!(await confirmDownload(needs))) return;
   for (const [n, e] of pending.entries()) {
-    showBusy(`Inachanganua ${n + 1}/${pending.length} · Analysing`);
+    showBusy(`${L('Inachanganua', 'Analysing')} ${n + 1}/${pending.length}`);
     const res = await analyze({ original: e.original, lang: e.lang, box: e.box }, progress);
     Object.assign(e, res);
     await db.put('entries', e);
   }
   hideBusy();
   await refreshModels();
-  toast('Imekamilika · Done');
+  toast(L('Imekamilika', 'Done'));
   render();
 }
 
@@ -1109,9 +1153,8 @@ async function loadDemo() {
   }
   await loadAll();
   state.period = 'all';
-  state.tab = 'summary';
-  toast('Data ya mfano imepakiwa. Bonyeza “Changanua sasa”. · Example data loaded.', 5000);
-  render();
+  go('home');
+  toast(L('Data ya mfano imepakiwa. Bonyeza “Changanua sasa”.', 'Example data loaded. Tap “Analyse now”.'), 5000);
 }
 
 async function removeDemo() {
@@ -1119,13 +1162,13 @@ async function removeDemo() {
   for (const e of state.entries.filter(x => x.synthetic || x.id.startsWith('demo_'))) await db.del('entries', e.id);
   for (const b of state.bookings.filter(x => x.synthetic)) await db.del('bookings', b.id);
   await loadAll();
-  toast('Imeondolewa · Removed');
+  toast(L('Imeondolewa', 'Removed'));
   render();
 }
 
 async function deleteGuest(id) {
   const g = guestById(id);
-  if (!g || !confirm(`Futa ${g.name} na maoni yake yote?\n\nDelete ${g.name} and all their feedback?`)) return;
+  if (!g || !confirm(L(`Futa ${g.name} na maoni yake yote?`, `Delete ${g.name} and all their feedback?`))) return;
   await db.del('guests', id);
   for (const e of state.entries.filter(x => x.guestId === id)) await db.del('entries', e.id);
   for (const m of state.messages.filter(x => x.guestId === id)) await db.del('messages', m.id);
@@ -1143,38 +1186,48 @@ async function shareReport() {
   }
 }
 
-async function setRole(role) {
-  state.role = role;
-  await db.setSetting('role', role);
-  if (role === 'visitor') state.visitor = { lang: pickVisitorLang(), saved: false, draft: {} };
-  if (role === 'host') state.tab = 'week';
-  render();
-  window.scrollTo(0, 0);
-  if (role === 'host' && !(await db.getSetting('guideSeen', false))) openGuide(0);
+async function readAloud() {
+  const { s, text } = currentSummary();
+  const lang = getLang();
+  // Swahili: natural voice clips (ElevenLabs, made at build time), the phone's own voice as fallback.
+  if (lang === 'sw' && await playClips(summaryClipIds(s))) return;
+  speak(text[lang].join(' '), lang);
+}
+
+async function startVisitor() {
+  state.visitor = { lang: pickVisitorLang(), saved: false, draft: {} };
+  await db.setSetting('kiosk', true);
+  go('visitor');
 }
 
 const actions = {
-  'choose-role': el => setRole(el.dataset.role),
-  'switch-role': async () => { state.role = null; await db.setSetting('role', null); render(); window.scrollTo(0, 0); },
-  'hand-to-guest': () => setRole('visitor'),
+  back: () => go('home'),
+  go: el => go(el.dataset.screen),
+  'toggle-lang': async () => {
+    setLang(getLang() === 'sw' ? 'en' : 'sw');
+    await db.setSetting('lang', getLang());
+    render();
+  },
+  'hand-to-guest': startVisitor,
   'visitor-lang': el => { captureVisitorDraft(); state.visitor.lang = el.dataset.lang; render(); },
   'visitor-save': saveVisitor,
   'visitor-next': () => { state.visitor = { lang: pickVisitorLang(), saved: false, draft: {} }; render(); window.scrollTo(0, 0); },
   'visitor-exit': async () => {
-    if (!confirm('Kwa Noor tu: rudi kwenye programu ya mwenyeji?\n\nHost only: go back to the host app?')) return;
-    await setRole('host');
+    if (!confirm(L('Kwa Noor tu: rudi nyumbani?', 'Host only: back to the home screen?'))) return;
+    await db.setSetting('kiosk', false);
+    go('home');
   },
   'company-sms': () => {
     const b = readCompanyForm();
     const phone = document.getElementById('c-phone')?.value?.trim() || '';
-    if (!phone) { toast('Weka namba ya simu ya Noor · Add Noor’s phone number'); return; }
+    if (!phone) { toast(L('Weka namba ya simu ya Noor', 'Add Noor’s phone number')); return; }
     window.location.href = `sms:${encodeURIComponent(phone)}?body=${encodeURIComponent(bookingSms(b))}`;
   },
   'company-save': async () => {
     const b = readCompanyForm();
     await db.put('bookings', b);
     state.bookings.push(b);
-    toast('Imehifadhiwa kwenye ratiba ya simu hii · Saved to this device’s schedule');
+    toast(L('Imehifadhiwa kwenye ratiba ya simu hii', 'Saved to this phone’s schedule'));
   },
   'toggle-big': async () => {
     const on = !document.documentElement.classList.contains('big-text');
@@ -1187,13 +1240,6 @@ const actions = {
   'guide-prev': () => openGuide(Math.max(state.guide.step - 1, 0)),
   'guide-close': closeGuide,
   'guide-try': tryExample,
-  'guide-demo': async () => { await closeGuide(); await loadDemo(); },
-  go: el => { state.tab = el.dataset.tab; render(); window.scrollTo(0, 0); },
-  'toggle-en': async () => {
-    const hide = !document.body.classList.contains('hide-en');
-    document.body.classList.toggle('hide-en', hide);
-    await db.setSetting('showEn', !hide);
-  },
   sync: syncBookings,
   'add-booking': addBooking,
   'download-pack': el => downloadPacks([el.dataset.lang]),
@@ -1203,7 +1249,7 @@ const actions = {
   'delete-removable': () => deletePacks(currentPlan().removable),
   'download-shared': async el => { if (await confirmDownload([['shared', el.dataset.key]])) render(); },
   'pick-booking': el => pickBooking(el.dataset.id),
-  'pick-guest': el => { state.add = freshAdd(); state.add.guestId = el.dataset.id; state.add.step = 2; render(); },
+  'pick-guest': el => { state.add = freshAdd(); state.add.guestId = el.dataset.id; state.add.step = 2; render(); window.scrollTo(0, 0); },
   'save-new-guest': saveNewGuest,
   'change-guest': () => { state.add.step = 1; render(); },
   'add-typed': () => { state.add.inputs.push({ id: uid('in'), source: 'typed', box: 'liked', text: '', status: 'ready' }); render(); },
@@ -1214,12 +1260,12 @@ const actions = {
     g.language = el.dataset.lang;
     await db.put('guests', g);
     state.add.inputs.forEach(i => { i.langHint = null; });
-    toast(`Lugha: ${LANGS[g.language].sw} · ${LANGS[g.language].en}`);
+    toast(`${L('Lugha', 'Language')}: ${langName(g.language, getLang())}`);
     render();
   },
   'run-analysis': runAnalysis,
-  'finish-add': () => { state.add = freshAdd(); state.tab = 'summary'; render(); window.scrollTo(0, 0); },
-  'more-feedback': () => { const id = state.add.guestId; state.add = freshAdd(); state.add.guestId = id; state.add.step = 2; render(); },
+  'finish-add': () => go('summary'),
+  'more-feedback': () => { const id = state.add.guestId; state.add = freshAdd(); state.add.guestId = id; state.add.step = 2; render(); window.scrollTo(0, 0); },
   'fix-mood': async el => {
     const [entry, s] = findSentence(el);
     if (!s) return;
@@ -1244,12 +1290,7 @@ const actions = {
     await saveEntry(entry);
   },
   period: el => { state.period = el.dataset.period; render(); },
-  speak: async () => {
-    const { s, text } = currentSummary();
-    // Natural Swahili voice clips (ElevenLabs, generated at build time); phone voice as fallback.
-    const played = await playClips(summaryClipIds(s));
-    if (!played) speak(text.sw.join(' '));
-  },
+  speak: readAloud,
   'analyze-pending': analyzePending,
   share: shareReport,
   'toggle-draft': el => { state.openGuest = state.openGuest === el.dataset.id ? null : el.dataset.id; render(); },
@@ -1265,12 +1306,14 @@ const actions = {
   'load-demo': loadDemo,
   'remove-demo': removeDemo,
   wipe: async () => {
-    if (!confirm('Futa data YOTE kwenye simu hii? Haiwezi kurudishwa.\n\nDelete ALL data on this phone? This cannot be undone.')) return;
+    if (!confirm(L('Futa data YOTE kwenye simu hii? Haiwezi kurudishwa.', 'Delete ALL data on this phone? This cannot be undone.'))) return;
+    const lang = getLang();
     await db.wipeAll();
+    await db.setSetting('lang', lang);
     await loadAll();
     state.add = freshAdd();
-    toast('Data yote imefutwa · All data deleted');
-    render();
+    toast(L('Data yote imefutwa', 'All data deleted'));
+    go('home');
   },
 };
 
@@ -1329,7 +1372,7 @@ document.addEventListener('click', e => {
   Promise.resolve(fn(el, e)).catch(err => {
     console.error(err);
     hideBusy();
-    toast(`Hitilafu · Error: ${err.message}`, 6000);
+    toast(`${L('Hitilafu', 'Error')}: ${err.message}`, 6000);
   });
 });
 
@@ -1378,10 +1421,20 @@ async function warmCache() {
   }));
 }
 
+// Interface language: the saved choice, otherwise the phone's language (Swahili or English).
+async function pickUiLang() {
+  const saved = await db.getSetting('lang', null);
+  if (saved) return saved;
+  const tags = navigator.languages || [navigator.language || 'en'];
+  return tags.some(t => String(t).toLowerCase().startsWith('sw')) ? 'sw' : 'en';
+}
+
 async function start() {
+  setLang(await pickUiLang());
   await loadAll();
+  if (await db.getSetting('kiosk', false)) state.visitor = { lang: pickVisitorLang(), saved: false, draft: {} }, state.screen = 'visitor';
   render();
-  if (state.role === 'host' && !(await db.getSetting('guideSeen', false))) openGuide(0);
+  if (state.screen === 'home' && !(await db.getSetting('guideSeen', false))) openGuide(0);
   await refreshModels();
   render();
   if ('serviceWorker' in navigator && import.meta.env?.PROD) {
@@ -1397,5 +1450,5 @@ async function start() {
 
 start().catch(err => {
   console.error(err);
-  view.innerHTML = `<div class="notice neg"><strong>Hitilafu · Error</strong>${h(err.message)}</div>`;
+  view.innerHTML = `<div class="notice neg"><strong>${L('Hitilafu', 'Error')}</strong>${h(err.message)}</div>`;
 });

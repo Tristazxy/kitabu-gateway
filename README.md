@@ -21,13 +21,18 @@
 | | **Thank-you messages** in each guest's language with the exact Swahili equivalent beside it, sent only if the guest ticked consent, and only after Noor approves. | Picks the topic the guest liked |
 | | An **anonymized report** (counts only — no names, contacts or quotes) for the guide / tourism centre, shared only when Noor agrees. | No |
 
-### Three ways in (one phone, no server)
+### One home screen (one phone, no server)
 
-The first screen asks **"Wewe ni nani? · Who are you?"**
+The app opens on a single home screen, in the phone's language (Swahili or English; one tap switches):
+two lines of *what guests said* with **Listen** and **Details**, then four big buttons. A three-step guide
+opens on the first visit.
 
-* **Host (Noor)** — the full app above, with a 6-step first-time guide (the **?** button reopens it), large-text mode and four big "what do you want to do" buttons.
-* **Visitor** — Noor taps *"Hand the phone to a guest"*. The screen switches to the guest's own language (Italian, French, German, Chinese, Spanish, Polish, English or Swahili, picked from the phone's settings): two boxes, optional email with a consent tick, *Save*. Typed text is more accurate than reading handwriting. The guest cannot see anyone else's data; returning to the host app is marked "host only".
-* **Tour company or guide** — a booking form that turns into a **Swahili SMS for Noor's basic phone** (date, number of guests, their language, guide), plus a plain statement of what the company gets back: an anonymized summary, only if Noor agrees.
+* **Add guest feedback** — pick the guest, photograph box A / box B, record or upload a voice note, or type. Analyse. Correct anything marked "Check".
+* **Let a guest write** — Noor hands over the phone. The screen switches to the guest's own language (Italian, French, German, Chinese, Spanish, Polish, English or Swahili, picked from the phone's settings): two boxes, optional email with a consent tick, *Save*. The guest cannot see anyone else's data; returning is marked "host only".
+* **Thank guests** — a human-written message in each guest's language with its meaning underneath, sent only if the guest ticked consent, and only after Noor approves.
+* **Next week** — the schedule from the tour company, the Swahili SMS for Noor's basic phone, and the language packs to download or delete.
+
+Two links at the bottom: **For tour companies** — a booking form that turns into a **Swahili SMS for Noor's basic phone** (date, number of guests, their language, guide), with a plain statement of what the company gets back (an anonymized summary, only if Noor agrees) — and **More** (large text, languages, printable guestbook page, example data, delete all data).
 
 Where it sits in Noor's day: on Monday her basic phone tells her who is coming; during the week guests
 write in the book while she works; at the weekend her daughter (or a paid young helper) spends ten

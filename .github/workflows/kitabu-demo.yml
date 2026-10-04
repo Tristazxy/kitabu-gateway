@@ -1,0 +1,100 @@
+name: Kitabu demo recording
+
+# Records the MVP walkthrough in a phone-sized browser with the real on-device models
+# (kitabu/tools/record-demo.mjs), composes a 16:9 video with captions, and commits the
+# result to a new branch demo-video-<run number> (never to main).
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - kitabu/tools/record-demo.mjs
+      - kitabu/tools/compose_demo.py
+      - kitabu/tools/demo_assets.py
+      - .github/workflows/kitabu-demo.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kitabu-demo
+  cancel-in-progress: true
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: kitabu
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: kitabu/package-lock.json
+
+      - name: Install tools
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q ffmpeg espeak-ng fonts-noto-core fonts-dejavu-core
+          python3 -m pip install --quiet pillow
+          npm ci
+          npm install --no-save playwright@1.56.0
+          npx playwright install --with-deps chromium
+
+      - name: Build the app and serve it
+        run: |
+          npm run build
+          (python3 -m http.server 4173 --directory dist > /tmp/http.log 2>&1 &)
+          sleep 2
+          curl -sf -o /dev/null http://localhost:4173/index.html
+
+      - name: Make the test inputs (German note image, French voice note)
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ELEVENLABS_VOICE_ID: ${{ vars.ELEVENLABS_VOICE_ID }}
+        run: python3 tools/demo_assets.py
+
+      - name: Record the walkthrough (downloads the real models once, then records)
+        run: node tools/record-demo.mjs
+
+      - name: Compose the videos
+        if: always()
+        run: python3 tools/compose_demo.py && ls -la demo-out
+
+      - name: Upload as a workflow artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kitabu-demo-${{ github.run_number }}
+          path: |
+            kitabu/demo-out/*.mp4
+            kitabu/demo-out/*.png
+            kitabu/demo-out/*.json
+            kitabu/demo-out/*.txt
+            kitabu/demo-assets/*
+          if-no-files-found: warn
+
+      - name: Commit the videos to a new branch
+        if: always()
+        working-directory: .
+        run: |
+          set -e
+          B="demo-video-${{ github.run_number }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$B"
+          mkdir -p demo
+          rm -f demo/*.mp4 demo/*.png demo/*.txt demo/*.json
+          cp kitabu/demo-out/*.mp4 demo/ 2>/dev/null || true
+          cp kitabu/demo-out/*.png demo/ 2>/dev/null || true
+          cp kitabu/demo-out/*.txt kitabu/demo-out/*.json demo/ 2>/dev/null || true
+          cp kitabu/demo-assets/note-de.png demo/input-note-de.png 2>/dev/null || true
+          cp kitabu/demo-assets/voice-fr.wav demo/input-voice-fr.wav 2>/dev/null || true
+          git add -f demo
+          git commit -m "Demo recording from run ${{ github.run_number }}" || echo "nothing to commit"
+          git push origin "$B"

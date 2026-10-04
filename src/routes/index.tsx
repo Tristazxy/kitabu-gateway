@@ -4,9 +4,9 @@ import { useEffect } from "react";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Kitabu cha Wageni — Guestbook for coffee-farm hosts" },
+      { title: "Karibu — Guestbook for coffee-farm hosts" },
       { name: "description", content: "Guestbook assistant for a small coffee-farm host · works offline" },
-      { property: "og:title", content: "Kitabu cha Wageni — Guestbook for coffee-farm hosts" },
+      { property: "og:title", content: "Karibu — Guestbook for coffee-farm hosts" },
       { property: "og:description", content: "Guestbook assistant for a small coffee-farm host · works offline" },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://kitabu-cha-wageni.lovable.app/" },
@@ -28,7 +28,7 @@ function Index() {
       className="flex min-h-screen flex-col items-center justify-center px-4 text-center"
       style={{ backgroundColor: "#F3F2EC", color: "#24533F", fontFamily: "system-ui, -apple-system, sans-serif" }}
     >
-      <h1 className="text-3xl font-bold">Kitabu cha Wageni — Guestbook for coffee-farm hosts</h1>
+      <h1 className="text-3xl font-bold">Karibu — Guestbook for coffee-farm hosts</h1>
       <p className="mt-3 text-sm">Guestbook assistant for a small coffee-farm host · works offline</p>
       <a
         href="/kitabu/index.html"

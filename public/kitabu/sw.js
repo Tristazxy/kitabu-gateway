@@ -1,4 +1,4 @@
-// Offline cache for Kitabu cha Wageni.
+// Offline cache for Karibu.
 // Same-origin files: network first, cached copy when offline.
 // Libraries from cdn.jsdelivr.net: cache first (they are version-pinned).
 // AI model files from Hugging Face are cached by the AI library itself.

@@ -20,14 +20,14 @@ export function dayEn(date) {
 // ---------- Weekly SMS to Noor's basic phone (Swahili) ----------
 export function weeklySms(bookings) {
   if (!bookings.length) {
-    return 'Kitabu: Hakuna wageni waliopangwa wiki ijayo.';
+    return 'Karibu: Hakuna wageni waliopangwa wiki ijayo.';
   }
   const total = bookings.reduce((n, b) => n + (Number(b.guests) || 1), 0);
   const lines = bookings
     .slice()
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .map(b => `${daySw(b.date)}: wageni ${b.guests} (${langName(b.language, 'sw')})${b.guide ? `, mwongozaji ${b.guide}` : ''}`);
-  return `Kitabu: Wiki ijayo wageni ${total}.\n${lines.join('\n')}\nJibu NDIYO kukubali au HAPANA kukataa.`;
+  return `Karibu: Wiki ijayo wageni ${total}.\n${lines.join('\n')}\nJibu NDIYO kukubali au HAPANA kukataa.`;
 }
 
 // A new-product idea is only raised with enough evidence: >= 3 guests AND >= 40% of guests.
@@ -37,7 +37,7 @@ export function strongProduct(s) {
 
 // One booking sent by a tour company straight to Noor's basic phone.
 export function bookingSms(b) {
-  return `Kitabu: Wageni wapya. ${daySw(b.date)}: wageni ${b.guests} (${langName(b.language, 'sw')})${b.guide ? `, mwongozaji ${b.guide}` : ''}.\nJibu NDIYO kukubali au HAPANA kukataa.`;
+  return `Karibu: Wageni wapya. ${daySw(b.date)}: wageni ${b.guests} (${langName(b.language, 'sw')})${b.guide ? `, mwongozaji ${b.guide}` : ''}.\nJibu NDIYO kukubali au HAPANA kukataa.`;
 }
 
 // ---------- Swahili summary for Noor ----------

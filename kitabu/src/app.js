@@ -1,4 +1,4 @@
-// Kitabu cha Wageni — main app: state, screens, actions.
+// Karibu — main app: state, screens, actions.
 // One home screen; every other screen is one tap away and has a back button.
 // The interface shows one language at a time (Swahili or English, following the phone; toggle at the top).
 

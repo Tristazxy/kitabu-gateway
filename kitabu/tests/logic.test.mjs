@@ -143,7 +143,7 @@ test('every language has the fields the app uses', () => {
 
 test('company booking becomes a Swahili SMS', () => {
   const sms = bookingSms({ date: day(4), guests: 3, language: 'pl', guide: 'Neema' });
-  assert.ok(sms.startsWith('Kitabu: Wageni wapya.'));
+  assert.ok(sms.startsWith('Karibu: Wageni wapya.'));
   assert.ok(sms.includes('wageni 3 (Kipolandi)'));
 });
 

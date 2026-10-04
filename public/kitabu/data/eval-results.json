@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-04T01:37:45.214Z",
+ "generated": "2026-10-04T03:04:50.300Z",
  "runner": "GitHub Actions (CPU, onnxruntime-node); same code as the app",
  "thresholds": {
   "topicMin": 0.3,
@@ -27,13 +27,13 @@
     "text": "I wish someone had explained the history of the farm.",
     "gold": "explain",
     "pred": "walk",
-    "score": 0.613
+    "score": 0.61
    },
    {
     "text": "There were no signs showing the way.",
     "gold": "access",
-    "pred": "facilities",
-    "score": 0.416
+    "pred": "buy",
+    "score": 0.501
    },
    {
     "text": "We are flying home on Tuesday.",
@@ -308,5 +308,5 @@
    ]
   }
  },
- "seconds": 386
+ "seconds": 337
 }

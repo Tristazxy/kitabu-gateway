@@ -53,3 +53,27 @@ export const NATURE_SVG = `
   ${bamboo(40, 900, 0)}${bamboo(110, 700, 1.3)}${bamboo(960, 980, 0.6, true)}${bamboo(890, 760, 2.1, true)}
   ${leaf(180, 0, 14)}${leaf(520, 5, 18)}${leaf(820, 9, 16)}${leaf(330, 12, 20)}
 </svg>`;
+
+// Real-nature background: a photo (always) and an optional looping video, dropped into public/bg/.
+// Falls back to the illustrated scene above when the photo is missing.
+export const BG = { poster: 'bg/forest.jpg', video: 'bg/forest.mp4' };
+
+export function mountBackground(el) {
+  const img = new Image();
+  img.onload = () => {
+    const saveData = navigator.connection && navigator.connection.saveData;
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const useVideo = navigator.onLine && !saveData && !reduce;
+    el.innerHTML = `<img class="bg-photo" src="${BG.poster}" alt="">` +
+      (useVideo ? `<video class="bg-video" autoplay muted loop playsinline preload="metadata" poster="${BG.poster}"><source src="${BG.video}" type="video/mp4"></video>` : '');
+    el.classList.add('real');
+    const v = el.querySelector('video');
+    if (v) {
+      v.addEventListener('canplay', () => el.classList.add('video-ready'), { once: true });
+      v.addEventListener('error', () => v.remove(), { once: true });
+      v.play().catch(() => v.remove());
+    }
+  };
+  img.onerror = () => { el.innerHTML = NATURE_SVG; };
+  img.src = BG.poster;
+}

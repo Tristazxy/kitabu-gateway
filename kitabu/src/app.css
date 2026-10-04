@@ -357,3 +357,13 @@ main > p, main > .hint { background: rgba(255, 255, 255, .72); padding: 8px 12px
 main > .row[aria-label] { background: rgba(255, 255, 255, .72); border-radius: 14px; padding: 8px; }
 label.field.search { margin-top: 4px; }
 .steps { background: rgba(255,255,255,.6); padding: 6px; border-radius: 10px; }
+
+/* real photo / video background */
+.nature .bg-photo, .nature .bg-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.nature .bg-photo { animation: kenburns 40s ease-in-out infinite alternate; transform-origin: 50% 60%; }
+.nature .bg-video { opacity: 0; transition: opacity 1.2s ease; }
+.nature.video-ready .bg-video { opacity: 1; }
+.nature.real::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10, 30, 20, .28), rgba(10, 30, 20, .06) 35%, rgba(10, 30, 20, .32)); pointer-events: none; }
+@keyframes kenburns { from { transform: scale(1); } to { transform: scale(1.1) translate(-1.5%, -1%); } }
+.nature.real ~ main .card, .nature.real ~ main .home-btn, .nature.real ~ main .say { background: rgba(255, 255, 255, .93); }
+@media (prefers-reduced-motion: reduce) { .nature .bg-photo { animation: none; } }

@@ -14,7 +14,7 @@ import { summaryClipIds, playClips, prefetchVoice, loadVoiceManifest, sayLabel }
 import { guideHTML, GUIDE_STEPS } from './guide.js';
 import { roleChooserHTML, visitorHTML, companyHTML, pickVisitorLang, visitorStrings } from './roles.js';
 import { findHTML, hostHTML, bookedHTML, hostDays, hostSummaryLine } from './visit.js';
-import { NATURE_SVG } from './nature.js';
+import { mountBackground } from './nature.js';
 
 const view = document.getElementById('view');
 
@@ -1599,7 +1599,7 @@ async function pickUiLang() {
 }
 
 async function start() {
-  document.getElementById('nature').innerHTML = NATURE_SVG;
+  mountBackground(document.getElementById('nature'));
   setLang(await pickUiLang());
   await loadAll();
   const kiosk = await db.getSetting('kiosk', false);

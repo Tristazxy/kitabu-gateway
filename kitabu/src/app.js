@@ -13,6 +13,7 @@ import { h, L, getLang, setLang, host, setHost, toast, showBusy, progress, hideB
 import { summaryClipIds, playClips, prefetchVoice, loadVoiceManifest } from './voice.js';
 import { guideHTML, GUIDE_STEPS } from './guide.js';
 import { roleChooserHTML, visitorHTML, companyHTML, pickVisitorLang, visitorStrings } from './roles.js';
+import { findHTML, hostHTML, bookedHTML, hostDays, hostSummaryLine } from './visit.js';
 
 const view = document.getElementById('view');
 
@@ -36,6 +37,10 @@ const state = {
   openGuest: null,
   guide: { open: false, step: 0 },
   visitor: { lang: 'en', saved: false, draft: {} },
+  hosts: null,           // directory from data/hosts.json (loaded on first use)
+  find: { q: '' },
+  book: { hostId: null, day: null, form: {}, done: null },
+  availableDays: [],     // days the host published (ISO dates)
 };
 
 // ---------------------------------------------------------------- data
@@ -44,6 +49,7 @@ async function loadAll() {
   Object.assign(state, { guests: g, entries: e, bookings: b, messages: m });
   state.lastSync = await db.getSetting('lastSync');
   state.role = await db.getSetting('role', null);
+  state.availableDays = await db.getSetting('availableDays', []);
   setHost(await db.getSetting('hostName', 'Noor'));
   document.documentElement.classList.toggle('big-text', await db.getSetting('bigText', false));
 }
@@ -230,7 +236,7 @@ function screenHome() {
     </div>` : '';
 
   const summaryCard = s.entries ? `
-    <div class="card">
+    <div class="card accent">
       <div class="card-title"><h2>${L('Wageni walisema', 'What guests said')}</h2><span class="small muted">${PERIODS[state.period]()}</span></div>
       <p class="big-summary" style="margin:0">${h(shortSummary(s))}</p>
       ${unsure ? `<p class="small" style="margin:8px 0 0;color:var(--warn-ink)">${L(`Sentensi ${unsure} zinahitaji kuangaliwa.`, `${unsure} ${unsure === 1 ? 'sentence needs' : 'sentences need'} a check.`)}</p>` : ''}
@@ -247,9 +253,9 @@ function screenHome() {
       ${pending.length ? '' : `<button class="btn secondary block" style="margin-top:12px" data-action="guide-try">${L('Jaribu mfano mmoja', 'Try one example')}</button>`}
     </div>`;
 
-  const bigBtn = (attrs, icon, title, sub) => `
+  const bigBtn = (attrs, icon, title, sub, tile = '') => `
     <button class="home-btn" ${attrs}>
-      <span class="role-icon" aria-hidden="true">${icon}</span>
+      <span class="role-icon ${tile}" aria-hidden="true">${icon}</span>
       <span class="role-text"><strong>${title}</strong><span class="small muted">${sub}</span></span>
     </button>`;
 
@@ -261,10 +267,10 @@ function screenHome() {
   return `
   ${summaryCard}
   <div class="stack">
-    ${bigBtn('data-action="go" data-screen="add"', ICON_CAMERA, L('Ongeza maoni ya mgeni', 'Add guest feedback'), L('Picha ya kitabu, sauti au kuandika', 'Photo of the guestbook, voice or typing'))}
-    ${bigBtn('data-action="hand-to-guest"', ICON_HAND, L('Mpe mgeni simu aandike', 'Let a guest write'), L('Kwa lugha yake, kwenye simu hii', 'In their own language, on this phone'))}
-    ${bigBtn('data-action="go" data-screen="guests"', ICON_MAIL, L('Washukuru wageni', 'Thank guests'), toThank ? L(`Wageni ${toThank} wanasubiri`, `${toThank} waiting`) : L('Ujumbe kwa lugha ya mgeni', 'A message in the guest’s language'))}
-    ${bigBtn('data-action="go" data-screen="week"', ICON_CAL, L('Wiki ijayo', 'Next week'), weekSub)}
+    ${bigBtn('data-action="go" data-screen="add"', ICON_CAMERA, L('Ongeza maoni ya mgeni', 'Add guest feedback'), L('Picha ya kitabu, sauti au kuandika', 'Photo of the guestbook, voice or typing'), 'tile-caramel')}
+    ${bigBtn('data-action="hand-to-guest"', ICON_HAND, L('Mpe mgeni simu aandike', 'Let a guest write'), L('Kwa lugha yake, kwenye simu hii', 'In their own language, on this phone'), 'tile-leaf')}
+    ${bigBtn('data-action="go" data-screen="guests"', ICON_MAIL, L('Washukuru wageni', 'Thank guests'), toThank ? L(`Wageni ${toThank} wanasubiri`, `${toThank} waiting`) : L('Ujumbe kwa lugha ya mgeni', 'A message in the guest’s language'), 'tile-cherry')}
+    ${bigBtn('data-action="go" data-screen="week"', ICON_CAL, L('Wiki ijayo', 'Next week'), weekSub, 'tile-sky')}
   </div>
   <div class="row home-links">
     <button class="link-btn" data-action="guide-open">${L('Jinsi ya kutumia', 'How to use')}</button>
@@ -291,14 +297,27 @@ function screenWeek() {
       </div>
       <div class="row small" style="margin-top:6px">
         ${langPill(b.language)} ${packChip(b.language)}
+        ${b.status === 'requested' ? `<span class="chip warn">${L('Inasubiri kampuni', 'Awaiting the company')}</span>` : ''}
         ${b.guide ? `<span class="muted">${L('Mwongozaji', 'Guide')}: ${h(b.guide)}</span>` : ''}
       </div>
-      <div class="small muted" style="margin-top:4px">${h(b.leadName || '')}${b.company ? ` · ${h(b.company)}` : ''}</div>
+      <div class="small muted" style="margin-top:4px">${h(b.leadName || '')}${b.company ? ` · ${h(b.company)}` : ''}${b.referredBy ? ` · ${L('alipendekezwa na', 'recommended by')} ${h(b.referredBy)}` : ''}</div>
     </li>`;
+
+  const dayChips = [...Array(14)].map((_, i) => {
+    const d = isoDate(addDays(new Date(), i + 1));
+    const on = state.availableDays.includes(d);
+    return `<button class="chip" data-action="toggle-day" data-day="${d}" aria-pressed="${on}">${h(day(d + 'T12:00:00'))}</button>`;
+  }).join('');
 
   return `
   ${backBtn()}
   <h1>${L('Wiki ijayo', 'Next week')}</h1>
+
+  <div class="card">
+    <h2>${L('Siku unazoweza kupokea wageni', 'Days you can take guests')}</h2>
+    <p class="small muted">${L('Wageni wanaziona wanapotafuta mahali, na kampuni ya utalii inapanga kulingana nazo.', 'Visitors see these when they search for a place, and the tour company books around them.')}</p>
+    <div class="row">${dayChips}</div>
+  </div>
 
   <div class="card">
     <button class="btn block" data-action="sync" ${state.online ? '' : 'disabled'}>${L('Pokea ratiba mpya', 'Get the new schedule')}</button>
@@ -762,6 +781,26 @@ function readCompanyForm() {
   };
 }
 
+function requestsHTML() {
+  const reqs = state.bookings.filter(b => b.status === 'requested').sort((a, b) => new Date(a.date) - new Date(b.date));
+  const confirmed = state.bookings.filter(b => b.status === 'confirmed' && b.source === 'visitor').slice(-3);
+  if (!reqs.length && !confirmed.length) return '';
+  const row = b => `
+    <li>
+      <div class="row between"><strong>${h(b.leadName)}</strong><span class="badge-num">${h(b.guests)}</span></div>
+      <div class="row small" style="margin-top:6px">${h(day(b.date))} ${langPill(b.language)}${b.referredBy ? `<span class="muted">${L('alipendekezwa na', 'recommended by')} ${h(b.referredBy)}</span>` : ''}${b.consent && b.email ? `<span class="muted">${h(b.email)}</span>` : ''}</div>
+      ${b.status === 'requested'
+        ? `<button class="btn small block" style="margin-top:8px" data-action="company-confirm" data-id="${b.id}">${L(`Thibitisha na tuma SMS kwa ${host()}`, `Confirm and send the SMS to ${host()}`)}</button>`
+        : `<div class="sms small" style="margin-top:8px">${h(bookingSms(b))}</div><a class="btn small secondary block" style="margin-top:6px" href="sms:?body=${encodeURIComponent(bookingSms(b))}">${L('Fungua kwenye programu ya SMS', 'Open in the SMS app')}</a>`}
+    </li>`;
+  return `
+  <div class="card">
+    <h2>${L('Maombi mapya kutoka kwa wageni', 'New requests from visitors')}</h2>
+    <p class="small muted">${L('Yametumwa kutoka ukurasa wa “Tafuta mahali”. Ukithibitisha, mwenyeji anapata SMS; haitaji intaneti.', 'Sent from the “Find a place” page. When you confirm, the host gets an SMS; no internet needed on her side.')}</p>
+    <ul class="list">${[...reqs, ...confirmed].map(row).join('')}</ul>
+  </div>`;
+}
+
 function screenCompany() {
   const today = isoDate(addDays(new Date(), 3));
   const { s } = currentSummary();
@@ -769,10 +808,72 @@ function screenCompany() {
   const back = state.role === 'company'
     ? `<button class="btn small secondary" data-action="switch-role" style="margin-bottom:12px">← ${L('Badilisha upande', 'Switch side')}</button>`
     : backBtn();
-  return back + companyHTML({
+  return back + requestsHTML() + companyHTML({
     langOptionsHTML: langOptions('en'), today,
     sms: bookingSms({ date: dayStamp(today), guests: 2, language: 'en', guide: '' }), report,
   });
+}
+
+// ---------------------------------------------------------------- visitor: find a place and book
+async function loadHosts() {
+  if (state.hosts) return state.hosts;
+  try {
+    const res = await fetch('data/hosts.json');
+    state.hosts = (await res.json()).hosts;
+  } catch {
+    state.hosts = [];
+  }
+  return state.hosts;
+}
+
+const hostById = id => (state.hosts || []).find(x => x.id === id);
+
+function screenFind() {
+  if (!state.hosts) loadHosts().then(render);
+  return findHTML({ q: state.find.q, hosts: state.hosts || [], lang: getLang(), loading: !state.hosts });
+}
+
+function screenHost() {
+  const hostRec = hostById(state.book.hostId);
+  if (!hostRec) { state.screen = 'find'; return screenFind(); }
+  const live = hostRec.id === 'noor' ? currentSummary().s : null;
+  const days = hostDays(hostRec, hostRec.id === 'noor' ? state.availableDays : null);
+  const ref = (state.book.form.referredBy || '').trim().toLowerCase();
+  const knownGuest = ref && hostRec.id === 'noor'
+    ? state.guests.find(g => (g.name || '').toLowerCase().split(' ')[0] === ref.split(' ')[0]) : null;
+  return hostHTML({ host: hostRec, days, selected: state.book.day, summaryLine: hostSummaryLine(hostRec, live, getLang()), form: state.book.form, lang: getLang(), knownGuest });
+}
+
+function screenBooked() {
+  const hostRec = hostById(state.book.hostId);
+  if (!hostRec || !state.book.done) { state.screen = 'find'; return screenFind(); }
+  return bookedHTML({ host: hostRec, booking: state.book.done, lang: getLang() });
+}
+
+function captureBookForm() {
+  const v = id => document.getElementById(id)?.value || '';
+  if (!document.getElementById('bk-v-name')) return;
+  state.book.form = {
+    guests: Number(v('bk-v-guests')) || 2, language: v('bk-v-lang') || 'en', name: v('bk-v-name'),
+    email: v('bk-v-email'), consent: Boolean(document.getElementById('bk-v-consent')?.checked), referredBy: v('bk-v-ref'),
+  };
+}
+
+async function submitBooking() {
+  captureBookForm();
+  const hostRec = hostById(state.book.hostId);
+  const f = state.book.form;
+  if (!state.book.day) return toast(L('Chagua siku', 'Pick a day'));
+  if (!f.name.trim()) return toast(L('Andika jina lako', 'Add your name'));
+  const b = {
+    id: uid('bk'), date: dayStamp(state.book.day), guests: Math.max(1, f.guests), leadName: f.name.trim(), language: f.language,
+    guide: hostRec.guide, company: hostRec.company, consent: f.consent, email: f.consent ? f.email.trim() : '',
+    referredBy: f.referredBy.trim(), hostId: hostRec.id, status: 'requested', source: 'visitor', createdAt: new Date().toISOString(),
+  };
+  await db.put('bookings', b);
+  state.bookings.push(b);
+  state.book.done = b;
+  go('booked');
 }
 
 function captureVisitorDraft() {
@@ -874,12 +975,14 @@ const SCREENS = {
   choose: roleChooserHTML,
   home: screenHome, add: screenAdd, summary: screenSummary, guests: screenGuests, week: screenWeek,
   langs: screenLangs, more: screenMore, company: screenCompany,
+  find: screenFind, host: screenHost, booked: screenBooked,
   visitor: () => visitorHTML(state.visitor.lang, state.visitor.saved, state.visitor.draft),
 };
 
 function render() {
   const sc = state.screen;
   document.body.classList.toggle('mode-visitor', sc === 'visitor' || sc === 'choose');
+  document.body.classList.toggle('mode-choose', sc === 'choose');
   document.body.classList.toggle('home', sc === 'home');
   view.innerHTML = SCREENS[sc]();
   document.getElementById('net').textContent = state.online ? L('Mtandaoni', 'Online') : L('Nje ya mtandao', 'Offline');
@@ -1218,13 +1321,30 @@ async function startVisitor(from = 'home') {
 async function chooseRole(role) {
   state.role = role;
   await db.setSetting('role', role);
-  if (role === 'visitor') return startVisitor('choose');
+  if (role === 'visitor') { state.book = { hostId: null, day: null, form: {}, done: null }; return go('find'); }
   go(role === 'company' ? 'company' : 'home');
   if (role === 'host' && !(await db.getSetting('guideSeen', false))) openGuide(0);
 }
 
 const actions = {
   'choose-role': el => chooseRole(el.dataset.role),
+  'open-host': el => { state.book = { hostId: el.dataset.id, day: null, form: {}, done: null }; go('host'); },
+  'book-day': el => { captureBookForm(); state.book.day = el.dataset.day; render(); },
+  'book-submit': submitBooking,
+  'toggle-day': async el => {
+    const d = el.dataset.day;
+    state.availableDays = state.availableDays.includes(d) ? state.availableDays.filter(x => x !== d) : [...state.availableDays, d].sort();
+    await db.setSetting('availableDays', state.availableDays);
+    render();
+  },
+  'company-confirm': async el => {
+    const b = state.bookings.find(x => x.id === el.dataset.id);
+    if (!b) return;
+    b.status = 'confirmed';
+    await db.put('bookings', b);
+    toast(L(`Imethibitishwa. SMS kwa ${host()} iko tayari.`, `Confirmed. The SMS to ${host()} is ready.`));
+    render();
+  },
   'switch-role': async () => { state.role = null; await db.setSetting('role', null); go('choose'); },
   back: () => go('home'),
   go: el => go(el.dataset.screen),
@@ -1233,7 +1353,7 @@ const actions = {
     await db.setSetting('lang', getLang());
     render();
   },
-  'hand-to-guest': () => startVisitor('home'),
+  'hand-to-guest': () => startVisitor(state.screen === 'find' ? 'choose' : 'home'),
   'visitor-lang': el => { captureVisitorDraft(); state.visitor.lang = el.dataset.lang; render(); },
   'visitor-save': saveVisitor,
   'visitor-next': () => { state.visitor = { lang: pickVisitorLang(), saved: false, draft: {} }; render(); window.scrollTo(0, 0); },
@@ -1241,7 +1361,7 @@ const actions = {
     const from = await db.getSetting('kiosk', 'home');
     if (from === 'home' && !confirm(L(`Kwa ${host()} tu: rudi nyumbani?`, `${host()} only: back to the home screen?`))) return;
     await db.setSetting('kiosk', false);
-    if (from === 'choose') { state.role = null; await db.setSetting('role', null); go('choose'); } else go('home');
+    if (from === 'choose') go('find'); else go('home');
   },
   'company-sms': () => {
     const b = readCompanyForm();
@@ -1382,9 +1502,19 @@ const changeHandlers = {
   },
 };
 
+let findTimer = null;
 const inputHandlers = {
   'input-text': el => { const i = state.add.inputs.find(x => x.id === el.dataset.id); if (i) i.text = el.value; refreshAnalyseButton(); },
   'input-english': el => { const i = state.add.inputs.find(x => x.id === el.dataset.id); if (i) i.english = el.value; },
+  'find-q': el => {
+    state.find.q = el.value;
+    clearTimeout(findTimer);
+    findTimer = setTimeout(() => { const pos = el.selectionStart; render(); const q = document.getElementById('find-q'); if (q) { q.focus(); q.setSelectionRange(pos, pos); } }, 250);
+  },
+  'bk-v-ref': el => {
+    clearTimeout(findTimer);
+    findTimer = setTimeout(() => { captureBookForm(); render(); const r = document.getElementById('bk-v-ref'); if (r) { r.focus(); r.setSelectionRange(r.value.length, r.value.length); } }, 400);
+  },
 };
 
 function refreshAnalyseButton() {
@@ -1467,7 +1597,7 @@ async function start() {
   await loadAll();
   const kiosk = await db.getSetting('kiosk', false);
   if (kiosk) { state.visitor = { lang: pickVisitorLang(), saved: false, draft: {} }; state.screen = 'visitor'; }
-  else state.screen = state.role === 'host' ? 'home' : state.role === 'company' ? 'company' : 'choose';
+  else state.screen = state.role === 'host' ? 'home' : state.role === 'company' ? 'company' : state.role === 'visitor' ? 'find' : 'choose';
   render();
   if (state.screen === 'home' && !(await db.getSetting('guideSeen', false))) openGuide(0);
   await refreshModels();

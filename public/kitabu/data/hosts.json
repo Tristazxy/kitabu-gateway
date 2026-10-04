@@ -1,0 +1,45 @@
+{
+  "_note": "SYNTHETIC directory of small hosts for the visitor side (find a place, see available days, book). All names, places' details and prices are fictional. In a real deployment this list comes from the tour company's or tourism office's registry; hosts publish their available days once a week through the helper or by SMS.",
+  "area": "Kilimanjaro region, Tanzania",
+  "hosts": [
+    {
+      "id": "noor",
+      "name": "Noor’s coffee farm",
+      "town": "Materuni",
+      "tags": ["coffee roasting", "waterfall walk", "family lunch"],
+      "languages": ["sw", "en"],
+      "blurb": "Pick, roast and grind coffee with Noor’s family on the slopes of Kilimanjaro, walk to the Materuni waterfall, and share lunch at the farm.",
+      "guide": "Juma",
+      "company": "Ondera Coffee Trails (fictional)",
+      "price": "TZS 60,000 per person, lunch included (fictional)",
+      "availableOffsets": [2, 4, 6, 9, 11],
+      "sample": { "guests": 12, "liked": ["coffee", "walk", "food"], "improve": ["access"], "products": ["coffee"] }
+    },
+    {
+      "id": "asha",
+      "name": "Mama Asha’s spice garden",
+      "town": "Marangu",
+      "tags": ["spices", "cooking class"],
+      "languages": ["sw"],
+      "blurb": "A morning in a spice garden and a cooking class in Mama Asha’s kitchen. The guide translates.",
+      "guide": "Neema",
+      "company": "Ondera Coffee Trails (fictional)",
+      "price": "TZS 45,000 per person (fictional)",
+      "availableOffsets": [3, 5, 8, 12],
+      "sample": { "guests": 7, "liked": ["food", "host"], "improve": ["timing"], "products": [] }
+    },
+    {
+      "id": "kibo",
+      "name": "Kibo honey & coffee",
+      "town": "Mweka",
+      "tags": ["honey", "coffee", "forest walk"],
+      "languages": ["sw", "en"],
+      "blurb": "Beehives at the forest edge, a short coffee tasting, and a walk to the Mweka viewpoint.",
+      "guide": "Juma",
+      "company": "Ondera Coffee Trails (fictional)",
+      "price": "TZS 50,000 per person (fictional)",
+      "availableOffsets": [1, 7, 10, 13],
+      "sample": { "guests": 5, "liked": ["walk", "explain"], "improve": ["facilities"], "products": ["honey"] }
+    }
+  ]
+}

@@ -7,7 +7,7 @@ const SHELL = 'kitabu-shell-v2';
 const LIBS = 'kitabu-libs-v1';
 const PRECACHE = [
   './index.html', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png',
-  './data/demo.json', './print/guestbook.html', './print/sales-log.html', './print/print.css',
+  './data/demo.json', './data/hosts.json', './print/guestbook.html', './print/sales-log.html', './print/print.css',
 ];
 
 self.addEventListener('install', event => {

@@ -5,6 +5,7 @@
 
 import { h, L, host } from './ui.js';
 import { LANGS } from './langs.js';
+import { FARM_ART } from './visit.js';
 
 export const VISITOR_LANGS = ['en', 'it', 'fr', 'de', 'zh', 'es', 'pl', 'sw', 'xx'];
 
@@ -109,16 +110,20 @@ const ICON_VISITOR = ICON.visitor;
 
 // The first screen: three sides of the same phone app.
 export function roleChooserHTML() {
+  const tile = { host: 'tile-caramel', visitor: 'tile-leaf', company: 'tile-sky' };
   const card = (role, title, sub) => `
     <button class="home-btn" data-action="choose-role" data-role="${role}">
-      <span class="role-icon" aria-hidden="true">${ICON[role]}</span>
+      <span class="role-icon ${tile[role]}" aria-hidden="true">${ICON[role]}</span>
       <span class="role-text"><strong>${title}</strong><span class="small muted">${sub}</span></span>
     </button>`;
   return `
-  <h1>${L('Karibu! Wewe ni nani?', 'Welcome! Who are you?')}</h1>
+  <div class="hero" aria-hidden="true">${FARM_ART}
+    <div class="hero-text"><h1>${L('Karibu!', 'Welcome!')}</h1><p>${L('Wageni wanaandika kwa lugha yao. Mwenyeji anasikia kwa lugha yake.', 'Guests write in their language. The host hears it in hers.')}</p></div>
+  </div>
+  <h2>${L('Wewe ni nani?', 'Who are you?')}</h2>
   <div class="stack" style="margin-top:12px">
     ${card('host', L('Mwenyeji', 'Host'), L('Ongeza maoni, sikiliza muhtasari, washukuru wageni.', 'Add feedback, hear the summary, thank guests.'))}
-    ${card('visitor', L('Mgeni', 'Visitor'), L('Andika maoni yako kwa lugha yako.', 'Leave feedback in your own language.'))}
+    ${card('visitor', L('Mgeni', 'Visitor'), L('Tafuta mahali, weka nafasi, andika maoni kwa lugha yako.', 'Find a place, book a visit, leave feedback in your language.'))}
     ${card('company', L('Kampuni ya utalii au mwongozaji', 'Tour company or guide'), L('Tuma ratiba ya wageni kwa SMS.', 'Send guest bookings by SMS.'))}
   </div>
   <p class="small muted" style="margin-top:14px">${L('Unaweza kubadilisha baadaye.', 'You can switch later.')}</p>`;

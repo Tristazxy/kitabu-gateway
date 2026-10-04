@@ -21,6 +21,7 @@ html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
   background: var(--bg);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%235B3A24' stroke-opacity='0.07' stroke-width='3'%3E%3Cellipse cx='30' cy='30' rx='9' ry='14' transform='rotate(-30 30 30)'/%3E%3Cpath d='M30 17c-3 4-3 9 0 13s3 9 0 13' transform='rotate(-30 30 30)'/%3E%3Cellipse cx='90' cy='85' rx='9' ry='14' transform='rotate(25 90 85)'/%3E%3Cpath d='M90 72c-3 4-3 9 0 13s3 9 0 13' transform='rotate(25 90 85)'/%3E%3C/g%3E%3C/svg%3E");
   color: var(--ink);
   font: 1.0625rem/1.45 system-ui, -apple-system, "Segoe UI", "Noto Sans", Ubuntu, sans-serif;
   padding-bottom: calc(24px + env(safe-area-inset-bottom));
@@ -42,7 +43,8 @@ a { color: var(--primary); }
   position: sticky; top: 0; z-index: 5;
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding: 10px 14px; padding-top: calc(10px + env(safe-area-inset-top));
-  background: var(--primary); color: #fff;
+  background: linear-gradient(100deg, #3F2617 0%, #5B3A24 55%, #7A5033 100%); color: #fff;
+  box-shadow: 0 2px 10px rgba(43, 29, 20, .25);
 }
 .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .brand img { border-radius: 8px; background: #fff; }
@@ -62,6 +64,7 @@ main { max-width: 620px; margin: 0 auto; padding: 16px 14px 24px; outline: none;
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
   padding: 16px; margin: 0 0 14px; box-shadow: var(--shadow);
 }
+.card.accent { border-left: 6px solid #E2A85C; }
 .card.flat { box-shadow: none; }
 .card-title { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 .stack { display: flex; flex-direction: column; gap: 10px; }
@@ -76,7 +79,8 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   min-height: 48px; padding: 10px 16px; border-radius: 12px; cursor: pointer;
-  border: 1px solid var(--primary); background: var(--primary); color: #fff;
+  border: 1px solid #4A2E1C; background: linear-gradient(180deg, #6B4530, #4F3220); color: #fff;
+  box-shadow: 0 2px 6px rgba(43, 29, 20, .18);
   font: inherit; font-weight: 650; text-align: center; text-decoration: none;
 }
 .btn.secondary { background: var(--surface); color: var(--primary); }
@@ -194,7 +198,20 @@ body.mode-visitor .host-only { display: none !important; }
 .role-icon {
   width: 56px; height: 56px; border-radius: 16px; background: var(--primary-soft); color: var(--primary);
   display: flex; align-items: center; justify-content: center; flex: none;
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.08);
 }
+.tile-caramel { background: #F5DEB8; color: #7A4F00; }
+.tile-cherry { background: #F8DCD4; color: #A33F2A; }
+.tile-leaf { background: #DCE8CF; color: #3E5E30; }
+.tile-sky { background: #D9E6EF; color: #2F5A78; }
+.tile-cocoa { background: #E6D5C5; color: #5B3A24; }
+.home-btn { transition: transform .08s ease; }
+.home-btn:active { transform: scale(.985); }
+.hero { position: relative; overflow: hidden; border-radius: 18px; margin: -2px 0 14px; box-shadow: var(--shadow); }
+.hero svg { display: block; width: 100%; height: auto; }
+.hero-text { position: absolute; left: 16px; right: 16px; bottom: 12px; color: #2B1D14; }
+.hero-text h1 { margin: 0; font-size: 1.5rem; text-shadow: 0 1px 0 rgba(255,255,255,.6); }
+.hero-text p { margin: 2px 0 0; font-size: .9rem; color: #4A3324; }
 .role-icon svg { width: 30px; height: 30px; }
 .role-text { display: flex; flex-direction: column; gap: 2px; }
 .role-text strong { font-size: 1.08rem; }
@@ -259,3 +276,12 @@ body.mode-visitor .host-only { display: none !important; }
 @media print {
   .topbar, .toast { display: none; }
 }
+
+/* visitor: find & book */
+label.field.search { flex-direction: row; align-items: center; gap: 8px; background: var(--surface); border: 1px solid #C4B5A3; border-radius: 12px; padding: 0 12px; }
+label.field.search svg { width: 22px; height: 22px; color: var(--muted); flex: none; }
+label.field.search input { border: 0; padding: 12px 0; min-height: 48px; }
+label.field.search input:focus { outline: none; }
+.field-label { font-weight: 600; font-size: .95rem; margin-bottom: 6px; }
+.hero-card { padding-top: 12px; }
+.hero-art svg { width: 100%; height: auto; display: block; border-radius: 10px; }

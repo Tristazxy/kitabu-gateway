@@ -1,0 +1,48 @@
+{
+  "chapters": [
+    {
+      "t": 3.848,
+      "title": "A friend’s tip is enough",
+      "body": "The search understands a friend’s tip and locks on the host. Vivian books one of Noor’s published days and pays the deposit by M-Pesa to Noor’s own phone."
+    },
+    {
+      "t": 24.379,
+      "title": "Noor decides",
+      "body": "The booking waits for Noor’s answer: Accept or Decline, in the app or by SMS from her basic phone. Then the guestbook photo (German) and a voice note (French) are read on the phone, offline."
+    },
+    {
+      "t": 71.084,
+      "title": "The week, in Swahili",
+      "body": "Ten fixed topics, good or bad; unsure sentences are marked “Check” for a person. The summary is human-written Swahili with the AI’s counts filled in; “Sikiliza” reads it aloud."
+    },
+    {
+      "t": 86.398,
+      "title": "A thank-you, with consent",
+      "body": "A human-written note in the guest’s language with its meaning underneath. Sent only with consent, and only when the host taps send."
+    },
+    {
+      "t": 93.959,
+      "title": "Evidence",
+      "body": "The app’s own code on a labelled set and on FLORES-200, run in GitHub Actions on every change: topic accuracy, mood, chrF per language pack, and the share of “not sure”."
+    }
+  ],
+  "busy": [
+    [
+      34.252,
+      35.794
+    ],
+    [
+      39.355,
+      42.59
+    ],
+    [
+      52.793,
+      63.491
+    ],
+    [
+      67.413,
+      67.421
+    ]
+  ],
+  "end": 100.345
+}
